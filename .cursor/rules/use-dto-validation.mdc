@@ -1,0 +1,6 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+Tous les DTOs doivent utiliser class-validator pour la validation des entrées.

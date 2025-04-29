@@ -1,0 +1,6 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+L’accès aux routes sensibles doit être protégé par un AuthGuard JWT.",

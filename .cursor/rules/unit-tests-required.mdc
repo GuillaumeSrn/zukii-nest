@@ -1,0 +1,6 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+Chaque service et controller doit avoir au moins un test unitaire associé.

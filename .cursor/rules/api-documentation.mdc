@@ -1,0 +1,6 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+Chaque endpoint doit être documenté via Swagger decorators.

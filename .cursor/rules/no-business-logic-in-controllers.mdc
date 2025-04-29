@@ -1,0 +1,6 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+Aucune logique métier dans les controllers : ils délèguent toujours aux services.

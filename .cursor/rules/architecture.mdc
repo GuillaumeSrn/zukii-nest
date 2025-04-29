@@ -1,0 +1,6 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+Respecter l’architecture modulaire NestJS (modules, controllers, services, providers).
