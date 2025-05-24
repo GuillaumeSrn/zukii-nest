@@ -1,6 +1,6 @@
 ---
 description: 
 globs: 
-alwaysApply: false
+alwaysApply: true
 ---
 Utiliser l’injection de dépendances NestJS, jamais de new direct dans les services/controllers.

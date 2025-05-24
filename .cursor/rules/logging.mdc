@@ -1,6 +1,6 @@
 ---
 description: 
 globs: 
-alwaysApply: false
+alwaysApply: true
 ---
 Utiliser le logger NestJS (`Logger`) pour toutes les traces importantes (erreurs, accès, etc.).

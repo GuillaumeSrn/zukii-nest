@@ -1,6 +1,6 @@
 ---
 description: 
 globs: 
-alwaysApply: false
+alwaysApply: true
 ---
 Chaque endpoint doit être documenté via Swagger decorators.
