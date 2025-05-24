@@ -1,0 +1,171 @@
+@startuml
+!define Table(name,desc) class name as "desc" << (T,#FFAAAA) >>
+
+' Utilisateur
+Table(User, "Utilisateur") {
+  + id: UUID <<PK>>
+  + email: string <<unique>>
+  + passwordHash: string
+  + displayName: string
+  + createdAt: Date
+  + updatedAt: Date
+  + deletedAt: Date | null
+  + deletedBy: UUID | null
+}
+
+' Rôle global (Admin, User, etc.)
+Table(Role, "Rôle global") {
+  + id: UUID <<PK>>
+  + name: string <<unique>>
+  + description: string
+  + deletedAt: Date | null
+}
+
+' Table de jointure User-Role
+Table(UserRole, "User-Role") {
+  + userId: UUID <<FK>>
+  + roleId: UUID <<FK>>
+}
+
+' Board/Tableau collaboratif
+Table(Board, "Tableau/Board") {
+  + id: UUID <<PK>>
+  + name: string
+  + description: string
+  + ownerId: UUID <<FK>>
+  + createdAt: Date
+  + updatedAt: Date
+  + deletedAt: Date | null
+  + deletedBy: UUID | null
+}
+
+' Membre d'un board (collaboration)
+Table(BoardMember, "Membre de Board") {
+  + id: UUID <<PK>>
+  + userId: UUID <<FK>>
+  + boardId: UUID <<FK>>
+  + role: string (admin, editor, viewer, etc.)
+  + permissions: JSON
+  + invitedBy: UUID <<FK>>
+  + status: string (pending, accepted, declined)
+  + invitedAt: Date
+  + joinedAt: Date | null
+  + deletedAt: Date | null
+}
+
+' Invitation à rejoindre un board
+Table(Invitation, "Invitation Board") {
+  + id: UUID <<PK>>
+  + boardId: UUID <<FK>>
+  + email: string
+  + invitedBy: UUID <<FK>>
+  + token: string
+  + status: string (pending, accepted, declined, expired)
+  + expiresAt: Date
+  + maxUses: int
+  + sentAt: Date
+  + respondedAt: Date | null
+  + deletedAt: Date | null
+}
+
+' Colonnes (ex: pour un Kanban)
+Table(Column, "Colonne de Board") {
+  + id: UUID <<PK>>
+  + boardId: UUID <<FK>>
+  + name: string
+  + position: int
+  + createdAt: Date
+  + deletedAt: Date | null
+}
+
+' Items/cartes dans une colonne
+Table(Item, "Item/Carte") {
+  + id: UUID <<PK>>
+  + columnId: UUID <<FK>>
+  + boardId: UUID <<FK>>
+  + title: string
+  + description: string
+  + position: int
+  + assignedTo: UUID | null <<FK>>
+  + createdBy: UUID <<FK>>
+  + createdAt: Date
+  + updatedAt: Date
+  + deletedAt: Date | null
+  + deletedBy: UUID | null
+}
+
+' Fichiers CSV liés aux items
+Table(CSVFile, "Fichier CSV") {
+  + id: UUID <<PK>>
+  + itemId: UUID <<FK>>
+  + filename: string
+  + originalName: string
+  + filePath: string
+  + fileSize: int
+  + mimeType: string
+  + uploadedBy: UUID <<FK>>
+  + uploadedAt: Date
+  + status: string (pending, processed, error, archived)
+  + metadata: JSON
+  + deletedAt: Date | null
+}
+
+' Analyses effectuées sur les CSV
+Table(Analysis, "Analyse") {
+  + id: UUID <<PK>>
+  + itemId: UUID <<FK>>
+  + csvFileId: UUID <<FK>>
+  + analysisType: string
+  + parameters: JSON
+  + results: JSON
+  + status: string (running, completed, failed)
+  + createdBy: UUID <<FK>>
+  + createdAt: Date
+  + completedAt: Date | null
+  + deletedAt: Date | null
+}
+
+' Commentaires sur les items (optionnel)
+Table(Comment, "Commentaire") {
+  + id: UUID <<PK>>
+  + itemId: UUID <<FK>>
+  + authorId: UUID <<FK>>
+  + content: text
+  + createdAt: Date
+  + updatedAt: Date
+  + deletedAt: Date | null
+  + deletedBy: UUID | null
+}
+
+' Historique des actions sur un board
+Table(BoardHistory, "Historique Board") {
+  + id: UUID <<PK>>
+  + boardId: UUID <<FK>>
+  + userId: UUID <<FK>>
+  + action: string
+  + details: string
+  + entityType: string (item, column, member, etc.)
+  + entityId: UUID | null
+  + createdAt: Date
+}
+
+' Relations
+User "1" -- "0..*" UserRole : has
+Role "1" -- "0..*" UserRole : assigned to
+User "1" -- "0..*" Board : owns
+Board "1" -- "0..*" BoardMember : has member
+Board "1" -- "0..*" Invitation : sends
+User "1" -- "0..*" BoardMember : is member
+User "1" -- "0..*" Item : creates
+User "0..1" -- "0..*" Item : assigned to
+Board "1" -- "0..*" Column : contains
+Column "1" -- "0..*" Item : has item
+Item "1" -- "0..*" CSVFile : has files
+Item "1" -- "0..*" Analysis : has analysis
+CSVFile "1" -- "0..*" Analysis : analyzed by
+Item "1" -- "0..*" Comment : has comments
+User "1" -- "0..*" Comment : authors
+Board "1" -- "0..*" BoardHistory : has history
+User "1" -- "0..*" BoardHistory : acts
+
+@enduml 
