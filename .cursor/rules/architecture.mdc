@@ -1,6 +1,6 @@
 ---
 description: 
 globs: 
-alwaysApply: false
+alwaysApply: true
 ---
 Respecter l’architecture modulaire NestJS (modules, controllers, services, providers).
