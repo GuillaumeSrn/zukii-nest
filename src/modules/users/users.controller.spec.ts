@@ -50,6 +50,7 @@ describe('UsersController', () => {
 
       const result = await controller.create(createUserDto);
 
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(service.create).toHaveBeenCalledWith(createUserDto);
       expect(result).toBe(mockResult);
     });
@@ -70,6 +71,7 @@ describe('UsersController', () => {
 
       const result = await controller.findById(userId);
 
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(service.findById).toHaveBeenCalledWith(userId);
       expect(result).toBe(mockResult);
     });
@@ -84,4 +86,4 @@ describe('UsersController', () => {
       );
     });
   });
-}); 
+});

@@ -11,7 +11,9 @@ import { Transform } from 'class-transformer';
 export class CreateUserDto {
   @IsEmail({}, { message: 'Email doit être un email valide' })
   @IsNotEmpty({ message: 'Email est obligatoire' })
-  @Transform(({ value }) => value?.toLowerCase().trim())
+  @Transform(({ value }: { value: string }) =>
+    typeof value === 'string' ? value.toLowerCase().trim() : value,
+  )
   email: string;
 
   @IsString({ message: 'Le mot de passe doit être une chaîne de caractères' })
@@ -37,6 +39,8 @@ export class CreateUserDto {
   @MaxLength(100, {
     message: "Le nom d'affichage ne peut pas dépasser 100 caractères",
   })
-  @Transform(({ value }) => value?.trim())
+  @Transform(({ value }: { value: string }) =>
+    typeof value === 'string' ? value.trim() : value,
+  )
   displayName: string;
 }

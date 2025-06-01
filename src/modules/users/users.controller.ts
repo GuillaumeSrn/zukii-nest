@@ -37,7 +37,7 @@ export class UsersController {
       return user;
     } catch (error) {
       this.logger.error(
-        `Erreur lors de la création de l'utilisateur: ${error.message}`,
+        `Erreur lors de la création de l'utilisateur: ${error instanceof Error ? error.message : 'Erreur inconnue'}`,
       );
       throw error;
     }
@@ -54,7 +54,7 @@ export class UsersController {
       return user;
     } catch (error) {
       this.logger.error(
-        `Erreur lors de la récupération de l'utilisateur: ${error.message}`,
+        `Erreur lors de la récupération de l'utilisateur: ${error instanceof Error ? error.message : 'Erreur inconnue'}`,
       );
       throw error;
     }
