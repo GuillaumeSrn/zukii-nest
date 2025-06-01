@@ -1,171 +1,272 @@
-@startuml
-!define Table(name,desc) class name as "desc" << (T,#FFAAAA) >>
+@startuml Database_Model_Zukii_Simplified
+!define TABLE(name,desc) class name as "desc" << (T,#FFAAAA) >>
+!define PK(x) <u>x</u>
+!define FK(x) <i>x</i>
 
-' Utilisateur
-Table(User, "Utilisateur") {
-  + id: UUID <<PK>>
-  + email: string <<unique>>
-  + passwordHash: string
-  + displayName: string
-  + createdAt: Date
-  + updatedAt: Date
-  + deletedAt: Date | null
-  + deletedBy: UUID | null
+title Modèle de base de données - Zukii SIMPLIFIÉ (MVP)
+
+' === UTILISATEURS ET PERMISSIONS ===
+TABLE(User, "User") {
+  PK(id): UUID
+  email: VARCHAR(255) UNIQUE NOT NULL
+  password_hash: VARCHAR(255) NOT NULL
+  first_name: VARCHAR(100) NOT NULL
+  last_name: VARCHAR(100) NOT NULL
+  is_email_verified: BOOLEAN DEFAULT FALSE
+  profile_picture_s3_key: VARCHAR(500)
+  FK(status_id): UUID NOT NULL
+  created_at: TIMESTAMP DEFAULT NOW()
+  updated_at: TIMESTAMP DEFAULT NOW()
 }
 
-' Rôle global (Admin, User, etc.)
-Table(Role, "Rôle global") {
-  + id: UUID <<PK>>
-  + name: string <<unique>>
-  + description: string
-  + deletedAt: Date | null
+TABLE(Role, "Role") {
+  PK(id): UUID
+  name: VARCHAR(50) UNIQUE NOT NULL
+  description: VARCHAR(200)
+  can_create_boards: BOOLEAN DEFAULT TRUE
+  can_invite_users: BOOLEAN DEFAULT TRUE
+  can_export_data: BOOLEAN DEFAULT TRUE
+  is_admin: BOOLEAN DEFAULT FALSE
+  created_at: TIMESTAMP DEFAULT NOW()
 }
 
-' Table de jointure User-Role
-Table(UserRole, "User-Role") {
-  + userId: UUID <<FK>>
-  + roleId: UUID <<FK>>
+TABLE(UserRole, "UserRole") {
+  PK(id): UUID
+  FK(user_id): UUID NOT NULL
+  FK(role_id): UUID NOT NULL
+  assigned_at: TIMESTAMP DEFAULT NOW()
+  assigned_by: UUID
 }
 
-' Board/Tableau collaboratif
-Table(Board, "Tableau/Board") {
-  + id: UUID <<PK>>
-  + name: string
-  + description: string
-  + ownerId: UUID <<FK>>
-  + createdAt: Date
-  + updatedAt: Date
-  + deletedAt: Date | null
-  + deletedBy: UUID | null
+' === BOARDS ET COLLABORATION ===
+TABLE(Board, "Board") {
+  PK(id): UUID
+  title: VARCHAR(200) NOT NULL
+  description: TEXT
+  FK(owner_id): UUID NOT NULL
+  FK(status_id): UUID NOT NULL
+  is_public: BOOLEAN DEFAULT FALSE
+  background_color: VARCHAR(7) DEFAULT '#FFFFFF'
+  background_s3_key: VARCHAR(500)
+  max_width: INTEGER DEFAULT 3000
+  max_height: INTEGER DEFAULT 2000
+  grid_size: INTEGER DEFAULT 20
+  enable_grid_snap: BOOLEAN DEFAULT TRUE
+  created_at: TIMESTAMP DEFAULT NOW()
+  updated_at: TIMESTAMP DEFAULT NOW()
+  deleted_at: TIMESTAMP NULL
 }
 
-' Membre d'un board (collaboration)
-Table(BoardMember, "Membre de Board") {
-  + id: UUID <<PK>>
-  + userId: UUID <<FK>>
-  + boardId: UUID <<FK>>
-  + role: string (admin, editor, viewer, etc.)
-  + permissions: JSON
-  + invitedBy: UUID <<FK>>
-  + status: string (pending, accepted, declined)
-  + invitedAt: Date
-  + joinedAt: Date | null
-  + deletedAt: Date | null
+TABLE(BoardMember, "BoardMember") {
+  PK(id): UUID
+  FK(board_id): UUID NOT NULL
+  FK(user_id): UUID NOT NULL
+  permission_level: ENUM('view', 'edit', 'admin') NOT NULL
+  FK(status_id): UUID NOT NULL
+  invited_by: UUID
+  joined_at: TIMESTAMP DEFAULT NOW()
 }
 
-' Invitation à rejoindre un board
-Table(Invitation, "Invitation Board") {
-  + id: UUID <<PK>>
-  + boardId: UUID <<FK>>
-  + email: string
-  + invitedBy: UUID <<FK>>
-  + token: string
-  + status: string (pending, accepted, declined, expired)
-  + expiresAt: Date
-  + maxUses: int
-  + sentAt: Date
-  + respondedAt: Date | null
-  + deletedAt: Date | null
+TABLE(Invitation, "Invitation") {
+  PK(id): UUID
+  FK(board_id): UUID NOT NULL
+  email: VARCHAR(255) NOT NULL
+  permission_level: ENUM('view', 'edit', 'admin') NOT NULL
+  FK(status_id): UUID NOT NULL
+  invitation_token: VARCHAR(100) UNIQUE NOT NULL
+  invited_by: UUID NOT NULL
+  expires_at: TIMESTAMP NOT NULL
+  created_at: TIMESTAMP DEFAULT NOW()
 }
 
-' Colonnes (ex: pour un Kanban)
-Table(Column, "Colonne de Board") {
-  + id: UUID <<PK>>
-  + boardId: UUID <<FK>>
-  + name: string
-  + position: int
-  + createdAt: Date
-  + deletedAt: Date | null
+' === TYPES DE BLOCS ===
+TABLE(BlockType, "BlockType") {
+  PK(id): UUID
+  name: VARCHAR(50) UNIQUE NOT NULL
+  category: ENUM('data', 'note', 'media', 'analysis') NOT NULL
+  icon_name: VARCHAR(50)
+  default_width: INTEGER DEFAULT 200
+  default_height: INTEGER DEFAULT 150
+  is_resizable: BOOLEAN DEFAULT TRUE
+  background_color: VARCHAR(7) DEFAULT '#FFFFFF'
+  border_color: VARCHAR(7) DEFAULT '#CCCCCC'
+  created_at: TIMESTAMP DEFAULT NOW()
 }
 
-' Items/cartes dans une colonne
-Table(Item, "Item/Carte") {
-  + id: UUID <<PK>>
-  + columnId: UUID <<FK>>
-  + boardId: UUID <<FK>>
-  + title: string
-  + description: string
-  + position: int
-  + assignedTo: UUID | null <<FK>>
-  + createdBy: UUID <<FK>>
-  + createdAt: Date
-  + updatedAt: Date
-  + deletedAt: Date | null
-  + deletedBy: UUID | null
+' === BLOCS PRINCIPAUX ===
+TABLE(Block, "Block") {
+  PK(id): UUID
+  FK(board_id): UUID NOT NULL
+  FK(block_type_id): UUID NOT NULL
+  FK(created_by): UUID NOT NULL
+  title: VARCHAR(200)
+  position_x: INTEGER NOT NULL
+  position_y: INTEGER NOT NULL
+  width: INTEGER NOT NULL
+  height: INTEGER NOT NULL
+  z_index: INTEGER DEFAULT 0
+  FK(status_id): UUID NOT NULL
+  created_at: TIMESTAMP DEFAULT NOW()
+  updated_at: TIMESTAMP DEFAULT NOW()
+  deleted_at: TIMESTAMP NULL
 }
 
-' Fichiers CSV liés aux items
-Table(CSVFile, "Fichier CSV") {
-  + id: UUID <<PK>>
-  + itemId: UUID <<FK>>
-  + filename: string
-  + originalName: string
-  + filePath: string
-  + fileSize: int
-  + mimeType: string
-  + uploadedBy: UUID <<FK>>
-  + uploadedAt: Date
-  + status: string (pending, processed, error, archived)
-  + metadata: JSON
-  + deletedAt: Date | null
+' === CONTENU SPÉCIALISÉ ===
+TABLE(TextBlock, "TextBlock") {
+  PK(id): UUID
+  FK(block_id): UUID NOT NULL UNIQUE
+  content: TEXT NOT NULL
+  font_size: INTEGER DEFAULT 14
+  font_color: VARCHAR(7) DEFAULT '#000000'
+  text_align: ENUM('left', 'center', 'right') DEFAULT 'left'
+  is_markdown: BOOLEAN DEFAULT FALSE
 }
 
-' Analyses effectuées sur les CSV
-Table(Analysis, "Analyse") {
-  + id: UUID <<PK>>
-  + itemId: UUID <<FK>>
-  + csvFileId: UUID <<FK>>
-  + analysisType: string
-  + parameters: JSON
-  + results: JSON
-  + status: string (running, completed, failed)
-  + createdBy: UUID <<FK>>
-  + createdAt: Date
-  + completedAt: Date | null
-  + deletedAt: Date | null
+TABLE(FileBlock, "FileBlock") {
+  PK(id): UUID
+  FK(block_id): UUID NOT NULL UNIQUE
+  original_filename: VARCHAR(255) NOT NULL
+  s3_key: VARCHAR(500) NOT NULL
+  s3_bucket: VARCHAR(100) NOT NULL
+  file_type: VARCHAR(50) NOT NULL
+  file_size: BIGINT NOT NULL
+  checksum: VARCHAR(64) NOT NULL
+  thumbnail_s3_key: VARCHAR(500)
+  FK(uploaded_by): UUID NOT NULL
+  uploaded_at: TIMESTAMP DEFAULT NOW()
 }
 
-' Commentaires sur les items (optionnel)
-Table(Comment, "Commentaire") {
-  + id: UUID <<PK>>
-  + itemId: UUID <<FK>>
-  + authorId: UUID <<FK>>
-  + content: text
-  + createdAt: Date
-  + updatedAt: Date
-  + deletedAt: Date | null
-  + deletedBy: UUID | null
+TABLE(AnalysisBlock, "AnalysisBlock") {
+  PK(id): UUID
+  FK(block_id): UUID NOT NULL UNIQUE
+  FK(source_file_id): UUID
+  analysis_type: VARCHAR(100) NOT NULL
+  chart_type: VARCHAR(50)
+  result_summary: TEXT
+  processing_time_ms: INTEGER
+  FK(created_by): UUID NOT NULL
+  processed_at: TIMESTAMP
+  created_at: TIMESTAMP DEFAULT NOW()
 }
 
-' Historique des actions sur un board
-Table(BoardHistory, "Historique Board") {
-  + id: UUID <<PK>>
-  + boardId: UUID <<FK>>
-  + userId: UUID <<FK>>
-  + action: string
-  + details: string
-  + entityType: string (item, column, member, etc.)
-  + entityId: UUID | null
-  + createdAt: Date
+' === MÉTADONNÉES CSV (OPTIMISATION) ===
+TABLE(CSVMetadata, "CSVMetadata") {
+  PK(id): UUID
+  FK(file_block_id): UUID NOT NULL UNIQUE
+  rows_count: INTEGER NOT NULL
+  columns_count: INTEGER NOT NULL
+  delimiter: VARCHAR(5) DEFAULT ','
+  encoding: VARCHAR(20) DEFAULT 'UTF-8'
+  has_header: BOOLEAN DEFAULT TRUE
+  parsed_at: TIMESTAMP DEFAULT NOW()
 }
 
-' Relations
-User "1" -- "0..*" UserRole : has
-Role "1" -- "0..*" UserRole : assigned to
-User "1" -- "0..*" Board : owns
-Board "1" -- "0..*" BoardMember : has member
-Board "1" -- "0..*" Invitation : sends
-User "1" -- "0..*" BoardMember : is member
-User "1" -- "0..*" Item : creates
-User "0..1" -- "0..*" Item : assigned to
-Board "1" -- "0..*" Column : contains
-Column "1" -- "0..*" Item : has item
-Item "1" -- "0..*" CSVFile : has files
-Item "1" -- "0..*" Analysis : has analysis
-CSVFile "1" -- "0..*" Analysis : analyzed by
-Item "1" -- "0..*" Comment : has comments
-User "1" -- "0..*" Comment : authors
-Board "1" -- "0..*" BoardHistory : has history
-User "1" -- "0..*" BoardHistory : acts
+TABLE(CSVColumn, "CSVColumn") {
+  PK(id): UUID
+  FK(csv_metadata_id): UUID NOT NULL
+  column_index: INTEGER NOT NULL
+  column_name: VARCHAR(255) NOT NULL
+  data_type: ENUM('string', 'integer', 'decimal', 'date', 'boolean') NOT NULL
+  null_count: INTEGER DEFAULT 0
+  unique_count: INTEGER
+  min_value: VARCHAR(255)
+  max_value: VARCHAR(255)
+}
+
+' === GROUPES VISUELS (OPTIONNEL) ===
+TABLE(BlockGroup, "BlockGroup") {
+  PK(id): UUID
+  FK(board_id): UUID NOT NULL
+  name: VARCHAR(100) NOT NULL
+  color: VARCHAR(7) NOT NULL
+  FK(created_by): UUID NOT NULL
+  created_at: TIMESTAMP DEFAULT NOW()
+}
+
+TABLE(BlockGroupMember, "BlockGroupMember") {
+  PK(id): UUID
+  FK(block_group_id): UUID NOT NULL
+  FK(block_id): UUID NOT NULL
+  added_at: TIMESTAMP DEFAULT NOW()
+}
+
+' === COMMENTAIRES ===
+TABLE(Comment, "Comment") {
+  PK(id): UUID
+  FK(block_id): UUID NOT NULL
+  FK(author_id): UUID NOT NULL
+  content: TEXT NOT NULL
+  position_x: INTEGER
+  position_y: INTEGER
+  is_resolved: BOOLEAN DEFAULT FALSE
+  parent_comment_id: UUID
+  created_at: TIMESTAMP DEFAULT NOW()
+  updated_at: TIMESTAMP DEFAULT NOW()
+  deleted_at: TIMESTAMP NULL
+}
+
+' === STATUTS SYSTÈME ===
+TABLE(Status, "Status") {
+  PK(id): UUID
+  category: VARCHAR(50) NOT NULL
+  name: VARCHAR(50) NOT NULL
+  description: VARCHAR(200)
+  color: VARCHAR(7)
+  is_active: BOOLEAN DEFAULT TRUE
+  sort_order: INTEGER
+  created_at: TIMESTAMP DEFAULT NOW()
+}
+
+' === RELATIONS ===
+User ||--o{ UserRole
+Role ||--o{ UserRole
+User ||--o{ Board
+User ||--o{ BoardMember
+Board ||--o{ BoardMember
+Board ||--o{ Invitation
+Board ||--o{ Block
+Board ||--o{ BlockGroup
+
+BlockType ||--o{ Block
+User ||--o{ Block
+Block ||--o{ TextBlock
+Block ||--o{ FileBlock
+Block ||--o{ AnalysisBlock
+Block ||--o{ Comment
+
+FileBlock ||--o{ CSVMetadata
+CSVMetadata ||--o{ CSVColumn
+
+BlockGroup ||--o{ BlockGroupMember
+Block ||--o{ BlockGroupMember
+
+User ||--o{ Comment
+
+Status ||--o{ User
+Status ||--o{ Board
+Status ||--o{ BoardMember
+Status ||--o{ Block
+
+note right of BlockGroup
+  Groupement visuel optionnel :
+  - Bordure colorée commune
+  - Organisation par thème
+  - Ex: "Analyse Q1" en bleu
+end note
+
+note right of CSVColumn
+  Optimisation requêtes :
+  - Filtres rapides sans parser
+  - Statistiques pré-calculées
+  - Index sur data_type + column_name
+end note
+
+note right of BlockType
+  Categories :
+  - data: CSV, Excel, DB
+  - note: Post-it, texte
+  - media: Images, graphiques
+  - analysis: Résultats IA
+end note
 
 @enduml 

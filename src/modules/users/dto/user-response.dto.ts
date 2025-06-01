@@ -29,7 +29,7 @@ export class UserResponseDto {
   roles: RoleResponseDto[];
 
   @Exclude()
-  passwordHash: string;
+  passwordHash?: string;
 
   @Exclude()
   deletedAt?: Date;
