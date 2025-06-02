@@ -2,13 +2,13 @@ import { Entity, Column, Index } from 'typeorm';
 import { BaseEntity } from '../../../common/entities/base.entity';
 
 @Entity('status')
-@Index(['type', 'value'], { unique: true })
+@Index(['category', 'name'], { unique: true })
 export class Status extends BaseEntity {
   @Column({ type: 'varchar', length: 50 })
-  type: string; // invitation, member, analysis, file
+  category: string; // user, board, block, invitation, etc.
 
   @Column({ type: 'varchar', length: 50 })
-  value: string; // pending, accepted, declined, expired, running, completed, failed, etc.
+  name: string; // active, inactive, pending, completed, etc.
 
   @Column({ type: 'text', nullable: true })
   description?: string;
