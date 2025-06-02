@@ -29,4 +29,4 @@ export class UpdateUserDto {
     typeof value === 'string' ? value.trim() : value,
   )
   displayName?: string;
-} 
+}

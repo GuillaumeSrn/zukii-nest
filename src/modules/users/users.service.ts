@@ -43,9 +43,14 @@ export class UsersService {
     const passwordHash = await bcrypt.hash(createUserDto.password, saltRounds);
 
     // Récupérer le statut par défaut pour les utilisateurs
-    const activeStatus = await this.statusService.findByCategoryAndName('user', 'active');
+    const activeStatus = await this.statusService.findByCategoryAndName(
+      'user',
+      'active',
+    );
     if (!activeStatus) {
-      throw new NotFoundException('Statut par défaut "active" pour utilisateur non trouvé');
+      throw new NotFoundException(
+        'Statut par défaut "active" pour utilisateur non trouvé',
+      );
     }
 
     const user = this.userRepository.create({
