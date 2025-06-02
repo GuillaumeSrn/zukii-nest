@@ -1,52 +1,68 @@
-# Documentation technique - Module utilisateur
+# Documentation
 
 ## Vue d'ensemble
 
-Module utilisateur de l'API **zukii-nest** développé avec NestJS, démontrant l'application des bonnes pratiques de développement et l'architecture SOLID.
+API collaborative d'analyse de données avec architecture modulaire NestJS.
 
-## Fonctionnalités implémentées
+## 📋 Index de documentation
 
-### CRUD utilisateur
-- **POST /users** : Création avec validation stricte
-- **GET /users/:id** : Récupération avec relations
+### Architecture et modèle
+- **[`database-schema.puml`](database-schema.puml)** : Diagramme UML complet des entités et relations
+- **[`architecture-technique.md`](architecture-technique.md)** : Patterns, conventions, sécurité, déploiement
+
+### DevOps et workflow  
+- **[`ci-cd.md`](ci-cd.md)** : Pipeline d'intégration et déploiement continu
+- **[`../README.md`](../README.md)** : Guide de démarrage avec Docker
+
+## 📊 État du projet
+
+### ✅ Modules opérationnels
+- **Users** : CRUD avec authentification bcrypt, relations Status/Roles
+- **Roles** : Permissions admin/user avec seeding automatique  
+- **Status** : États centralisés par catégorie (user, board, block, invitation)
+
+### 🔄 En développement
+- **Auth** : JWT, Guards, protection des routes sensibles
+
+### 📋 Roadmap
+- **Boards** : Espaces collaboratifs avec members et permissions
+- **Blocks** : Contenu interactif (text, file, analysis) avec positionnement
+- **Invitations** : Système d'invitation avec tokens temporaires
+
+## 🏗️ Architecture résumée
+
+### Stack technique
+- **Backend** : NestJS + TypeORM + PostgreSQL
+- **Authentification** : bcrypt + JWT (en cours)
+- **DevOps** : Docker + GitHub Actions
+- **Tests** : e2e sans mocks
+
+### Principes
+- Architecture SOLID et modulaire
+- Injection de dépendances native
+- Validation stricte (class-validator)
+- Soft delete centralisé (BaseEntity)
+
+## 🎯 Standards appliqués
+
+### Code
+- TypeScript strict
+- Patterns Repository + Service Layer
+- DTOs avec validation et transformation
+- Gestion d'erreurs structurée
+
+### API
+- Conventions REST standardisées
+- Codes HTTP appropriés
+- Documentation Swagger automatique
+- Logging centralisé
 
 ### Sécurité
-- Hachage bcrypt des mots de passe (12 rounds)
-- Validation des entrées (email, mot de passe complexe)
-- Exclusion automatique des données sensibles
-
-### Architecture
-- Pattern Repository avec TypeORM
-- Injection de dépendances NestJS
-- DTOs avec class-validator
-- Tests unitaires avec objets simulés
-- Soft delete sur toutes les entités
-
-## Structure technique
-
-```
-src/modules/users/
-├── entities/user.entity.ts      # Entité avec soft delete
-├── dto/                         # Validation entrée/sortie
-├── users.controller.ts          # Endpoints REST
-├── users.service.ts             # Logique métier
-└── users.controller.spec.ts     # Tests unitaires
-```
-
-## Documentation
-
-- **architecture-technique.md** : Détails de l'architecture du module
-- **database-schema.puml** : Diagramme UML de la base de données
-
-## Conformité technique
-
-- ✅ Architecture SOLID appliquée
-- ✅ Tests unitaires avec couverture
-- ✅ Gestion d'erreurs structurée
-- ✅ Logging pour traçabilité
-- ✅ Documentation API Swagger
-- ✅ Sécurité (hachage, validation)
+- Aucune clé en dur (variables d'environnement)
+- Hachage bcrypt 12 rounds
+- Validation des entrées utilisateur
+- Exclusion des données sensibles
 
 ---
 
-*Ce module constitue une démonstration pratique des compétences de développement d'applications avec NestJS.* 
+*Documentation évolutive - consultez les fichiers spécialisés pour les détails complets.*
