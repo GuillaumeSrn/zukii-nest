@@ -17,6 +17,14 @@ describe('UsersController', () => {
     roles: [{ name: 'user', description: 'Utilisateur standard' }],
   };
 
+  const mockAuthRequest = {
+    user: {
+      id: 'mock-id',
+      email: 'test@example.com',
+      roles: ['user'],
+    },
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [UsersController],
@@ -77,10 +85,10 @@ describe('UsersController', () => {
 
   describe('findById', () => {
     it('should return user when found', async () => {
-      const userId = 'test-id';
+      const userId = 'mock-id';
       service.findById.mockResolvedValue(mockUserResponse);
 
-      const result = await controller.findById(userId);
+      const result = await controller.findById(userId, mockAuthRequest);
 
       // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(service.findById).toHaveBeenCalledWith(userId);
@@ -88,19 +96,19 @@ describe('UsersController', () => {
     });
 
     it('should propagate NotFoundException when user not found', async () => {
-      const userId = 'non-existent-id';
+      const userId = 'mock-id';
       const notFoundError = new NotFoundException('Utilisateur non trouvé');
       service.findById.mockRejectedValue(notFoundError);
 
-      await expect(controller.findById(userId)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        controller.findById(userId, mockAuthRequest),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 
   describe('update', () => {
     it('should update user successfully', async () => {
-      const userId = 'test-id';
+      const userId = 'mock-id';
       const updateUserDto = {
         displayName: 'Updated Name',
       };
@@ -111,7 +119,11 @@ describe('UsersController', () => {
       };
       service.update.mockResolvedValue(updatedUserResponse);
 
-      const result = await controller.update(userId, updateUserDto);
+      const result = await controller.update(
+        userId,
+        updateUserDto,
+        mockAuthRequest,
+      );
 
       // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(service.update).toHaveBeenCalledWith(userId, updateUserDto);
@@ -119,15 +131,15 @@ describe('UsersController', () => {
     });
 
     it('should propagate NotFoundException when updating non-existent user', async () => {
-      const userId = 'non-existent-id';
+      const userId = 'mock-id';
       const updateUserDto = { displayName: 'Updated Name' };
       const notFoundError = new NotFoundException('Utilisateur non trouvé');
 
       service.update.mockRejectedValue(notFoundError);
 
-      await expect(controller.update(userId, updateUserDto)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        controller.update(userId, updateUserDto, mockAuthRequest),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 });

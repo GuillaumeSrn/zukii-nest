@@ -115,19 +115,7 @@ export class UsersService {
       throw new NotFoundException('Utilisateur non trouvé');
     }
 
-    // Vérifier l'unicité de l'email si fourni
-    if (updateUserDto.email && updateUserDto.email !== user.email) {
-      const existingUser = await this.userRepository.findOne({
-        where: { email: updateUserDto.email, deletedAt: IsNull() },
-      });
-
-      if (existingUser) {
-        throw new ConflictException(
-          'Un utilisateur avec cet email existe déjà',
-        );
-      }
-    }
-
+    // Plus de vérification d'email car non modifiable
     Object.assign(user, updateUserDto);
 
     await this.userRepository.save(user);

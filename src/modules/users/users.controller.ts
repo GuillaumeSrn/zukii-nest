@@ -12,11 +12,21 @@ import {
   ValidationPipe,
   UsePipes,
   Logger,
+  UseGuards,
+  Request,
+  ForbiddenException,
 } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UserResponseDto } from './dto/user-response.dto';
 import { UsersService } from './users.service';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+
+interface JwtUser {
+  id: string;
+  email: string;
+  roles: string[];
+}
 
 @Controller('users')
 @UseInterceptors(ClassSerializerInterceptor)
@@ -47,8 +57,18 @@ export class UsersController {
 
   @Get(':id')
   @HttpCode(HttpStatus.OK)
-  async findById(@Param('id') id: string): Promise<UserResponseDto> {
+  @UseGuards(JwtAuthGuard)
+  async findById(
+    @Param('id') id: string,
+    @Request() req: { user: JwtUser },
+  ): Promise<UserResponseDto> {
     this.logger.log(`Requête de récupération d'utilisateur: ${id}`);
+
+    if (req.user.id !== id) {
+      throw new ForbiddenException(
+        'Vous ne pouvez consulter que votre propre profil',
+      );
+    }
 
     try {
       const user = await this.usersService.findById(id);
@@ -64,12 +84,20 @@ export class UsersController {
 
   @Put(':id')
   @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAuthGuard)
   @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
   async update(
     @Param('id') id: string,
     @Body() updateUserDto: UpdateUserDto,
+    @Request() req: { user: JwtUser },
   ): Promise<UserResponseDto> {
     this.logger.log(`Requête de mise à jour d'utilisateur: ${id}`);
+
+    if (req.user.id !== id) {
+      throw new ForbiddenException(
+        'Vous ne pouvez modifier que votre propre profil',
+      );
+    }
 
     try {
       const user = await this.usersService.update(id, updateUserDto);
