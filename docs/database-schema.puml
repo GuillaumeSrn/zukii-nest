@@ -126,7 +126,6 @@ Status ||--o{ Block
 note right of Board
   Canvas interactif avec limites.
   Couleur de fond personnalisable.
-  Pas de grille complexe.
 end note
 
 note right of Block
