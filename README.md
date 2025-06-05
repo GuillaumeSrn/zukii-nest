@@ -20,15 +20,13 @@ API REST pour application collaborative d'analyse de données CSV avec IA.
 
 2. **Démarrer l'environnement**
    ```bash
-   ./scripts/dev.sh
-   # ou manuellement : docker compose up --build
+   docker compose up --build
    ```
 
 3. **Vérifier le fonctionnement**
    - API : http://localhost:3000
    - Base de données : localhost:5432
-   - Adminer : http://localhost:8080
-
+   
 ## 🛠️ Développement
 
 ### Commandes essentielles
@@ -53,23 +51,81 @@ npm run lint                      # Vérification code
 npm run format                    # Formatage automatique
 ```
 
+## 📊 État du projet
+
+### ✅ Modules opérationnels
+- **Users** : CRUD avec authentification bcrypt, relations Status/Roles
+- **Roles** : Permissions admin/user avec seeding automatique  
+- **Status** : États centralisés par catégorie (user, board, block, invitation)
+- **Auth** : JWT, Guards, protection des routes sensibles
+
+### 📋 Roadmap
+- **Boards** : Espaces collaboratifs avec members et permissions
+- **Blocks** : Contenu interactif (text, file, analysis) avec positionnement
+- **Invitations** : Système d'invitation avec tokens temporaires
+
+## 🏗️ Architecture
+
+- **NestJS** : Framework, injection de dépendances
+- **PostgreSQL** : Base de données relationnelle
+- **TypeORM** : ORM avec soft delete
+- **Docker** : Environnement de développement
+
+### Structure du projet
+```
+src/
+├── common/entities/base.entity.ts    # Entité abstraite
+├── modules/
+│   ├── users/                        # Gestion utilisateurs
+│   ├── roles/                        # Système permissions
+│   ├── status/                       # États centralisés
+│   ├── auth/                         # Authentification JWT
+│   └── [entity]/                     # Pattern modulaire
+│       ├── entities/
+│       ├── dto/
+│       ├── *.controller.ts
+│       ├── *.service.ts
+│       └── *.module.ts
+└── app.module.ts
+```
+
+### Principes SOLID appliqués
+- **SRP** : Responsabilité unique par classe/service
+- **OCP** : Extension via héritage (BaseEntity, modules)
+- **LSP** : Substitution des abstractions respectée
+- **ISP** : DTOs spécialisés (Create, Update, Response)
+- **DIP** : Injection de dépendances NestJS obligatoire
+
+## 🔒 Sécurité
+
+- Hachage bcrypt (12 rounds)
+- JWT pour authentification
+- Guards NestJS pour protection des routes
+- Validation stricte des entrées (class-validator)
+- Exclusion données sensibles (@Exclude)
+
+## 📚 Documentation
+
+### Référence technique
+- **[`docs/architecture-technique.md`](docs/architecture-technique.md)** : Architecture détaillée
+- **[`docs/database-schema.puml`](docs/database-schema.puml)** : Modèle de données
+- **[`docs/ci-cd.md`](docs/ci-cd.md)** : Pipeline CI/CD
+
 ## 🤝 Contribution
 
 1. Créer une branche : `git checkout -b feature/ma-fonctionnalite`
-2. Développer avec tests
+2. Développer avec tests unitaires obligatoires
 3. Valider : `npm run precommit`
 4. Commit : `git commit -m "feat: description"`
 5. Push et créer une PR
 
-## 📚 Documentation complète
+## ⚡ Hot Reload
 
-Consultez le dossier [`docs/`](docs/) pour :
-- Architecture technique détaillée
-- Modèle de données et relations
-- Configuration CI/CD
-- État du projet et roadmap
+Modifications automatiquement reflétées grâce au volume mapping du dossier `src/`.
 
 ---
+
+*Projet Zukii - Analyse collaborative de données CSV avec IA*
 
 ```
 src/

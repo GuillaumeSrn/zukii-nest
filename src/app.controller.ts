@@ -1,12 +1,18 @@
 import { Controller, Get } from '@nestjs/common';
-import { AppService } from './app.service';
 
 @Controller()
 export class AppController {
-  constructor(private readonly appService: AppService) {}
-
   @Get()
-  getHello(): string {
-    return this.appService.getHello();
+  getApiInfo(): object {
+    return {
+      name: 'Zukii API',
+      version: '1.0.0',
+      description:
+        "API REST pour application collaborative d'analyse de données CSV avec IA",
+      endpoints: {
+        auth: '/auth',
+        users: '/users',
+      },
+    };
   }
 }
