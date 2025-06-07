@@ -3,4 +3,4 @@ description:
 globs: 
 alwaysApply: true
 ---
-Respecter l’architecture modulaire NestJS (modules, controllers, services, providers).
+Respecter l’architecture modulaire NestJS (modules, controllers, services, providers, dto).
