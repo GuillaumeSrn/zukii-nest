@@ -1,19 +1,23 @@
-// Configuration globale pour les tests e2e
-beforeAll(() => {
-  // Configuration de la base de données de test
-  process.env.NODE_ENV = 'test';
-  process.env.DB_HOST = process.env.DB_HOST || 'localhost';
-  process.env.DB_PORT = process.env.DB_PORT || '5432';
-  process.env.DB_USERNAME = process.env.DB_USERNAME || 'test_user';
-  process.env.DB_PASSWORD = process.env.DB_PASSWORD || 'test_password';
-  process.env.DB_NAME = process.env.DB_NAME || 'zukii_test';
+import { DataSource } from 'typeorm';
+
+const dataSource = new DataSource({
+  type: 'postgres',
+  host: process.env.DB_HOST,
+  port: parseInt(process.env.DB_PORT || '5432'),
+  username: process.env.DB_USERNAME,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+  entities: [__dirname + '/../src/**/*.entity.ts'],
+  synchronize: true,
 });
 
-// Nettoyage après chaque test
-afterEach(() => {
-  // Ici tu peux ajouter la logique de nettoyage de la base de données
-  // par exemple, truncate des tables ou rollback des transactions
+beforeAll(async () => {
+  await dataSource.initialize();
+  await dataSource.synchronize(true);
 });
 
-// Configuration Jest globale
+afterEach(async () => {
+  await dataSource.destroy();
+});
+
 jest.setTimeout(30000);
