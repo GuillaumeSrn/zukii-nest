@@ -1,12 +1,15 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, IsNull } from 'typeorm';
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { User } from './entities/user.entity';
 import { UserRole } from './entities/user-role.entity';
+import { Role } from '../roles/entities/role.entity';
+import { Status } from '../status/entities/status.entity';
 import { RolesService } from '../roles/roles.service';
 import { StatusService } from '../status/status.service';
+import { UserResponseDto } from './dto/user-response.dto';
 
 describe('UsersService', () => {
   let service: UsersService;
@@ -15,34 +18,45 @@ describe('UsersService', () => {
   let rolesService: jest.Mocked<RolesService>;
   let statusService: jest.Mocked<StatusService>;
 
+  const mockRole = {
+    id: 'role-id',
+    name: 'user',
+    description: 'Utilisateur standard',
+    isAdmin: false,
+  } as Role;
+
+  const mockStatus = {
+    id: 'status-id',
+    category: 'user',
+    name: 'active',
+    description: 'Utilisateur actif',
+  } as Status;
+
+  const mockUserRole = {
+    id: 'user-role-id',
+    userId: '123e4567-e89b-12d3-a456-426614174000',
+    roleId: 'role-id',
+    role: mockRole,
+  } as UserRole;
+
   const mockUser = {
     id: '123e4567-e89b-12d3-a456-426614174000',
     email: 'test@example.com',
     displayName: 'Test User',
     passwordHash: 'hashedPassword',
     statusId: 'status-id',
+    userRoles: [mockUserRole],
+    status: mockStatus,
+  } as User;
+
+  const mockUserResponse = {
+    id: '123e4567-e89b-12d3-a456-426614174000',
+    email: 'test@example.com',
+    displayName: 'Test User',
     createdAt: new Date(),
     updatedAt: new Date(),
-    deletedAt: null,
-    deletedBy: null,
-    userRoles: [
-      {
-        role: { name: 'user', description: 'Utilisateur standard' },
-      },
-    ],
-  } as unknown as User;
-
-  const mockRole = {
-    id: 'role-id',
-    name: 'user',
-    description: 'Utilisateur standard',
-  };
-
-  const mockStatus = {
-    id: 'status-id',
-    category: 'user',
-    name: 'active',
-  };
+    roles: [{ name: 'user', description: 'Utilisateur standard' }],
+  } as UserResponseDto;
 
   beforeEach(async () => {
     const mockUserRepository = {
@@ -107,23 +121,26 @@ describe('UsersService', () => {
 
     it('should create a user successfully', async () => {
       userRepository.findOne.mockResolvedValue(null);
-      statusService.findByCategoryAndName.mockResolvedValue(mockStatus as any);
-      rolesService.findByName.mockResolvedValue(mockRole as any);
+      statusService.findByCategoryAndName.mockResolvedValue(mockStatus);
+      rolesService.findByName.mockResolvedValue(mockRole);
       userRepository.create.mockReturnValue(mockUser);
       userRepository.save.mockResolvedValue(mockUser);
-      userRoleRepository.create.mockReturnValue({} as any);
-      userRoleRepository.save.mockResolvedValue({} as any);
-      jest.spyOn(service, 'findById').mockResolvedValue({} as any);
+      userRoleRepository.create.mockReturnValue(mockUserRole);
+      userRoleRepository.save.mockResolvedValue(mockUserRole);
+      jest.spyOn(service, 'findById').mockResolvedValue(mockUserResponse);
 
       const result = await service.create(createUserDto);
 
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(userRepository.findOne).toHaveBeenCalledWith({
-        where: { email: createUserDto.email, deletedAt: expect.anything() },
+        where: { email: createUserDto.email, deletedAt: IsNull() },
       });
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(statusService.findByCategoryAndName).toHaveBeenCalledWith(
         'user',
         'active',
       );
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(rolesService.findByName).toHaveBeenCalledWith('user');
       expect(result).toBeDefined();
     });
@@ -153,8 +170,9 @@ describe('UsersService', () => {
       const result = await service.findById(mockUser.id);
 
       expect(result).toBeDefined();
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(userRepository.findOne).toHaveBeenCalledWith({
-        where: { id: mockUser.id, deletedAt: expect.anything() },
+        where: { id: mockUser.id, deletedAt: IsNull() },
         relations: ['userRoles', 'userRoles.role'],
       });
     });
@@ -175,8 +193,9 @@ describe('UsersService', () => {
       const result = await service.findByEmail(mockUser.email);
 
       expect(result).toBe(mockUser);
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(userRepository.findOne).toHaveBeenCalledWith({
-        where: { email: mockUser.email, deletedAt: expect.anything() },
+        where: { email: mockUser.email, deletedAt: IsNull() },
         relations: ['userRoles', 'userRoles.role'],
       });
     });
@@ -189,4 +208,4 @@ describe('UsersService', () => {
       expect(result).toBeNull();
     });
   });
-}); 
+});

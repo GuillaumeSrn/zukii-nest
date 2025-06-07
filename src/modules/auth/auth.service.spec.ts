@@ -69,11 +69,12 @@ describe('AuthService', () => {
       const password = 'password123';
 
       usersService.findByEmail.mockResolvedValue(mockUser);
-      jest.spyOn(bcrypt, 'compare').mockImplementation(() => Promise.resolve(true));
+      jest.spyOn(bcrypt, 'compare').mockImplementation(() => true);
 
       const result = await service.validateUser(email, password);
 
       expect(result).toBe(mockUser);
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(usersService.findByEmail).toHaveBeenCalledWith(email);
     });
 
@@ -93,7 +94,7 @@ describe('AuthService', () => {
       const password = 'wrongpassword';
 
       usersService.findByEmail.mockResolvedValue(mockUser);
-      jest.spyOn(bcrypt, 'compare').mockImplementation(() => Promise.resolve(false));
+      jest.spyOn(bcrypt, 'compare').mockImplementation(() => false);
 
       await expect(service.validateUser(email, password)).rejects.toThrow(
         UnauthorizedException,
@@ -121,6 +122,7 @@ describe('AuthService', () => {
         },
       });
 
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(jwtService.sign).toHaveBeenCalledWith({
         sub: mockUser.id,
         email: mockUser.email,
@@ -128,4 +130,4 @@ describe('AuthService', () => {
       });
     });
   });
-}); 
+});

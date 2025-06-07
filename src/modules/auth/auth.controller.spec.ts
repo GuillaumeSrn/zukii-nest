@@ -49,4 +49,4 @@ describe('AuthController', () => {
       expect(service.login).toHaveBeenCalledWith(loginDto);
     });
   });
-}); 
+});
