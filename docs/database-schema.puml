@@ -1,4 +1,4 @@
-@startuml Database_Model_Zukii_MVP_Hybrid
+@startuml Database_Model_Zukii
 !define TABLE(name,desc) class name as "desc" << (T,#FFAAAA) >>
 !define PK(x) <u>x</u>
 !define FK(x) <i>x</i>
@@ -14,20 +14,6 @@ TABLE(User, "User") {
   FK(status_id): UUID NOT NULL
   created_at: TIMESTAMP DEFAULT NOW()
   updated_at: TIMESTAMP DEFAULT NOW()
-}
-
-TABLE(Role, "Role") {
-  PK(id): UUID
-  name: VARCHAR(50) UNIQUE NOT NULL
-  is_admin: BOOLEAN DEFAULT FALSE
-  created_at: TIMESTAMP DEFAULT NOW()
-}
-
-TABLE(UserRole, "UserRole") {
-  PK(id): UUID
-  FK(user_id): UUID NOT NULL
-  FK(role_id): UUID NOT NULL
-  assigned_at: TIMESTAMP DEFAULT NOW()
 }
 
 TABLE(Board, "Board") {
@@ -109,8 +95,6 @@ TABLE(Status, "Status") {
 }
 
 ' === RELATIONS ===
-User ||--o{ UserRole
-Role ||--o{ UserRole
 User ||--o{ Board
 User ||--o{ BoardMember
 Board ||--o{ BoardMember
@@ -126,6 +110,7 @@ Status ||--o{ Block
 note right of Board
   Canvas interactif avec limites.
   Couleur de fond personnalisable.
+  Permissions gérées via BoardMember.
 end note
 
 note right of Block

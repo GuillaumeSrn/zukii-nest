@@ -54,13 +54,12 @@ npm run format                    # Formatage automatique
 ## 📊 État du projet
 
 ### ✅ Modules opérationnels
-- **Users** : CRUD avec authentification bcrypt, relations Status/Roles
-- **Roles** : Permissions admin/user avec seeding automatique  
+- **Users** : CRUD avec authentification bcrypt et gestion des statuts
 - **Status** : États centralisés par catégorie (user, board, block, invitation)
 - **Auth** : JWT, Guards, protection des routes sensibles
 
 ### 📋 Roadmap
-- **Boards** : Espaces collaboratifs avec members et permissions
+- **Boards** : Espaces collaboratifs avec membres et permissions granulaires
 - **Blocks** : Contenu interactif (text, file, analysis) avec positionnement
 - **Invitations** : Système d'invitation avec tokens temporaires
 
@@ -77,7 +76,6 @@ src/
 ├── common/entities/base.entity.ts    # Entité abstraite
 ├── modules/
 │   ├── users/                        # Gestion utilisateurs
-│   ├── roles/                        # Système permissions
 │   ├── status/                       # États centralisés
 │   ├── auth/                         # Authentification JWT
 │   └── [entity]/                     # Pattern modulaire
@@ -98,18 +96,18 @@ src/
 
 ## 🔒 Sécurité
 
-- Hachage bcrypt (12 rounds)
+- Hachage bcrypt des mots de passe (12 rounds)
 - JWT pour authentification
 - Guards NestJS pour protection des routes
 - Validation stricte des entrées (class-validator)
 - Exclusion données sensibles (@Exclude)
+- Permissions granulaires au niveau des boards
 
 ## 📚 Documentation
 
 ### Référence technique
 - **[`docs/architecture-technique.md`](docs/architecture-technique.md)** : Architecture détaillée
 - **[`docs/database-schema.puml`](docs/database-schema.puml)** : Modèle de données
-- **[`docs/ci-cd.md`](docs/ci-cd.md)** : Pipeline CI/CD
 
 ## 🤝 Contribution
 
@@ -132,7 +130,6 @@ src/
 ├── common/entities/base.entity.ts    # Entité abstraite
 ├── modules/
 │   ├── users/                        # Gestion utilisateurs
-│   ├── roles/                        # Système permissions
 │   ├── status/                       # États centralisés
 │   └── [entity]/                     # Pattern modulaire
 │       ├── entities/

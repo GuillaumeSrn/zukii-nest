@@ -4,26 +4,14 @@ import { Repository, IsNull } from 'typeorm';
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { User } from './entities/user.entity';
-import { UserRole } from './entities/user-role.entity';
-import { Role } from '../roles/entities/role.entity';
 import { Status } from '../status/entities/status.entity';
-import { RolesService } from '../roles/roles.service';
 import { StatusService } from '../status/status.service';
 import { UserResponseDto } from './dto/user-response.dto';
 
 describe('UsersService', () => {
   let service: UsersService;
   let userRepository: jest.Mocked<Repository<User>>;
-  let userRoleRepository: jest.Mocked<Repository<UserRole>>;
-  let rolesService: jest.Mocked<RolesService>;
   let statusService: jest.Mocked<StatusService>;
-
-  const mockRole = {
-    id: 'role-id',
-    name: 'user',
-    description: 'Utilisateur standard',
-    isAdmin: false,
-  } as Role;
 
   const mockStatus = {
     id: 'status-id',
@@ -32,20 +20,12 @@ describe('UsersService', () => {
     description: 'Utilisateur actif',
   } as Status;
 
-  const mockUserRole = {
-    id: 'user-role-id',
-    userId: '123e4567-e89b-12d3-a456-426614174000',
-    roleId: 'role-id',
-    role: mockRole,
-  } as UserRole;
-
   const mockUser = {
     id: '123e4567-e89b-12d3-a456-426614174000',
     email: 'test@example.com',
     displayName: 'Test User',
     passwordHash: 'hashedPassword',
     statusId: 'status-id',
-    userRoles: [mockUserRole],
     status: mockStatus,
   } as User;
 
@@ -55,7 +35,6 @@ describe('UsersService', () => {
     displayName: 'Test User',
     createdAt: new Date(),
     updatedAt: new Date(),
-    roles: [{ name: 'user', description: 'Utilisateur standard' }],
   } as UserResponseDto;
 
   beforeEach(async () => {
@@ -64,15 +43,6 @@ describe('UsersService', () => {
       create: jest.fn(),
       save: jest.fn(),
       find: jest.fn(),
-    };
-
-    const mockUserRoleRepository = {
-      create: jest.fn(),
-      save: jest.fn(),
-    };
-
-    const mockRolesService = {
-      findByName: jest.fn(),
     };
 
     const mockStatusService = {
@@ -87,14 +57,6 @@ describe('UsersService', () => {
           useValue: mockUserRepository,
         },
         {
-          provide: getRepositoryToken(UserRole),
-          useValue: mockUserRoleRepository,
-        },
-        {
-          provide: RolesService,
-          useValue: mockRolesService,
-        },
-        {
           provide: StatusService,
           useValue: mockStatusService,
         },
@@ -103,8 +65,6 @@ describe('UsersService', () => {
 
     service = module.get<UsersService>(UsersService);
     userRepository = module.get(getRepositoryToken(User));
-    userRoleRepository = module.get(getRepositoryToken(UserRole));
-    rolesService = module.get(RolesService);
     statusService = module.get(StatusService);
   });
 
@@ -122,11 +82,8 @@ describe('UsersService', () => {
     it('should create a user successfully', async () => {
       userRepository.findOne.mockResolvedValue(null);
       statusService.findByCategoryAndName.mockResolvedValue(mockStatus);
-      rolesService.findByName.mockResolvedValue(mockRole);
       userRepository.create.mockReturnValue(mockUser);
       userRepository.save.mockResolvedValue(mockUser);
-      userRoleRepository.create.mockReturnValue(mockUserRole);
-      userRoleRepository.save.mockResolvedValue(mockUserRole);
       jest.spyOn(service, 'findById').mockResolvedValue(mockUserResponse);
 
       const result = await service.create(createUserDto);
@@ -140,8 +97,6 @@ describe('UsersService', () => {
         'user',
         'active',
       );
-      // eslint-disable-next-line @typescript-eslint/unbound-method
-      expect(rolesService.findByName).toHaveBeenCalledWith('user');
       expect(result).toBeDefined();
     });
 
@@ -173,7 +128,7 @@ describe('UsersService', () => {
       // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(userRepository.findOne).toHaveBeenCalledWith({
         where: { id: mockUser.id, deletedAt: IsNull() },
-        relations: ['userRoles', 'userRoles.role'],
+        relations: ['status'],
       });
     });
 
@@ -196,7 +151,7 @@ describe('UsersService', () => {
       // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(userRepository.findOne).toHaveBeenCalledWith({
         where: { email: mockUser.email, deletedAt: IsNull() },
-        relations: ['userRoles', 'userRoles.role'],
+        relations: ['status'],
       });
     });
 

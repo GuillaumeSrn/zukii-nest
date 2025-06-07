@@ -14,14 +14,12 @@ describe('UsersController', () => {
     displayName: 'Test User',
     createdAt: new Date(),
     updatedAt: new Date(),
-    roles: [{ name: 'user', description: 'Utilisateur standard' }],
   };
 
   const mockAuthRequest = {
     user: {
       id: 'mock-id',
       email: 'test@example.com',
-      roles: ['user'],
     },
   };
 

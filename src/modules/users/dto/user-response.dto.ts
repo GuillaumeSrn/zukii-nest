@@ -1,12 +1,4 @@
-import { Exclude, Expose, Type } from 'class-transformer';
-
-class RoleResponseDto {
-  @Expose()
-  name: string;
-
-  @Expose()
-  description?: string;
-}
+import { Exclude, Expose } from 'class-transformer';
 
 export class UserResponseDto {
   @Expose()
@@ -23,10 +15,6 @@ export class UserResponseDto {
 
   @Expose()
   updatedAt: Date;
-
-  @Expose()
-  @Type(() => RoleResponseDto)
-  roles: RoleResponseDto[];
 
   @Exclude()
   passwordHash?: string;

@@ -25,7 +25,6 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 interface JwtUser {
   id: string;
   email: string;
-  roles: string[];
 }
 
 @Controller('users')
