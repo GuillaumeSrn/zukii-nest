@@ -1,15 +1,7 @@
-import {
-  Entity,
-  Column,
-  OneToMany,
-  ManyToOne,
-  JoinColumn,
-  Index,
-} from 'typeorm';
+import { Entity, Column, ManyToOne, JoinColumn, Index } from 'typeorm';
 import { IsEmail, IsNotEmpty, MinLength } from 'class-validator';
 import { Exclude } from 'class-transformer';
 import { BaseEntity } from '../../../common/entities/base.entity';
-import { UserRole } from './user-role.entity';
 import { Status } from '../../status/entities/status.entity';
 
 @Entity('users')
@@ -36,7 +28,4 @@ export class User extends BaseEntity {
   @ManyToOne(() => Status, { eager: false })
   @JoinColumn({ name: 'statusId' })
   status: Status;
-
-  @OneToMany(() => UserRole, (userRole) => userRole.user, { cascade: true })
-  userRoles: UserRole[];
 }

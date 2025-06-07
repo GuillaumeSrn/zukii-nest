@@ -22,13 +22,6 @@ describe('AuthService', () => {
     deletedAt: null,
     deletedBy: null,
     status: undefined,
-    userRoles: [
-      {
-        userId: '123e4567-e89b-12d3-a456-426614174000',
-        roleId: 'role-id',
-        role: { name: 'user', description: 'Utilisateur standard' },
-      },
-    ],
   } as unknown as User;
 
   beforeEach(async () => {
@@ -118,7 +111,6 @@ describe('AuthService', () => {
           id: mockUser.id,
           email: mockUser.email,
           displayName: mockUser.displayName,
-          roles: ['user'],
         },
       });
 
@@ -126,7 +118,6 @@ describe('AuthService', () => {
       expect(jwtService.sign).toHaveBeenCalledWith({
         sub: mockUser.id,
         email: mockUser.email,
-        roles: ['user'],
       });
     });
   });

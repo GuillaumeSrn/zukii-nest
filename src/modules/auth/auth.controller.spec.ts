@@ -36,7 +36,6 @@ describe('AuthController', () => {
           id: '1',
           email: 'test@example.com',
           displayName: 'Test',
-          roles: [],
         },
       };
 

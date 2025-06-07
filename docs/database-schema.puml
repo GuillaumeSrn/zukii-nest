@@ -1,33 +1,22 @@
-@startuml Database_Model_Zukii_MVP_Hybrid
+@startuml Database_Model_Zukii
 !define TABLE(name,desc) class name as "desc" << (T,#FFAAAA) >>
 !define PK(x) <u>x</u>
 !define FK(x) <i>x</i>
+!define IDX(x) <color:blue>x</color>
 
 title Modèle de base de données - Zukii
 
 ' === CORE ENTITIES ===
 TABLE(User, "User") {
   PK(id): UUID
-  email: VARCHAR(255) UNIQUE NOT NULL
+  IDX(email): VARCHAR(255) UNIQUE NOT NULL
   password_hash: VARCHAR(255) NOT NULL
   display_name: VARCHAR(100) NOT NULL
   FK(status_id): UUID NOT NULL
   created_at: TIMESTAMP DEFAULT NOW()
   updated_at: TIMESTAMP DEFAULT NOW()
-}
-
-TABLE(Role, "Role") {
-  PK(id): UUID
-  name: VARCHAR(50) UNIQUE NOT NULL
-  is_admin: BOOLEAN DEFAULT FALSE
-  created_at: TIMESTAMP DEFAULT NOW()
-}
-
-TABLE(UserRole, "UserRole") {
-  PK(id): UUID
-  FK(user_id): UUID NOT NULL
-  FK(role_id): UUID NOT NULL
-  assigned_at: TIMESTAMP DEFAULT NOW()
+  deleted_at: TIMESTAMP NULL
+  deleted_by: UUID NULL
 }
 
 TABLE(Board, "Board") {
@@ -36,13 +25,11 @@ TABLE(Board, "Board") {
   description: TEXT
   FK(owner_id): UUID NOT NULL
   FK(status_id): UUID NOT NULL
-  ' Propriétés interactives essentielles
   background_color: VARCHAR(7) DEFAULT '#FFFFFF'
-  canvas_width: INTEGER DEFAULT 2000
-  canvas_height: INTEGER DEFAULT 1500
   created_at: TIMESTAMP DEFAULT NOW()
   updated_at: TIMESTAMP DEFAULT NOW()
   deleted_at: TIMESTAMP NULL
+  deleted_by: UUID NULL
 }
 
 TABLE(BoardMember, "BoardMember") {
@@ -51,6 +38,11 @@ TABLE(BoardMember, "BoardMember") {
   FK(user_id): UUID NOT NULL
   permission_level: ENUM('view', 'edit', 'admin') NOT NULL
   joined_at: TIMESTAMP DEFAULT NOW()
+  updated_by: UUID NULL
+  updated_at: TIMESTAMP DEFAULT NOW()
+  deleted_at: TIMESTAMP NULL
+  deleted_by: UUID NULL
+  IDX(UNIQUE): (user_id, board_id) WHERE deleted_at IS NULL
 }
 
 TABLE(Invitation, "Invitation") {
@@ -58,90 +50,147 @@ TABLE(Invitation, "Invitation") {
   FK(board_id): UUID NOT NULL
   email: VARCHAR(255) NOT NULL
   permission_level: ENUM('view', 'edit', 'admin') NOT NULL
-  invitation_token: VARCHAR(100) UNIQUE NOT NULL
+  IDX(invitation_token): VARCHAR(128) UNIQUE NOT NULL
   invited_by: UUID NOT NULL
   expires_at: TIMESTAMP NOT NULL
   created_at: TIMESTAMP DEFAULT NOW()
+  deleted_at: TIMESTAMP NULL
 }
 
+' === BLOCK SYSTEM (Refactorisé) ===
 TABLE(Block, "Block") {
   PK(id): UUID
   FK(board_id): UUID NOT NULL
   FK(created_by): UUID NOT NULL
   block_type: ENUM('text', 'file', 'analysis') NOT NULL
   title: VARCHAR(200)
-  ' Position et taille interactives
-  position_x: INTEGER NOT NULL
-  position_y: INTEGER NOT NULL
-  width: INTEGER DEFAULT 300
-  height: INTEGER DEFAULT 200
+  ' Position avec validation
+  position_x: INTEGER NOT NULL CHECK (position_x >= 0)
+  position_y: INTEGER NOT NULL CHECK (position_y >= 0)
+  width: INTEGER DEFAULT 300 CHECK (width > 0)
+  height: INTEGER DEFAULT 200 CHECK (height > 0)
   z_index: INTEGER DEFAULT 0
   FK(status_id): UUID NOT NULL
+  ' Référence générique vers le contenu
+  FK(content_id): UUID NOT NULL
+  ' Tracking des modifications
+  last_modified_by: UUID
+  created_at: TIMESTAMP DEFAULT NOW()
+  updated_at: TIMESTAMP DEFAULT NOW()
+  deleted_at: TIMESTAMP NULL
+  deleted_by: UUID NULL
+  IDX(board_spatial): (board_id, position_x, position_y)
+  IDX(content_lookup): (content_id, block_type)
+}
+
+TABLE(TextContent, "TextContent") {
+  PK(id): UUID
+  content: TEXT NOT NULL
+  format_type: ENUM('plain', 'markdown', 'html') DEFAULT 'plain'
+  created_at: TIMESTAMP DEFAULT NOW()
+  updated_at: TIMESTAMP DEFAULT NOW()
+}
+
+TABLE(FileContent, "FileContent") {
+  PK(id): UUID
+  file_name: VARCHAR(255) NOT NULL
+  s3_key: VARCHAR(500) NOT NULL
+  s3_bucket: VARCHAR(100) NOT NULL
+  file_size: BIGINT NOT NULL
+  file_type: VARCHAR(50) NOT NULL
+  mime_type: VARCHAR(100) NOT NULL
+  FK(uploaded_by): UUID NOT NULL
+  upload_status: ENUM('uploading', 'completed', 'failed') DEFAULT 'uploading'
+  created_at: TIMESTAMP DEFAULT NOW()
+  updated_at: TIMESTAMP DEFAULT NOW()
+}
+
+TABLE(AnalysisContent, "AnalysisContent") {
+  PK(id): UUID
+  analysis_type: VARCHAR(100) NOT NULL
+  result_data: JSONB NOT NULL
+  FK(source_file_id): UUID
+  execution_status: ENUM('pending', 'running', 'completed', 'failed') DEFAULT 'pending'
+  execution_time: INTEGER
+  error_message: TEXT
+  created_at: TIMESTAMP DEFAULT NOW()
+  updated_at: TIMESTAMP DEFAULT NOW()
+  IDX(analysis_search): (analysis_type, execution_status)
+  IDX(jsonb_conversation): USING GIN ((result_data->'conversationId'))
+}
+
+' === RELATIONS ENTRE BLOCKS ===
+TABLE(BlockRelation, "BlockRelation") {
+  PK(id): UUID
+  FK(source_block_id): UUID NOT NULL
+  FK(target_block_id): UUID NOT NULL
+  relation_type: ENUM('generated_from', 'references', 'comment_on', 'derived_from') NOT NULL
+  metadata: JSONB
+  FK(created_by): UUID NOT NULL
+  created_at: TIMESTAMP DEFAULT NOW()
+  deleted_at: TIMESTAMP NULL
+  deleted_by: UUID NULL
+  IDX(UNIQUE): (source_block_id, target_block_id, relation_type) WHERE deleted_at IS NULL
+  IDX(source_relations): (source_block_id)
+  IDX(target_relations): (target_block_id)
+}
+
+TABLE(Status, "Status") {
+  PK(id): UUID
+  IDX(category_name): (category, name) UNIQUE
+  category: VARCHAR(50) NOT NULL
+  name: VARCHAR(50) NOT NULL
+  description: TEXT
+  is_active: BOOLEAN DEFAULT TRUE
   created_at: TIMESTAMP DEFAULT NOW()
   updated_at: TIMESTAMP DEFAULT NOW()
   deleted_at: TIMESTAMP NULL
 }
 
-TABLE(BlockContent, "BlockContent") {
-  PK(id): UUID
-  FK(block_id): UUID NOT NULL UNIQUE
-  ' Pour TextBlock - simple mais flexible
-  text_content: TEXT
-  text_color: VARCHAR(7) DEFAULT '#000000'
-  ' Pour FileBlock - métadonnées essentielles
-  file_name: VARCHAR(255)
-  s3_key: VARCHAR(500)
-  s3_bucket: VARCHAR(100)
-  file_size: BIGINT
-  file_type: VARCHAR(50)
-  FK(uploaded_by): UUID
-  ' Pour AnalysisBlock
-  analysis_type: VARCHAR(100)
-  result_data: JSONB
-}
-
-TABLE(Status, "Status") {
-  PK(id): UUID
-  category: VARCHAR(50) NOT NULL
-  name: VARCHAR(50) NOT NULL
-  is_active: BOOLEAN DEFAULT TRUE
-  created_at: TIMESTAMP DEFAULT NOW()
-}
-
-' === RELATIONS ===
-User ||--o{ UserRole
-Role ||--o{ UserRole
+' === RELATIONS PRINCIPALES ===
 User ||--o{ Board
 User ||--o{ BoardMember
 Board ||--o{ BoardMember
 Board ||--o{ Invitation
 Board ||--o{ Block
 User ||--o{ Block
-Block ||--o{ BlockContent
 
 Status ||--o{ User
 Status ||--o{ Board
 Status ||--o{ Block
 
-note right of Board
-  Canvas interactif avec limites.
-  Couleur de fond personnalisable.
-end note
+' === RELATIONS CONTENU ===
+Block ||--|| TextContent : "content_id (when type=text)"
+Block ||--|| FileContent : "content_id (when type=file)"
+Block ||--|| AnalysisContent : "content_id (when type=analysis)"
 
+User ||--o{ FileContent : "uploaded_by"
+FileContent ||--o{ AnalysisContent : "source_file_id"
+
+' === RELATIONS ENTRE BLOCKS ===
+Block ||--o{ BlockRelation : "source_block_id"
+Block ||--o{ BlockRelation : "target_block_id"
+User ||--o{ BlockRelation : "created_by"
+
+' === NOTES EXPLICATIVES ===
 note right of Block
-  z_index pour superposition.
-  Dimensions redimensionnables.
-  3 types via ENUM.
+  Index optimisés :
+  - board_spatial: viewport queries
+  - content_lookup: évite joins multiples
 end note
 
-note right of BlockContent
-  Métadonnées S3 essentielles.
-  JSONB flexible pour analyses.
+note right of AnalysisContent
+  Stockage Plotly/IA :
+  - result_data: JSON complet (graphiques, etc.)
+  - Index JSONB pour recherches rapides
+  - Traçabilité vers fichier source
 end note
 
-note right of Invitation
-  Système d'invitation
-  Token temporaire + expiration.
+note right of Status
+  Index composite :
+  - (category, name) UNIQUE
+  - Recherches optimisées
+  - Ex: status('user', 'active')
 end note
 
 @enduml 

@@ -11,6 +11,7 @@ import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { AuthResponseDto } from './dto/auth-response.dto';
 import { LocalAuthGuard } from './guards/local-auth.guard';
+import { Public } from '../../common/decorators/public.decorator';
 
 @Controller('auth')
 export class AuthController {
@@ -18,6 +19,7 @@ export class AuthController {
 
   constructor(private readonly authService: AuthService) {}
 
+  @Public()
   @UseGuards(LocalAuthGuard)
   @Post('login')
   @HttpCode(HttpStatus.OK)

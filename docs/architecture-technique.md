@@ -8,26 +8,35 @@ L'architecture repose sur le diagramme UML défini dans `database-schema.puml`.
 
 #### Core System
 - **User** : Gestion des comptes utilisateurs
-- **Role** : Système de permissions
-- **UserRole** : Association utilisateur-rôle
 - **Status** : États par catégorie (user, board, block, invitation)
 
 #### Collaboration
 - **Board** : Espaces de travail collaboratifs
-- **BoardMember** : Membres d'un board avec permissions
+- **BoardMember** : Membres d'un board avec permissions granulaires (view, edit, admin)
 - **Invitation** : Système d'invitation temporaire
 
-#### Contenu
-- **Block** : Éléments de contenu (text, file, analysis)
-- **BlockContent** : Données spécifiques par type de block
+#### Système de Blocks (Refactorisé)
+- **Block** : Positionnement, métadonnées et référence générique vers le contenu
+- **TextContent** : Contenu textuel avec support Markdown/HTML
+- **FileContent** : Métadonnées fichiers, statut upload et référence S3
+- **AnalysisContent** : Résultats d'analyses IA avec données Plotly et traçabilité
+
+#### Relations entre Blocks
+- **BlockRelation** : Relations inter-blocks (generated_from, references, comment_on, derived_from)
 
 ### Relations
-- User 1..N UserRole N..1 Role
-- User 1..N Board
-- User 1..N BoardMember N..1 Board
+- User 1..N Board (propriétaire)
+- User 1..N BoardMember N..1 Board (permissions granulaires)
 - Board 1..N Block
-- Block 1..1 BlockContent
+- Block 1..1 TextContent|FileContent|AnalysisContent (via content_id)
+- Block N..N Block (via BlockRelation)
 - Status 1..N User/Board/Block
+
+### Permissions simplifiées
+Les permissions sont gérées **uniquement au niveau des boards** via la table `BoardMember` :
+- **view** : Consultation des données
+- **edit** : Modification du contenu
+- **admin** : Gestion des membres et permissions
 
 ## Architecture logicielle
 
@@ -88,9 +97,10 @@ export class EntityResponseDto {
 - Exclusion des champs sensibles
 
 #### Permissions
-- Système de rôles granulaire
-- Vérification des permissions par endpoint
-- Isolation des données par utilisateur/board
+- **Pas de rôles globaux** : Simplicité et sécurité
+- **Permissions granulaires au niveau board** : Contrôle fin des accès
+- **Vérification d'ownership** : Utilisateur ne peut modifier que ses propres données
+- **Isolation des données** par board et utilisateur
 
 ## Conventions API
 
@@ -152,6 +162,7 @@ this.logger.error('Operation failed', error.stack);
 - UUID pour toutes les clés primaires
 - Soft delete via BaseEntity
 - Relations chargées explicitement
+- Index optimisés pour performance spatiale et JSONB
 
 ### TypeORM
 ```typescript
@@ -173,6 +184,7 @@ Configuration via fichier `.env` basé sur `.env.example` :
 
 ### Stratégie
 - Tests e2e avec base de données réelle
+- Tests unitaires avec mocks pour services
 - Validation de la compilation TypeScript
 - Linting et formatage automatiques
 
