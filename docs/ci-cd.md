@@ -11,7 +11,7 @@ Pipeline d'intégration et déploiement continu basé sur GitHub Actions pour va
 
 **Étapes de validation** :
 - **Code Quality** : ESLint, Prettier, TypeScript compilation
-- **Tests** : Tests e2e avec base de données PostgreSQL
+- **Tests** : Tests unitaires (.spec.ts) avec mocks appropriés
 - **Build** : Construction et validation Docker
 - **Security** : Audit des dépendances npm
 
@@ -40,14 +40,14 @@ Configuration via GitHub Secrets et fichiers `.env` :
 ### Vérifications automatiques
 ```bash
 npm run build              # Compilation TypeScript
-npm run test:e2e           # Tests d'intégration
+npm run test               # Tests unitaires (tous les .spec.ts)
 npm run lint               # Analyse statique du code
 npm run format             # Formatage du code
 ```
 
 ### Validation locale complète
 ```bash
-npm run lint && npm run format && npm run test:e2e
+npm run lint && npm run format && npm run test
 ```
 
 ## Optimisations
@@ -65,15 +65,16 @@ npm run lint && npm run format && npm run test:e2e
 ## Stratégie de tests
 
 ### Approche privilégiée
-- **Tests e2e** : Validation complète avec base de données réelle
-- **Tests unitaires** : Services avec mocks appropriés
+- **Tests unitaires** : Services avec mocks appropriés (27 tests .spec.ts)
 - **Build validation** : Compilation TypeScript stricte
 - **Code quality** : Linting et formatage automatisés
+- **Security audit** : Détection automatique des vulnérabilités
 
 ### Justification
-- Code de production sans mocks inappropriés
-- Tests d'intégration représentatifs
+- Focus sur la logique métier via tests unitaires
+- Pipeline CI/CD rapide et fiable
 - Validation par compilation stricte
+- Sécurité garantie par audit automatique
 
 ## Workflow de développement
 
@@ -93,9 +94,10 @@ npm run lint && npm run format && npm run test:e2e
 ### Debug local
 ```bash
 # Reproduire la CI localement
-npm run lint && npm run format && npm run test:e2e
-docker compose up -d
-npm run test:e2e
+npm run lint && npm run format && npm run test
+
+# Tests avec couverture (optionnel)
+npm run test:cov  # Tests avec rapport de couverture
 ```
 
 ## Métriques et monitoring
