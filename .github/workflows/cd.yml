@@ -25,7 +25,6 @@ jobs:
         run: |
           echo "🚀 Déploiement de la version démo"
           echo "Commit: ${{ github.sha }}"
-          # Ici tu peux ajouter la logique de déploiement pour une démo
 
   release:
     name: Création de release
