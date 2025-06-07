@@ -41,13 +41,13 @@ Configuration via GitHub Secrets et fichiers `.env` :
 ```bash
 npm run build              # Compilation TypeScript
 npm run test:e2e           # Tests d'intégration
-npm run lint:check         # Analyse statique du code
-npm run format:check       # Conformité formatage
+npm run lint               # Analyse statique du code
+npm run format             # Formatage du code
 ```
 
-### Validation pré-commit
+### Validation locale complète
 ```bash
-npm run precommit          # Validation complète locale
+npm run lint && npm run format && npm run test:e2e
 ```
 
 ## Optimisations
@@ -66,11 +66,12 @@ npm run precommit          # Validation complète locale
 
 ### Approche privilégiée
 - **Tests e2e** : Validation complète avec base de données réelle
+- **Tests unitaires** : Services avec mocks appropriés
 - **Build validation** : Compilation TypeScript stricte
 - **Code quality** : Linting et formatage automatisés
 
 ### Justification
-- Code de production sans mocks
+- Code de production sans mocks inappropriés
 - Tests d'intégration représentatifs
 - Validation par compilation stricte
 
@@ -92,7 +93,7 @@ npm run precommit          # Validation complète locale
 ### Debug local
 ```bash
 # Reproduire la CI localement
-npm run precommit
+npm run lint && npm run format && npm run test:e2e
 docker compose up -d
 npm run test:e2e
 ```
