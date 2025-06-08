@@ -4,7 +4,7 @@ import { ApiProperty } from '@nestjs/swagger';
 export class UserResponseDto {
   @ApiProperty({
     description: "Identifiant unique de l'utilisateur",
-    example: '123e4567-e89b-12d3-a456-426614174000',
+    example: 'user-abc123',
     format: 'uuid',
   })
   @Expose()

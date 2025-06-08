@@ -36,7 +36,7 @@ describe('AuthController', () => {
       const mockResponse = {
         access_token: 'jwt-token',
         user: {
-          id: '123e4567-e89b-12d3-a456-426614174000',
+          id: 'test-user-id',
           email: 'test@example.com',
           displayName: 'Test User',
           createdAt: new Date('2024-01-15T10:00:00.000Z'),

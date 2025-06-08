@@ -23,7 +23,7 @@ describe('UsersService', () => {
   } as Status;
 
   const mockUser = {
-    id: '123e4567-e89b-12d3-a456-426614174000',
+    id: 'test-user-id',
     email: 'test@example.com',
     displayName: 'Test User',
     passwordHash: 'hashedPassword',
@@ -32,7 +32,7 @@ describe('UsersService', () => {
   } as User;
 
   const mockUserResponse = {
-    id: '123e4567-e89b-12d3-a456-426614174000',
+    id: 'test-user-id',
     email: 'test@example.com',
     displayName: 'Test User',
     createdAt: new Date(),
