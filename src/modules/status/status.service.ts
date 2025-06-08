@@ -1,52 +1,14 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Status } from './entities/status.entity';
 
 @Injectable()
-export class StatusService implements OnModuleInit {
+export class StatusService {
   constructor(
     @InjectRepository(Status)
     private readonly statusRepository: Repository<Status>,
   ) {}
-
-  async onModuleInit() {
-    await this.seedStatuses();
-  }
-
-  private async seedStatuses() {
-    const statusesToSeed = [
-      // User statuses
-      { category: 'user', name: 'active' },
-      { category: 'user', name: 'inactive' },
-
-      // Board statuses
-      { category: 'board', name: 'active' },
-      { category: 'board', name: 'archived' },
-
-      // Block statuses
-      { category: 'block', name: 'draft' },
-      { category: 'block', name: 'active' },
-      { category: 'block', name: 'archived' },
-
-      // Invitation statuses
-      { category: 'invitation', name: 'pending' },
-      { category: 'invitation', name: 'accepted' },
-      { category: 'invitation', name: 'declined' },
-      { category: 'invitation', name: 'expired' },
-    ];
-
-    for (const statusData of statusesToSeed) {
-      const exists = await this.statusRepository.findOne({
-        where: { category: statusData.category, name: statusData.name },
-      });
-
-      if (!exists) {
-        const status = this.statusRepository.create(statusData);
-        await this.statusRepository.save(status);
-      }
-    }
-  }
 
   async findByCategoryAndName(
     category: string,
@@ -62,5 +24,27 @@ export class StatusService implements OnModuleInit {
       where: { category, isActive: true },
       order: { name: 'ASC' },
     });
+  }
+
+  async getStatus(): Promise<{
+    status: string;
+    timestamp: string;
+    database: string;
+  }> {
+    try {
+      // Test simple de connexion à la base de données
+      await this.statusRepository.count();
+      return {
+        status: 'OK',
+        timestamp: new Date().toISOString(),
+        database: 'connected',
+      };
+    } catch {
+      return {
+        status: 'ERROR',
+        timestamp: new Date().toISOString(),
+        database: 'disconnected',
+      };
+    }
   }
 }

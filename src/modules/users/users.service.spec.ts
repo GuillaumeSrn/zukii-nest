@@ -14,10 +14,12 @@ describe('UsersService', () => {
   let statusService: jest.Mocked<StatusService>;
 
   const mockStatus = {
-    id: 'status-id',
+    id: 'user-active',
     category: 'user',
     name: 'active',
-    description: 'Utilisateur actif',
+    isActive: true,
+    createdAt: new Date(),
+    updatedAt: new Date(),
   } as Status;
 
   const mockUser = {
