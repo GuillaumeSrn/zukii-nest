@@ -1,60 +1,35 @@
-@startuml Database_Model_Zukii_Simplified
+@startuml Database_Model_Zukii
 !define TABLE(name,desc) class name as "desc" << (T,#FFAAAA) >>
 !define PK(x) <u>x</u>
 !define FK(x) <i>x</i>
+!define IDX(x) <color:blue>x</color>
 
-title Modèle de base de données - Zukii SIMPLIFIÉ (MVP)
+title Modèle de base de données - Zukii
 
-' === UTILISATEURS ET PERMISSIONS ===
+' === CORE ENTITIES ===
 TABLE(User, "User") {
   PK(id): UUID
-  email: VARCHAR(255) UNIQUE NOT NULL
+  IDX(email): VARCHAR(255) UNIQUE NOT NULL
   password_hash: VARCHAR(255) NOT NULL
-  first_name: VARCHAR(100) NOT NULL
-  last_name: VARCHAR(100) NOT NULL
-  is_email_verified: BOOLEAN DEFAULT FALSE
-  profile_picture_s3_key: VARCHAR(500)
+  display_name: VARCHAR(100) NOT NULL
   FK(status_id): UUID NOT NULL
   created_at: TIMESTAMP DEFAULT NOW()
   updated_at: TIMESTAMP DEFAULT NOW()
+  deleted_at: TIMESTAMP NULL
+  deleted_by: UUID NULL
 }
 
-TABLE(Role, "Role") {
-  PK(id): UUID
-  name: VARCHAR(50) UNIQUE NOT NULL
-  description: VARCHAR(200)
-  can_create_boards: BOOLEAN DEFAULT TRUE
-  can_invite_users: BOOLEAN DEFAULT TRUE
-  can_export_data: BOOLEAN DEFAULT TRUE
-  is_admin: BOOLEAN DEFAULT FALSE
-  created_at: TIMESTAMP DEFAULT NOW()
-}
-
-TABLE(UserRole, "UserRole") {
-  PK(id): UUID
-  FK(user_id): UUID NOT NULL
-  FK(role_id): UUID NOT NULL
-  assigned_at: TIMESTAMP DEFAULT NOW()
-  assigned_by: UUID
-}
-
-' === BOARDS ET COLLABORATION ===
 TABLE(Board, "Board") {
   PK(id): UUID
   title: VARCHAR(200) NOT NULL
   description: TEXT
   FK(owner_id): UUID NOT NULL
   FK(status_id): UUID NOT NULL
-  is_public: BOOLEAN DEFAULT FALSE
   background_color: VARCHAR(7) DEFAULT '#FFFFFF'
-  background_s3_key: VARCHAR(500)
-  max_width: INTEGER DEFAULT 3000
-  max_height: INTEGER DEFAULT 2000
-  grid_size: INTEGER DEFAULT 20
-  enable_grid_snap: BOOLEAN DEFAULT TRUE
   created_at: TIMESTAMP DEFAULT NOW()
   updated_at: TIMESTAMP DEFAULT NOW()
   deleted_at: TIMESTAMP NULL
+  deleted_by: UUID NULL
 }
 
 TABLE(BoardMember, "BoardMember") {
@@ -62,9 +37,12 @@ TABLE(BoardMember, "BoardMember") {
   FK(board_id): UUID NOT NULL
   FK(user_id): UUID NOT NULL
   permission_level: ENUM('view', 'edit', 'admin') NOT NULL
-  FK(status_id): UUID NOT NULL
-  invited_by: UUID
   joined_at: TIMESTAMP DEFAULT NOW()
+  updated_by: UUID NULL
+  updated_at: TIMESTAMP DEFAULT NOW()
+  deleted_at: TIMESTAMP NULL
+  deleted_by: UUID NULL
+  IDX(UNIQUE): (user_id, board_id) WHERE deleted_at IS NULL
 }
 
 TABLE(Invitation, "Invitation") {
@@ -72,201 +50,147 @@ TABLE(Invitation, "Invitation") {
   FK(board_id): UUID NOT NULL
   email: VARCHAR(255) NOT NULL
   permission_level: ENUM('view', 'edit', 'admin') NOT NULL
-  FK(status_id): UUID NOT NULL
-  invitation_token: VARCHAR(100) UNIQUE NOT NULL
+  IDX(invitation_token): VARCHAR(128) UNIQUE NOT NULL
   invited_by: UUID NOT NULL
   expires_at: TIMESTAMP NOT NULL
   created_at: TIMESTAMP DEFAULT NOW()
+  deleted_at: TIMESTAMP NULL
 }
 
-' === TYPES DE BLOCS ===
-TABLE(BlockType, "BlockType") {
-  PK(id): UUID
-  name: VARCHAR(50) UNIQUE NOT NULL
-  category: ENUM('data', 'note', 'media', 'analysis') NOT NULL
-  icon_name: VARCHAR(50)
-  default_width: INTEGER DEFAULT 200
-  default_height: INTEGER DEFAULT 150
-  is_resizable: BOOLEAN DEFAULT TRUE
-  background_color: VARCHAR(7) DEFAULT '#FFFFFF'
-  border_color: VARCHAR(7) DEFAULT '#CCCCCC'
-  created_at: TIMESTAMP DEFAULT NOW()
-}
-
-' === BLOCS PRINCIPAUX ===
+' === BLOCK SYSTEM (Refactorisé) ===
 TABLE(Block, "Block") {
   PK(id): UUID
   FK(board_id): UUID NOT NULL
-  FK(block_type_id): UUID NOT NULL
   FK(created_by): UUID NOT NULL
+  block_type: ENUM('text', 'file', 'analysis') NOT NULL
   title: VARCHAR(200)
-  position_x: INTEGER NOT NULL
-  position_y: INTEGER NOT NULL
-  width: INTEGER NOT NULL
-  height: INTEGER NOT NULL
+  ' Position avec validation
+  position_x: INTEGER NOT NULL CHECK (position_x >= 0)
+  position_y: INTEGER NOT NULL CHECK (position_y >= 0)
+  width: INTEGER DEFAULT 300 CHECK (width > 0)
+  height: INTEGER DEFAULT 200 CHECK (height > 0)
   z_index: INTEGER DEFAULT 0
   FK(status_id): UUID NOT NULL
+  ' Référence générique vers le contenu
+  FK(content_id): UUID NOT NULL
+  ' Tracking des modifications
+  last_modified_by: UUID
   created_at: TIMESTAMP DEFAULT NOW()
   updated_at: TIMESTAMP DEFAULT NOW()
   deleted_at: TIMESTAMP NULL
+  deleted_by: UUID NULL
+  IDX(board_spatial): (board_id, position_x, position_y)
+  IDX(content_lookup): (content_id, block_type)
 }
 
-' === CONTENU SPÉCIALISÉ ===
-TABLE(TextBlock, "TextBlock") {
+TABLE(TextContent, "TextContent") {
   PK(id): UUID
-  FK(block_id): UUID NOT NULL UNIQUE
   content: TEXT NOT NULL
-  font_size: INTEGER DEFAULT 14
-  font_color: VARCHAR(7) DEFAULT '#000000'
-  text_align: ENUM('left', 'center', 'right') DEFAULT 'left'
-  is_markdown: BOOLEAN DEFAULT FALSE
+  format_type: ENUM('plain', 'markdown', 'html') DEFAULT 'plain'
+  created_at: TIMESTAMP DEFAULT NOW()
+  updated_at: TIMESTAMP DEFAULT NOW()
 }
 
-TABLE(FileBlock, "FileBlock") {
+TABLE(FileContent, "FileContent") {
   PK(id): UUID
-  FK(block_id): UUID NOT NULL UNIQUE
-  original_filename: VARCHAR(255) NOT NULL
+  file_name: VARCHAR(255) NOT NULL
   s3_key: VARCHAR(500) NOT NULL
   s3_bucket: VARCHAR(100) NOT NULL
-  file_type: VARCHAR(50) NOT NULL
   file_size: BIGINT NOT NULL
-  checksum: VARCHAR(64) NOT NULL
-  thumbnail_s3_key: VARCHAR(500)
+  file_type: VARCHAR(50) NOT NULL
+  mime_type: VARCHAR(100) NOT NULL
   FK(uploaded_by): UUID NOT NULL
-  uploaded_at: TIMESTAMP DEFAULT NOW()
+  upload_status: ENUM('uploading', 'completed', 'failed') DEFAULT 'uploading'
+  created_at: TIMESTAMP DEFAULT NOW()
+  updated_at: TIMESTAMP DEFAULT NOW()
 }
 
-TABLE(AnalysisBlock, "AnalysisBlock") {
+TABLE(AnalysisContent, "AnalysisContent") {
   PK(id): UUID
-  FK(block_id): UUID NOT NULL UNIQUE
-  FK(source_file_id): UUID
   analysis_type: VARCHAR(100) NOT NULL
-  chart_type: VARCHAR(50)
-  result_summary: TEXT
-  processing_time_ms: INTEGER
-  FK(created_by): UUID NOT NULL
-  processed_at: TIMESTAMP
+  result_data: JSONB NOT NULL
+  FK(source_file_id): UUID
+  execution_status: ENUM('pending', 'running', 'completed', 'failed') DEFAULT 'pending'
+  execution_time: INTEGER
+  error_message: TEXT
   created_at: TIMESTAMP DEFAULT NOW()
+  updated_at: TIMESTAMP DEFAULT NOW()
+  IDX(analysis_search): (analysis_type, execution_status)
+  IDX(jsonb_conversation): USING GIN ((result_data->'conversationId'))
 }
 
-' === MÉTADONNÉES CSV (OPTIMISATION) ===
-TABLE(CSVMetadata, "CSVMetadata") {
+' === RELATIONS ENTRE BLOCKS ===
+TABLE(BlockRelation, "BlockRelation") {
   PK(id): UUID
-  FK(file_block_id): UUID NOT NULL UNIQUE
-  rows_count: INTEGER NOT NULL
-  columns_count: INTEGER NOT NULL
-  delimiter: VARCHAR(5) DEFAULT ','
-  encoding: VARCHAR(20) DEFAULT 'UTF-8'
-  has_header: BOOLEAN DEFAULT TRUE
-  parsed_at: TIMESTAMP DEFAULT NOW()
-}
-
-TABLE(CSVColumn, "CSVColumn") {
-  PK(id): UUID
-  FK(csv_metadata_id): UUID NOT NULL
-  column_index: INTEGER NOT NULL
-  column_name: VARCHAR(255) NOT NULL
-  data_type: ENUM('string', 'integer', 'decimal', 'date', 'boolean') NOT NULL
-  null_count: INTEGER DEFAULT 0
-  unique_count: INTEGER
-  min_value: VARCHAR(255)
-  max_value: VARCHAR(255)
-}
-
-' === GROUPES VISUELS (OPTIONNEL) ===
-TABLE(BlockGroup, "BlockGroup") {
-  PK(id): UUID
-  FK(board_id): UUID NOT NULL
-  name: VARCHAR(100) NOT NULL
-  color: VARCHAR(7) NOT NULL
+  FK(source_block_id): UUID NOT NULL
+  FK(target_block_id): UUID NOT NULL
+  relation_type: ENUM('generated_from', 'references', 'comment_on', 'derived_from') NOT NULL
+  metadata: JSONB
   FK(created_by): UUID NOT NULL
   created_at: TIMESTAMP DEFAULT NOW()
+  deleted_at: TIMESTAMP NULL
+  deleted_by: UUID NULL
+  IDX(UNIQUE): (source_block_id, target_block_id, relation_type) WHERE deleted_at IS NULL
+  IDX(source_relations): (source_block_id)
+  IDX(target_relations): (target_block_id)
 }
 
-TABLE(BlockGroupMember, "BlockGroupMember") {
+TABLE(Status, "Status") {
   PK(id): UUID
-  FK(block_group_id): UUID NOT NULL
-  FK(block_id): UUID NOT NULL
-  added_at: TIMESTAMP DEFAULT NOW()
-}
-
-' === COMMENTAIRES ===
-TABLE(Comment, "Comment") {
-  PK(id): UUID
-  FK(block_id): UUID NOT NULL
-  FK(author_id): UUID NOT NULL
-  content: TEXT NOT NULL
-  position_x: INTEGER
-  position_y: INTEGER
-  is_resolved: BOOLEAN DEFAULT FALSE
-  parent_comment_id: UUID
+  IDX(category_name): (category, name) UNIQUE
+  category: VARCHAR(50) NOT NULL
+  name: VARCHAR(50) NOT NULL
+  description: TEXT
+  is_active: BOOLEAN DEFAULT TRUE
   created_at: TIMESTAMP DEFAULT NOW()
   updated_at: TIMESTAMP DEFAULT NOW()
   deleted_at: TIMESTAMP NULL
 }
 
-' === STATUTS SYSTÈME ===
-TABLE(Status, "Status") {
-  PK(id): UUID
-  category: VARCHAR(50) NOT NULL
-  name: VARCHAR(50) NOT NULL
-  description: VARCHAR(200)
-  color: VARCHAR(7)
-  is_active: BOOLEAN DEFAULT TRUE
-  sort_order: INTEGER
-  created_at: TIMESTAMP DEFAULT NOW()
-}
-
-' === RELATIONS ===
-User ||--o{ UserRole
-Role ||--o{ UserRole
+' === RELATIONS PRINCIPALES ===
 User ||--o{ Board
 User ||--o{ BoardMember
 Board ||--o{ BoardMember
 Board ||--o{ Invitation
 Board ||--o{ Block
-Board ||--o{ BlockGroup
-
-BlockType ||--o{ Block
 User ||--o{ Block
-Block ||--o{ TextBlock
-Block ||--o{ FileBlock
-Block ||--o{ AnalysisBlock
-Block ||--o{ Comment
-
-FileBlock ||--o{ CSVMetadata
-CSVMetadata ||--o{ CSVColumn
-
-BlockGroup ||--o{ BlockGroupMember
-Block ||--o{ BlockGroupMember
-
-User ||--o{ Comment
 
 Status ||--o{ User
 Status ||--o{ Board
-Status ||--o{ BoardMember
 Status ||--o{ Block
 
-note right of BlockGroup
-  Groupement visuel optionnel :
-  - Bordure colorée commune
-  - Organisation par thème
-  - Ex: "Analyse Q1" en bleu
+' === RELATIONS CONTENU ===
+Block ||--|| TextContent : "content_id (when type=text)"
+Block ||--|| FileContent : "content_id (when type=file)"
+Block ||--|| AnalysisContent : "content_id (when type=analysis)"
+
+User ||--o{ FileContent : "uploaded_by"
+FileContent ||--o{ AnalysisContent : "source_file_id"
+
+' === RELATIONS ENTRE BLOCKS ===
+Block ||--o{ BlockRelation : "source_block_id"
+Block ||--o{ BlockRelation : "target_block_id"
+User ||--o{ BlockRelation : "created_by"
+
+' === NOTES EXPLICATIVES ===
+note right of Block
+  Index optimisés :
+  - board_spatial: viewport queries
+  - content_lookup: évite joins multiples
 end note
 
-note right of CSVColumn
-  Optimisation requêtes :
-  - Filtres rapides sans parser
-  - Statistiques pré-calculées
-  - Index sur data_type + column_name
+note right of AnalysisContent
+  Stockage Plotly/IA :
+  - result_data: JSON complet (graphiques, etc.)
+  - Index JSONB pour recherches rapides
+  - Traçabilité vers fichier source
 end note
 
-note right of BlockType
-  Categories :
-  - data: CSV, Excel, DB
-  - note: Post-it, texte
-  - media: Images, graphiques
-  - analysis: Résultats IA
+note right of Status
+  Index composite :
+  - (category, name) UNIQUE
+  - Recherches optimisées
+  - Ex: status('user', 'active')
 end note
 
 @enduml 
