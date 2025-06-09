@@ -4,6 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { User } from './modules/users/entities/user.entity';
 import { Status } from './modules/status/entities/status.entity';
+import { Board } from './modules/boards/entities/board.entity';
 import { StatusModule } from './modules/status/status.module';
 import { UsersModule } from './modules/users/users.module';
 import { AuthModule } from './modules/auth/auth.module';
@@ -22,7 +23,7 @@ import { APP_GUARD } from '@nestjs/core';
       username: process.env.DB_USERNAME || 'postgres',
       password: process.env.DB_PASSWORD || 'password',
       database: process.env.DB_NAME || 'zukii_db',
-      entities: [User, Status],
+      entities: [User, Status, Board],
       synchronize: process.env.NODE_ENV !== 'production',
       logging: process.env.NODE_ENV === 'development',
     }),
