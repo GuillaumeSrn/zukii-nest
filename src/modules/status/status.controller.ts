@@ -1,5 +1,11 @@
 import { Controller, Get, Param } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiParam,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { StatusService } from './status.service';
 import { Public } from '../../common/decorators/public.decorator';
 
@@ -28,8 +34,8 @@ export class StatusController {
     return this.statusService.getStatus();
   }
 
-  @Public()
   @Get('category/:category')
+  @ApiBearerAuth('JWT-auth')
   @ApiOperation({
     summary: 'Lister les statuts par catégorie',
     description: 'Récupère tous les statuts actifs pour une catégorie donnée',
@@ -50,6 +56,10 @@ export class StatusController {
         isActive: true,
       },
     ],
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Token JWT requis',
   })
   getStatusByCategory(@Param('category') category: string) {
     return this.statusService.findByCategory(category);

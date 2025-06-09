@@ -185,6 +185,7 @@ Configuration via fichier `.env` basé sur `.env.example` :
 - Variables de base de données PostgreSQL
 - Clé secrète JWT  
 - Environnement d'exécution
+- Mot de passe pour les tests unitaires (TEST_USER_PASSWORD)
 
 ### Intégration Microservice IA
 - Communication REST directe avec Lambda AWS Python

@@ -59,7 +59,7 @@ describe('AuthService', () => {
   describe('validateUser', () => {
     it('should return user when credentials are valid', async () => {
       const email = 'test@example.com';
-      const password = 'MotDePasse123!';
+      const password = process.env.TEST_USER_PASSWORD || 'MotDePasse123!';
 
       usersService.findByEmail.mockResolvedValue(mockUser);
       jest.spyOn(bcrypt, 'compare').mockImplementation(() => true);
@@ -84,7 +84,7 @@ describe('AuthService', () => {
 
     it('should throw UnauthorizedException when password is invalid', async () => {
       const email = 'test@example.com';
-      const password = 'MotDePasse123!';
+      const password = process.env.TEST_USER_PASSWORD || 'MotDePasse123!';
 
       usersService.findByEmail.mockResolvedValue(mockUser);
       jest.spyOn(bcrypt, 'compare').mockImplementation(() => false);
@@ -99,7 +99,7 @@ describe('AuthService', () => {
     it('should return access token and user info', async () => {
       const loginDto = {
         email: 'test@example.com',
-        password: 'MotDePasse123!',
+        password: process.env.TEST_USER_PASSWORD || 'MotDePasse123!',
       };
       const expectedToken = 'jwt-token';
 

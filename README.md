@@ -66,6 +66,9 @@ APP_URL=http://localhost:3000
 MICROSERVICE_API_KEY=your_secure_random_key_here_change_in_production
 MICROSERVICE_URL=https://your-lambda-url.execute-api.region.amazonaws.com/prod
 MICROSERVICE_TIMEOUT=30000
+
+# === TESTS ===
+TEST_USER_PASSWORD=MotDePasse123!
 ```
 
 ### Base de données

@@ -77,4 +77,4 @@ describe('StatusController', () => {
       expect(service.findByCategory).toHaveBeenCalledWith('nonexistent');
     });
   });
-}); 
+});
