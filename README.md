@@ -44,6 +44,30 @@ cp .env.example .env
 # Modifier les variables selon vos besoins
 ```
 
+#### Variables d'environnement requises
+```env
+# === DATABASE ===
+DB_HOST=localhost
+DB_PORT=5432
+DB_USERNAME=zukii_user
+DB_PASSWORD=zukii_password
+DB_DATABASE=zukii_db
+
+# === JWT ===
+JWT_SECRET=your_jwt_secret_key_change_in_production
+JWT_EXPIRES_IN=24h
+
+# === APPLICATION ===
+NODE_ENV=development
+PORT=3000
+APP_URL=http://localhost:3000
+
+# === MICROSERVICE IA ===
+MICROSERVICE_API_KEY=your_secure_random_key_here_change_in_production
+MICROSERVICE_URL=https://your-lambda-url.execute-api.region.amazonaws.com/prod
+MICROSERVICE_TIMEOUT=30000
+```
+
 ### Base de données
 
 #### Démarrage de PostgreSQL
@@ -166,6 +190,8 @@ npm run format                    # Formatage automatique
 - **Block Relations** : Liens entre blocks (generated_from, references, etc.)
 - **Content Types** : TextContent, FileContent, AnalysisContent spécialisés
 - **Invitations** : Système d'invitation avec tokens temporaires
+- **🆕 Analysis Templates** : Templates préconfigurés pour IA (analyse prévisionnelle, extraction données, etc.)
+- **🆕 Microservice IA** : Intégration Lambda AWS Python + OpenAI via API REST
 
 ## 🏗️ Architecture
 

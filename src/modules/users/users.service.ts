@@ -40,8 +40,10 @@ export class UsersService {
       'active',
     );
 
-    if (!activeStatus || activeStatus.id !== UserStatus.ACTIVE) {
-      throw new Error('Status "user.active" introuvable ou incorrect');
+    if (!activeStatus) {
+      throw new NotFoundException(
+        'Status "user.active" introuvable ou incorrect',
+      );
     }
 
     const saltRounds = 12;
