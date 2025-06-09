@@ -97,7 +97,10 @@ describe('AuthService', () => {
 
   describe('login', () => {
     it('should return access token and user info', async () => {
-      const loginDto = { email: 'test@example.com', password: 'MotDePasse123!' };
+      const loginDto = {
+        email: 'test@example.com',
+        password: 'MotDePasse123!',
+      };
       const expectedToken = 'jwt-token';
 
       jest.spyOn(service, 'validateUser').mockResolvedValue(mockUser);

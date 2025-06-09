@@ -89,16 +89,16 @@ export class UsersController {
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
     summary: 'Récupérer son propre profil',
-    description: 'Récupère le profil complet de l\'utilisateur connecté',
+    description: "Récupère le profil complet de l'utilisateur connecté",
   })
   @ApiResponse({
     status: 200,
-    description: 'Profil complet de l\'utilisateur connecté',
+    description: "Profil complet de l'utilisateur connecté",
     type: UserResponseDto,
   })
   async getMe(@Request() req: { user: JwtUser }): Promise<UserResponseDto> {
     this.logger.log(`Requête de profil personnel pour: ${req.user.id}`);
-    
+
     try {
       const user = await this.usersService.findById(req.user.id);
       this.logger.log(`Profil personnel retourné pour: ${user.email}`);
@@ -121,8 +121,9 @@ export class UsersController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
-    summary: 'Récupérer le profil public d\'un utilisateur',
-    description: 'Récupère uniquement les informations publiques d\'un utilisateur',
+    summary: "Récupérer le profil public d'un utilisateur",
+    description:
+      "Récupère uniquement les informations publiques d'un utilisateur",
   })
   @ApiParam({
     name: 'id',
@@ -131,7 +132,7 @@ export class UsersController {
   })
   @ApiResponse({
     status: 200,
-    description: 'Profil public de l\'utilisateur',
+    description: "Profil public de l'utilisateur",
     type: PublicUserDto,
   })
   @ApiResponse({
@@ -140,7 +141,7 @@ export class UsersController {
   })
   async getPublicProfile(@Param('id') id: string): Promise<PublicUserDto> {
     this.logger.log(`Requête de profil public pour: ${id}`);
-    
+
     try {
       const user = await this.usersService.findById(id);
       this.logger.log(`Profil public retourné pour l'utilisateur: ${id}`);
