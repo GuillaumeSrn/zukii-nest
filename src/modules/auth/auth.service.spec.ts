@@ -12,7 +12,7 @@ describe('AuthService', () => {
   let jwtService: jest.Mocked<JwtService>;
 
   const mockUser = {
-    id: 'test-user-id',
+    id: '123e4567-e89b-12d3-a456-426614174000',
     email: 'test@example.com',
     displayName: 'Test User',
     passwordHash: 'hashedPassword',
@@ -59,7 +59,7 @@ describe('AuthService', () => {
   describe('validateUser', () => {
     it('should return user when credentials are valid', async () => {
       const email = 'test@example.com';
-      const password = process.env.TEST_USER_PASSWORD || 'MotDePasse123!';
+      const password = 'password123';
 
       usersService.findByEmail.mockResolvedValue(mockUser);
       jest.spyOn(bcrypt, 'compare').mockImplementation(() => true);
@@ -84,7 +84,7 @@ describe('AuthService', () => {
 
     it('should throw UnauthorizedException when password is invalid', async () => {
       const email = 'test@example.com';
-      const password = process.env.TEST_USER_PASSWORD || 'MotDePasse123!';
+      const password = 'wrongpassword';
 
       usersService.findByEmail.mockResolvedValue(mockUser);
       jest.spyOn(bcrypt, 'compare').mockImplementation(() => false);
@@ -97,10 +97,7 @@ describe('AuthService', () => {
 
   describe('login', () => {
     it('should return access token and user info', async () => {
-      const loginDto = {
-        email: 'test@example.com',
-        password: process.env.TEST_USER_PASSWORD || 'MotDePasse123!',
-      };
+      const loginDto = { email: 'test@example.com', password: 'password123' };
       const expectedToken = 'jwt-token';
 
       jest.spyOn(service, 'validateUser').mockResolvedValue(mockUser);
@@ -114,8 +111,6 @@ describe('AuthService', () => {
           id: mockUser.id,
           email: mockUser.email,
           displayName: mockUser.displayName,
-          createdAt: mockUser.createdAt,
-          updatedAt: mockUser.updatedAt,
         },
       });
 

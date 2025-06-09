@@ -19,7 +19,6 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-
     "precommit": "npm run lint:check && npm run format:check && npm run test",
     "docker:build": "docker build -t zukii-nest .",
     "docker:run": "docker-compose up -d",
@@ -34,7 +33,6 @@
     "@nestjs/jwt": "^11.0.0",
     "@nestjs/passport": "^11.0.5",
     "@nestjs/platform-express": "^11.0.1",
-    "@nestjs/swagger": "^11.2.0",
     "@nestjs/typeorm": "^11.0.0",
     "@types/passport-local": "^1.0.38",
     "bcryptjs": "^3.0.2",

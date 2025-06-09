@@ -3,7 +3,6 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { UsersService } from '../users/users.service';
 import { LoginDto } from './dto/login.dto';
-import { AuthResponseDto } from './dto/auth-response.dto';
 import { User } from '../users/entities/user.entity';
 
 @Injectable()
@@ -31,7 +30,7 @@ export class AuthService {
     return user;
   }
 
-  async login(loginDto: LoginDto): Promise<AuthResponseDto> {
+  async login(loginDto: LoginDto) {
     this.logger.log(`Tentative de connexion pour: ${loginDto.email}`);
 
     const user = await this.validateUser(loginDto.email, loginDto.password);
@@ -51,8 +50,6 @@ export class AuthService {
         id: user.id,
         email: user.email,
         displayName: user.displayName,
-        createdAt: user.createdAt,
-        updatedAt: user.updatedAt,
       },
     };
   }

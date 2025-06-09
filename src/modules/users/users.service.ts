@@ -12,7 +12,6 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UserResponseDto } from './dto/user-response.dto';
 import { StatusService } from '../status/status.service';
-import { UserStatus } from '../status/enums/status.enum';
 
 @Injectable()
 export class UsersService {
@@ -35,25 +34,25 @@ export class UsersService {
       throw new ConflictException('Un utilisateur avec cet email existe déjà');
     }
 
+    const saltRounds = 12;
+    const passwordHash = await bcrypt.hash(createUserDto.password, saltRounds);
+
+    // Récupérer le statut par défaut pour les utilisateurs
     const activeStatus = await this.statusService.findByCategoryAndName(
       'user',
       'active',
     );
-
     if (!activeStatus) {
       throw new NotFoundException(
-        'Status "user.active" introuvable ou incorrect',
+        'Statut par défaut "active" pour utilisateur non trouvé',
       );
     }
 
-    const saltRounds = 12;
-    const passwordHash = await bcrypt.hash(createUserDto.password, saltRounds);
-
     const user = this.userRepository.create({
       email: createUserDto.email,
-      displayName: createUserDto.displayName || createUserDto.email,
+      displayName: createUserDto.displayName,
       passwordHash,
-      statusId: UserStatus.ACTIVE,
+      statusId: activeStatus.id,
     });
 
     const savedUser = await this.userRepository.save(user);

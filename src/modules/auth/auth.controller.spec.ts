@@ -29,18 +29,13 @@ describe('AuthController', () => {
 
   describe('login', () => {
     it('should return auth response when login successful', async () => {
-      const loginDto = {
-        email: 'test@example.com',
-        password: process.env.TEST_USER_PASSWORD || 'MotDePasse123!',
-      };
+      const loginDto = { email: 'test@example.com', password: 'password' };
       const mockResponse = {
-        access_token: 'jwt-token',
+        access_token: 'mock-token',
         user: {
-          id: 'test-user-id',
+          id: '1',
           email: 'test@example.com',
-          displayName: 'Test User',
-          createdAt: new Date('2024-01-15T10:00:00.000Z'),
-          updatedAt: new Date('2024-01-15T10:00:00.000Z'),
+          displayName: 'Test',
         },
       };
 
