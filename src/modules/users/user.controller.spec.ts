@@ -78,7 +78,7 @@ describe('UsersController', () => {
       await expect(controller.create(createUserDto)).rejects.toThrow(
         ConflictException,
       );
-        });
+    });
   });
 
   describe('update', () => {

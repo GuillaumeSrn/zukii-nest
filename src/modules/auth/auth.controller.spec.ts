@@ -31,7 +31,7 @@ describe('AuthController', () => {
     it('should return auth response when login successful', async () => {
       const loginDto = {
         email: 'test@example.com',
-        password: 'MotDePasse123!',
+        password: process.env.TEST_USER_PASSWORD || 'MotDePasse123!',
       };
       const mockResponse = {
         access_token: 'jwt-token',

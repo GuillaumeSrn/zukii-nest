@@ -44,6 +44,33 @@ cp .env.example .env
 # Modifier les variables selon vos besoins
 ```
 
+#### Variables d'environnement requises
+```env
+# === DATABASE ===
+DB_HOST=localhost
+DB_PORT=5432
+DB_USERNAME=zukii_user
+DB_PASSWORD=zukii_password
+DB_DATABASE=zukii_db
+
+# === JWT ===
+JWT_SECRET=your_jwt_secret_key_change_in_production
+JWT_EXPIRES_IN=24h
+
+# === APPLICATION ===
+NODE_ENV=development
+PORT=3000
+APP_URL=http://localhost:3000
+
+# === MICROSERVICE IA ===
+MICROSERVICE_API_KEY=your_secure_random_key_here_change_in_production
+MICROSERVICE_URL=https://your-lambda-url.execute-api.region.amazonaws.com/prod
+MICROSERVICE_TIMEOUT=30000
+
+# === TESTS ===
+TEST_USER_PASSWORD=MotDePasse123!
+```
+
 ### Base de données
 
 #### Démarrage de PostgreSQL
@@ -55,11 +82,11 @@ docker compose --profile tools up -d adminer
 
 #### Initialisation des données de référence
 ```bash
-# Seed des statuts (obligatoire au premier démarrage)
-npm run seed:dev
+# ✅ Auto-seeding 
+# Les statuts de référence sont automatiquement initialisés au démarrage
+# si la table statuses est vide
 
-# Alternative : via migration TypeORM (production)
-npm run typeorm:migrate
+# Aucune action manuelle requise - tout est automatique
 ```
 
 #### Accès aux outils
@@ -118,9 +145,8 @@ npm run format            # Prettier
 npm run lint:check        # Vérification sans correction
 npm run format:check      # Vérification formatage
 
-# Base de données
-npm run seed:dev          # Initialisation données de dev
-npm run typeorm:migrate   # Migrations (production)
+# Base de données (Auto-seeding)
+# Aucune commande manuelle requise - seeding automatique au démarrage
 
 # Docker
 npm run docker:build     # Build de l'image Docker
@@ -157,7 +183,7 @@ npm run format                    # Formatage automatique
 
 ### ✅ Modules opérationnels
 - **Users** : CRUD avec authentification bcrypt et gestion des statuts
-- **Status** : États centralisés par catégorie (user, board, block, invitation)
+- **Status** : États centralisés par catégorie
 - **Auth** : JWT, Guards, protection des routes sensibles
 
 ### 📋 Roadmap
@@ -166,6 +192,8 @@ npm run format                    # Formatage automatique
 - **Block Relations** : Liens entre blocks (generated_from, references, etc.)
 - **Content Types** : TextContent, FileContent, AnalysisContent spécialisés
 - **Invitations** : Système d'invitation avec tokens temporaires
+- **🆕 Analysis Templates** : Templates préconfigurés pour IA (analyse prévisionnelle, extraction données, etc.)
+- **🆕 Microservice IA** : Intégration Lambda AWS Python + OpenAI via API REST
 
 ## 🏗️ Architecture
 

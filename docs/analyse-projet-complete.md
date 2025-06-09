@@ -410,10 +410,11 @@ this.logger.error(`Erreur lors de la création: ${error.message}`, error.stack);
 1. **BlockModule** : Conteneurs positionnés
 2. **TextContentModule** : Contenu textuel simple
 
-### **Phase 3 : Fichiers et analyses**
+### **Phase 3 : Fichiers et analyses IA**
 1. **FileContentModule** : Upload S3, métadonnées
-2. **AnalysisContentModule** : Intégration IA
-3. **BlockRelationModule** : Traçabilité
+2. **AnalysisTemplateModule** : Templates système préconfigurés pour IA
+3. **AnalysisContentModule** : Intégration microservice Python + OpenAI
+4. **BlockRelationModule** : Traçabilité
 
 ### **Phase 4 : Features avancées**
 1. **Notifications** en temps réel (WebSockets)
@@ -429,7 +430,7 @@ this.logger.error(`Erreur lors de la création: ${error.message}`, error.stack);
 # Installation et démarrage
 npm install
 docker compose up -d db
-npm run seed:dev        # OBLIGATOIRE : Données de référence
+# Auto-seeding intelligent - aucune action manuelle requise
 npm run start:dev
 
 # Tests et qualité
@@ -438,7 +439,7 @@ npm run lint          # ESLint + Prettier
 npm run test:cov      # Couverture de code
 
 # Base de données
-npm run seed:dev      # Reset données de dev
+# Auto-seeding intelligent - reset automatique si table vide
 docker compose --profile tools up -d adminer  # Interface DB
 ```
 

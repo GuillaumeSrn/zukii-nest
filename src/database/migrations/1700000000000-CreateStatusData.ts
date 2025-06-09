@@ -29,4 +29,4 @@ export class CreateStatusData1700000000000 implements MigrationInterface {
       );
     `);
   }
-} 
+}

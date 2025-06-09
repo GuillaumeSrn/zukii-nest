@@ -19,4 +19,4 @@ export class PublicUserDto {
     example: true,
   })
   isActive: boolean;
-} 
+}

@@ -35,4 +35,4 @@ export const STATUS_BY_CATEGORY = {
   board: BoardStatus,
   block: BlockStatus,
   invitation: InvitationStatus,
-} as const; 
+} as const;

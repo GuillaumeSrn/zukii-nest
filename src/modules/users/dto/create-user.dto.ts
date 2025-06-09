@@ -27,7 +27,8 @@ export class CreateUserDto {
     description: "Mot de passe de l'utilisateur",
     example: 'MotDePasse123!',
     minLength: 8,
-    pattern: '^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]',
+    pattern:
+      '^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]',
   })
   @IsString({ message: 'Le mot de passe doit être une chaîne de caractères' })
   @MinLength(6, {

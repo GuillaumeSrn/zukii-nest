@@ -32,4 +32,4 @@ export class StatusSeeder {
       throw error;
     }
   }
-} 
+}

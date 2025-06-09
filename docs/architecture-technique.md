@@ -21,6 +21,12 @@ L'architecture repose sur le diagramme UML défini dans `database-schema.puml`.
 - **FileContent** : Métadonnées fichiers, statut upload et référence S3
 - **AnalysisContent** : Résultats d'analyses IA avec données Plotly et traçabilité
 
+#### Templates d'Analyse IA
+- **AnalysisTemplate** : Templates préconfigurés pour microservice Python
+  - Prompts OpenAI optimisés par type d'analyse
+  - Configuration des paramètres d'entrée
+  - Menu déroulant pour interface utilisateur
+
 #### Relations entre Blocks
 - **BlockRelation** : Relations inter-blocks (generated_from, references, comment_on, derived_from)
 
@@ -179,6 +185,13 @@ Configuration via fichier `.env` basé sur `.env.example` :
 - Variables de base de données PostgreSQL
 - Clé secrète JWT  
 - Environnement d'exécution
+- Mot de passe pour les tests unitaires (TEST_USER_PASSWORD)
+
+### Intégration Microservice IA
+- Communication REST directe avec Lambda AWS Python
+- Authentification par API Key partagée
+- Timeout configuré (30 secondes par défaut)
+- Templates système pour analyses standardisées
 
 ## Tests et validation
 
