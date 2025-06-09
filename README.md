@@ -79,11 +79,11 @@ docker compose --profile tools up -d adminer
 
 #### Initialisation des données de référence
 ```bash
-# Seed des statuts (obligatoire au premier démarrage)
-npm run seed:dev
+# ✅ Auto-seeding 
+# Les statuts de référence sont automatiquement initialisés au démarrage
+# si la table statuses est vide
 
-# Alternative : via migration TypeORM (production)
-npm run typeorm:migrate
+# Aucune action manuelle requise - tout est automatique
 ```
 
 #### Accès aux outils
@@ -142,9 +142,8 @@ npm run format            # Prettier
 npm run lint:check        # Vérification sans correction
 npm run format:check      # Vérification formatage
 
-# Base de données
-npm run seed:dev          # Initialisation données de dev
-npm run typeorm:migrate   # Migrations (production)
+# Base de données (Auto-seeding)
+# Aucune commande manuelle requise - seeding automatique au démarrage
 
 # Docker
 npm run docker:build     # Build de l'image Docker
@@ -181,7 +180,7 @@ npm run format                    # Formatage automatique
 
 ### ✅ Modules opérationnels
 - **Users** : CRUD avec authentification bcrypt et gestion des statuts
-- **Status** : États centralisés par catégorie (user, board, block, invitation)
+- **Status** : États centralisés par catégorie
 - **Auth** : JWT, Guards, protection des routes sensibles
 
 ### 📋 Roadmap
