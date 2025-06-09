@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 import { StatusService } from './status.service';
 import { Status } from './entities/status.entity';
 
@@ -20,6 +20,10 @@ describe('StatusService', () => {
   } as Status;
 
   beforeEach(async () => {
+    const mockDataSource = {
+      getRepository: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         StatusService,
@@ -30,7 +34,12 @@ describe('StatusService', () => {
             find: jest.fn(),
             create: jest.fn(),
             save: jest.fn(),
+            count: jest.fn(),
           },
+        },
+        {
+          provide: DataSource,
+          useValue: mockDataSource,
         },
       ],
     }).compile();
