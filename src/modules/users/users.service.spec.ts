@@ -14,16 +14,14 @@ describe('UsersService', () => {
   let statusService: jest.Mocked<StatusService>;
 
   const mockStatus = {
-    id: 'user-active',
+    id: 'status-id',
     category: 'user',
     name: 'active',
-    isActive: true,
-    createdAt: new Date(),
-    updatedAt: new Date(),
+    description: 'Utilisateur actif',
   } as Status;
 
   const mockUser = {
-    id: 'test-user-id',
+    id: '123e4567-e89b-12d3-a456-426614174000',
     email: 'test@example.com',
     displayName: 'Test User',
     passwordHash: 'hashedPassword',
@@ -32,7 +30,7 @@ describe('UsersService', () => {
   } as User;
 
   const mockUserResponse = {
-    id: 'test-user-id',
+    id: '123e4567-e89b-12d3-a456-426614174000',
     email: 'test@example.com',
     displayName: 'Test User',
     createdAt: new Date(),

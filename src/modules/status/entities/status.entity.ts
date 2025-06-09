@@ -1,22 +1,18 @@
-import { Entity, Column, PrimaryColumn } from 'typeorm';
+import { Entity, Column, Index } from 'typeorm';
+import { BaseEntity } from '../../../common/entities/base.entity';
 
-@Entity('statuses')
-export class Status {
-  @PrimaryColumn()
-  id: string; // ID fixe au lieu d'UUID auto-généré
+@Entity('status')
+@Index(['category', 'name'], { unique: true })
+export class Status extends BaseEntity {
+  @Column({ type: 'varchar', length: 50 })
+  category: string; // user, board, block, invitation, etc.
 
-  @Column()
-  category: string;
+  @Column({ type: 'varchar', length: 50 })
+  name: string; // active, inactive, pending, completed, etc.
 
-  @Column()
-  name: string;
+  @Column({ type: 'text', nullable: true })
+  description?: string;
 
-  @Column({ default: true })
+  @Column({ type: 'boolean', default: true })
   isActive: boolean;
-
-  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
-  createdAt: Date;
-
-  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
-  updatedAt: Date;
 }

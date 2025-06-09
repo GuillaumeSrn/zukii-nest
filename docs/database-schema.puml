@@ -119,22 +119,6 @@ TABLE(AnalysisContent, "AnalysisContent") {
   IDX(jsonb_conversation): USING GIN ((result_data->'conversationId'))
 }
 
-' === TEMPLATES D'ANALYSE IA ===
-TABLE(AnalysisTemplate, "AnalysisTemplate") {
-  PK(id): UUID
-  name: VARCHAR(200) NOT NULL
-  description: TEXT
-  analysis_type: VARCHAR(100) NOT NULL
-  prompt_template: TEXT NOT NULL
-  parameters: JSONB DEFAULT '{}'
-  input_requirements: JSONB
-  is_active: BOOLEAN DEFAULT TRUE
-  created_at: TIMESTAMP DEFAULT NOW()
-  updated_at: TIMESTAMP DEFAULT NOW()
-  deleted_at: TIMESTAMP NULL
-  IDX(analysis_type_active): (analysis_type, is_active)
-}
-
 ' === RELATIONS ENTRE BLOCKS ===
 TABLE(BlockRelation, "BlockRelation") {
   PK(id): UUID
@@ -183,9 +167,6 @@ Block ||--|| AnalysisContent : "content_id (when type=analysis)"
 User ||--o{ FileContent : "uploaded_by"
 FileContent ||--o{ AnalysisContent : "source_file_id"
 
-' === RELATIONS TEMPLATES ===
-AnalysisTemplate ||--o{ AnalysisContent : "analysis_type"
-
 ' === RELATIONS ENTRE BLOCKS ===
 Block ||--o{ BlockRelation : "source_block_id"
 Block ||--o{ BlockRelation : "target_block_id"
@@ -210,13 +191,6 @@ note right of Status
   - (category, name) UNIQUE
   - Recherches optimisées
   - Ex: status('user', 'active')
-end note
-
-note right of AnalysisTemplate
-  Templates système pour IA :
-  - Prompts préconfigurés OpenAI
-  - Paramètres par type d'analyse
-  - Menu déroulant frontend Angular
 end note
 
 @enduml 

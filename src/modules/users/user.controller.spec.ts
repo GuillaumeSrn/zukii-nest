@@ -81,6 +81,29 @@ describe('UsersController', () => {
     });
   });
 
+  describe('findById', () => {
+    it('should return user when found', async () => {
+      const userId = 'mock-id';
+      service.findById.mockResolvedValue(mockUserResponse);
+
+      const result = await controller.findById(userId, mockAuthRequest);
+
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(service.findById).toHaveBeenCalledWith(userId);
+      expect(result).toBe(mockUserResponse);
+    });
+
+    it('should propagate NotFoundException when user not found', async () => {
+      const userId = 'mock-id';
+      const notFoundError = new NotFoundException('Utilisateur non trouvé');
+      service.findById.mockRejectedValue(notFoundError);
+
+      await expect(
+        controller.findById(userId, mockAuthRequest),
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
+
   describe('update', () => {
     it('should update user successfully', async () => {
       const userId = 'mock-id';
@@ -115,39 +138,6 @@ describe('UsersController', () => {
       await expect(
         controller.update(userId, updateUserDto, mockAuthRequest),
       ).rejects.toThrow(NotFoundException);
-    });
-  });
-
-  describe('getMe', () => {
-    it('should return complete user profile', async () => {
-      const mockAuthRequest = {
-        user: { id: 'mock-id', email: 'test@example.com' },
-      };
-      service.findById.mockResolvedValue(mockUserResponse);
-
-      const result = await controller.getMe(mockAuthRequest);
-
-      // eslint-disable-next-line @typescript-eslint/unbound-method
-      expect(service.findById).toHaveBeenCalledWith('mock-id');
-      expect(result).toEqual({
-        id: mockUserResponse.id,
-        email: mockUserResponse.email,
-        displayName: mockUserResponse.displayName,
-        createdAt: mockUserResponse.createdAt,
-        updatedAt: mockUserResponse.updatedAt,
-      });
-    });
-
-    it('should propagate NotFoundException when user not found', async () => {
-      const mockAuthRequest = {
-        user: { id: 'mock-id', email: 'test@example.com' },
-      };
-      const notFoundError = new NotFoundException('Utilisateur non trouvé');
-      service.findById.mockRejectedValue(notFoundError);
-
-      await expect(controller.getMe(mockAuthRequest)).rejects.toThrow(
-        NotFoundException,
-      );
     });
   });
 });
