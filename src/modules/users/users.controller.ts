@@ -34,7 +34,6 @@ import { Public } from '../../common/decorators/public.decorator';
 
 interface JwtUser {
   id: string;
-  email: string;
 }
 
 @ApiTags('Utilisateurs')

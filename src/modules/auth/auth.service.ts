@@ -4,12 +4,12 @@ import * as bcrypt from 'bcryptjs';
 import { UsersService } from '../users/users.service';
 import { LoginDto } from './dto/login.dto';
 import { AuthResponseDto } from './dto/auth-response.dto';
+import { AuthUserDto } from './dto/auth-user.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { User } from '../users/entities/user.entity';
 
 interface TokenPayload {
   sub: string;
-  email: string;
   iat?: number;
   exp?: number;
 }
@@ -48,16 +48,16 @@ export class AuthService {
 
     this.logger.log(`Connexion réussie pour: ${user.email}`);
 
+    const authUser: AuthUserDto = {
+      id: user.id,
+      email: user.email,
+      displayName: user.displayName,
+    };
+
     return {
       access_token,
       refresh_token,
-      user: {
-        id: user.id,
-        email: user.email,
-        displayName: user.displayName,
-        createdAt: user.createdAt,
-        updatedAt: user.updatedAt,
-      },
+      user: authUser,
     };
   }
 
@@ -83,16 +83,16 @@ export class AuthService {
 
       this.logger.log(`Token renouvelé pour: ${user.email}`);
 
+      const authUser: AuthUserDto = {
+        id: user.id,
+        email: user.email,
+        displayName: user.displayName,
+      };
+
       return {
         access_token,
         refresh_token,
-        user: {
-          id: user.id,
-          email: user.email,
-          displayName: user.displayName,
-          createdAt: user.createdAt,
-          updatedAt: user.updatedAt,
-        },
+        user: authUser,
       };
     } catch (error) {
       this.logger.error(
@@ -110,7 +110,6 @@ export class AuthService {
   } {
     const payload: TokenPayload = {
       sub: user.id,
-      email: user.email,
     };
 
     const access_token = this.jwtService.sign(payload, {
@@ -127,8 +126,7 @@ export class AuthService {
     return (
       typeof payload === 'object' &&
       payload !== null &&
-      typeof (payload as TokenPayload).sub === 'string' &&
-      typeof (payload as TokenPayload).email === 'string'
+      typeof (payload as TokenPayload).sub === 'string'
     );
   }
 }
