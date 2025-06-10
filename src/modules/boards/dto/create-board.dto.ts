@@ -64,4 +64,3 @@ export class CreateBoardDto {
   })
   backgroundColor?: string;
 }
- 
