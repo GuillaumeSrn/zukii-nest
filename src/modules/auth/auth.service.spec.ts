@@ -27,10 +27,12 @@ describe('AuthService', () => {
   beforeEach(async () => {
     const mockUsersService = {
       findByEmail: jest.fn(),
+      findByIdEntity: jest.fn(),
     };
 
     const mockJwtService = {
       sign: jest.fn(),
+      verify: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -110,6 +112,7 @@ describe('AuthService', () => {
 
       expect(result).toEqual({
         access_token: expectedToken,
+        refresh_token: expectedToken,
         user: {
           id: mockUser.id,
           email: mockUser.email,
@@ -120,10 +123,77 @@ describe('AuthService', () => {
       });
 
       // eslint-disable-next-line @typescript-eslint/unbound-method
-      expect(jwtService.sign).toHaveBeenCalledWith({
+      expect(jwtService.sign).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe('refreshToken', () => {
+    it('should return new tokens when refresh token is valid', async () => {
+      const refreshTokenDto = {
+        refresh_token: 'valid-refresh-token',
+      };
+      const expectedAccessToken = 'new-access-token';
+      const expectedRefreshToken = 'new-refresh-token';
+      const mockPayload = {
         sub: mockUser.id,
         email: mockUser.email,
+      };
+
+      jwtService.verify.mockReturnValue(mockPayload);
+      usersService.findByIdEntity.mockResolvedValue(mockUser);
+      jwtService.sign
+        .mockReturnValueOnce(expectedAccessToken)
+        .mockReturnValueOnce(expectedRefreshToken);
+
+      const result = await service.refreshToken(refreshTokenDto);
+
+      expect(result).toEqual({
+        access_token: expectedAccessToken,
+        refresh_token: expectedRefreshToken,
+        user: {
+          id: mockUser.id,
+          email: mockUser.email,
+          displayName: mockUser.displayName,
+          createdAt: mockUser.createdAt,
+          updatedAt: mockUser.updatedAt,
+        },
       });
+
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(jwtService.verify).toHaveBeenCalledWith('valid-refresh-token');
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(usersService.findByIdEntity).toHaveBeenCalledWith(mockUser.id);
+    });
+
+    it('should throw UnauthorizedException when user not found', async () => {
+      const refreshTokenDto = {
+        refresh_token: 'valid-refresh-token',
+      };
+      const mockPayload = {
+        sub: 'nonexistent-user-id',
+        email: 'test@example.com',
+      };
+
+      jwtService.verify.mockReturnValue(mockPayload);
+      usersService.findByIdEntity.mockResolvedValue(null);
+
+      await expect(service.refreshToken(refreshTokenDto)).rejects.toThrow(
+        UnauthorizedException,
+      );
+    });
+
+    it('should throw UnauthorizedException when token verification fails', async () => {
+      const refreshTokenDto = {
+        refresh_token: 'invalid-refresh-token',
+      };
+
+      jwtService.verify.mockImplementation(() => {
+        throw new Error('Token verification failed');
+      });
+
+      await expect(service.refreshToken(refreshTokenDto)).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
   });
 });
