@@ -55,26 +55,4 @@ export class StatusService implements OnModuleInit {
       order: { name: 'ASC' },
     });
   }
-
-  async getStatus(): Promise<{
-    status: string;
-    timestamp: string;
-    database: string;
-  }> {
-    try {
-      // Test simple de connexion à la base de données
-      await this.statusRepository.count();
-      return {
-        status: 'OK',
-        timestamp: new Date().toISOString(),
-        database: 'connected',
-      };
-    } catch {
-      return {
-        status: 'ERROR',
-        timestamp: new Date().toISOString(),
-        database: 'disconnected',
-      };
-    }
-  }
 }

@@ -9,7 +9,7 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   // 🛡️ Protection sécuritaire globale
-  
+
   // Headers de sécurité avec Helmet
   app.use(
     helmet({

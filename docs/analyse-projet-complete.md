@@ -447,7 +447,6 @@ docker compose --profile tools up -d adminer  # Interface DB
 - **API** : http://localhost:3000
 - **Swagger** : http://localhost:3000/api
 - **Adminer** : http://localhost:8080
-- **Health Check** : http://localhost:3000/status
 
 ---
 

@@ -34,7 +34,7 @@ export class AppController {
       endpoints: {
         auth: '/auth',
         users: '/users',
-        status: '/status',
+        statuses: '/statuses',
       },
     };
   }

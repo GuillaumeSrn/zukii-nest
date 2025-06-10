@@ -110,7 +110,6 @@ npm run start:prod
 #### Accès aux services
 - **API** : http://localhost:3000
 - **Documentation Swagger** : http://localhost:3000/api
-- **Health Check** : http://localhost:3000/status
 
 ### Données de référence
 
