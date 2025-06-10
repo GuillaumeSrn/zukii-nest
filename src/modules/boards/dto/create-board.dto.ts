@@ -1,0 +1,66 @@
+import {
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  MinLength,
+  MaxLength,
+  IsHexColor,
+  Matches,
+} from 'class-validator';
+import { Transform } from 'class-transformer';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+
+export class CreateBoardDto {
+  @ApiProperty({
+    description: 'Titre du board',
+    example: 'Mon Tableau de Bord Projet',
+    minLength: 3,
+    maxLength: 200,
+  })
+  @IsString({ message: 'Le titre doit être une chaîne de caractères' })
+  @IsNotEmpty({ message: 'Le titre est requis' })
+  @MinLength(3, {
+    message: 'Le titre doit contenir au moins 3 caractères',
+  })
+  @MaxLength(200, {
+    message: 'Le titre ne peut pas dépasser 200 caractères',
+  })
+  @Matches(/^[a-zA-Z0-9\s\-_.,!?àáâäèéêëìíîïòóôöùúûüñç]+$/, {
+    message: 'Le titre contient des caractères non autorisés',
+  })
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.trim() : value,
+  )
+  title: string;
+
+  @ApiPropertyOptional({
+    description: 'Description détaillée du board',
+    example: 'Ce tableau contient les analyses de données de notre projet.',
+    maxLength: 1000,
+  })
+  @IsOptional()
+  @IsString({ message: 'La description doit être une chaîne de caractères' })
+  @MaxLength(1000, {
+    message: 'La description ne peut pas dépasser 1000 caractères',
+  })
+  @Matches(/^[a-zA-Z0-9\s\-_.,!?\n\r()àáâäèéêëìíîïòóôöùúûüñç]*$/, {
+    message: 'La description contient des caractères non autorisés',
+  })
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.trim() : value,
+  )
+  description?: string;
+
+  @ApiPropertyOptional({
+    description: 'Couleur de fond du board au format hexadécimal',
+    example: '#F5F5F5',
+    pattern: '^#[0-9A-Fa-f]{6}$',
+    default: '#FFFFFF',
+  })
+  @IsOptional()
+  @IsHexColor({
+    message:
+      'La couleur de fond doit être un code hexadécimal valide (ex: #FF5733)',
+  })
+  backgroundColor?: string;
+}
