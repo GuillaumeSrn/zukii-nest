@@ -1,4 +1,4 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import { Controller, Get, Param, BadRequestException } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -44,6 +44,7 @@ export class StatusController {
     name: 'category',
     description: 'Catégorie de statuts (user, board, block, invitation)',
     example: 'user',
+    enum: ['user', 'board', 'block', 'invitation'],
   })
   @ApiResponse({
     status: 200,
@@ -58,10 +59,20 @@ export class StatusController {
     ],
   })
   @ApiResponse({
+    status: 400,
+    description: 'Catégorie invalide',
+  })
+  @ApiResponse({
     status: 401,
     description: 'Token JWT requis',
   })
   getStatusByCategory(@Param('category') category: string) {
+    // Validation supplémentaire au niveau controller
+    const validCategories = ['user', 'board', 'block', 'invitation'];
+    if (!validCategories.includes(category)) {
+      throw new BadRequestException('Catégorie invalide');
+    }
+
     return this.statusService.findByCategory(category);
   }
 }

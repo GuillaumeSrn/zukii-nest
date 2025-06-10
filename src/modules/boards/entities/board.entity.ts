@@ -51,3 +51,4 @@ export class Board extends BaseEntity {
   @JoinColumn({ name: 'statusId' })
   status: Status;
 }
+ 
