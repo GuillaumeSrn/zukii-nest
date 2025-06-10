@@ -10,6 +10,7 @@ import {
 import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
+import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { AuthResponseDto } from './dto/auth-response.dto';
 import { LocalAuthGuard } from './guards/local-auth.guard';
 import { Public } from '../../common/decorators/public.decorator';
@@ -50,6 +51,41 @@ export class AuthController {
     } catch (error) {
       this.logger.error(
         `Erreur lors de la connexion: ${error instanceof Error ? error.message : 'Erreur inconnue'}`,
+      );
+      throw error;
+    }
+  }
+
+  @Public()
+  @Post('refresh')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Renouvellement du token JWT',
+    description:
+      'Renouvelle un token JWT en utilisant le refresh token et retourne de nouveaux tokens',
+  })
+  @ApiBody({ type: RefreshTokenDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Token renouvelé avec succès',
+    type: AuthResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Refresh token invalide ou expiré',
+  })
+  async refreshToken(
+    @Body() refreshTokenDto: RefreshTokenDto,
+  ): Promise<AuthResponseDto> {
+    this.logger.log('Tentative de renouvellement de token');
+
+    try {
+      const result = await this.authService.refreshToken(refreshTokenDto);
+      this.logger.log('Token renouvelé avec succès');
+      return result;
+    } catch (error) {
+      this.logger.error(
+        `Erreur lors du renouvellement: ${error instanceof Error ? error.message : 'Erreur inconnue'}`,
       );
       throw error;
     }

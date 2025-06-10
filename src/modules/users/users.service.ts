@@ -85,6 +85,13 @@ export class UsersService {
     });
   }
 
+  async findByIdEntity(id: string): Promise<User | null> {
+    return this.userRepository.findOne({
+      where: { id, deletedAt: IsNull() },
+      relations: ['status'],
+    });
+  }
+
   async update(
     id: string,
     updateUserDto: UpdateUserDto,

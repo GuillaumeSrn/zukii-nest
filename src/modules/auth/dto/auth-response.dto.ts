@@ -9,6 +9,12 @@ export class AuthResponseDto {
   access_token: string;
 
   @ApiProperty({
+    description: "Refresh token pour renouveler le token d'accès",
+    example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.refresh...',
+  })
+  refresh_token: string;
+
+  @ApiProperty({
     description: "Informations de l'utilisateur connecté",
     type: UserResponseDto,
   })

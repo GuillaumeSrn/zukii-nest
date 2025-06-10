@@ -92,21 +92,30 @@ export class EntityResponseDto {
 
 ### Sécurité
 
-#### Authentification
-- Hachage bcrypt des mots de passe (12 rounds)
-- Tokens JWT pour l'authentification
-- Guards NestJS pour la protection des routes
+L'application implémente une sécurité robuste sur plusieurs niveaux :
 
-#### Validation
-- class-validator sur tous les DTOs
-- Transformation automatique des données
-- Exclusion des champs sensibles
+#### Authentification & Autorisation
+- **Hachage bcrypt** : Mots de passe avec 12 rounds de sel
+- **JWT Strategy** : Tokens sécurisés pour authentification
+- **Guards NestJS** : Protection automatique des routes sensibles
+- **Permissions granulaires** : Contrôle au niveau des boards uniquement
 
-#### Permissions
-- **Pas de rôles globaux** : Simplicité et sécurité
-- **Permissions granulaires au niveau board** : Contrôle fin des accès
-- **Vérification d'ownership** : Utilisateur ne peut modifier que ses propres données
-- **Isolation des données** par board et utilisateur
+#### Validation & Protection
+- **DTOs class-validator** : Validation stricte de toutes les entrées
+- **SecurityInterceptor global** : Protection XSS, limites payload (1MB JSON / 50MB files)
+- **Exclusion données sensibles** : `@Exclude` sur champs critiques
+- **TypeORM paramétré** : Protection SQL injection automatique
+
+#### Configuration sécurisée
+- **Helmet** : Headers de sécurité (CSP, HSTS, etc.)
+- **CORS configuré** : Origine restreinte en production
+- **Variables d'environnement** : Aucun secret en dur dans le code
+- **Audit automatique** : Scan vulnérabilités dans CI/CD
+
+#### Conformité OWASP Top 10
+L'application couvre les 10 vulnérabilités critiques avec protections automatiques et validation continue.
+
+> **Référence complète** : Voir [`docs/security-guide.md`](security-guide.md) pour détails d'implémentation et checklist par endpoint.
 
 ## Conventions API
 

@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { BadRequestException } from '@nestjs/common';
 import { StatusController } from './status.controller';
 import { StatusService } from './status.service';
 
@@ -67,14 +68,25 @@ describe('StatusController', () => {
       expect(service.findByCategory).toHaveBeenCalledWith('user');
     });
 
-    it('should return empty array when no statuses found', async () => {
-      service.findByCategory.mockResolvedValue([]);
+    it('should throw BadRequestException for invalid category', () => {
+      expect(() => controller.getStatusByCategory('nonexistent')).toThrow(
+        BadRequestException,
+      );
+    });
 
-      const result = await controller.getStatusByCategory('nonexistent');
+    it('should accept valid categories', async () => {
+      const validCategories = ['user', 'board', 'block', 'invitation'];
 
-      expect(result).toEqual([]);
-      // eslint-disable-next-line @typescript-eslint/unbound-method
-      expect(service.findByCategory).toHaveBeenCalledWith('nonexistent');
+      for (const category of validCategories) {
+        service.findByCategory.mockResolvedValue([]);
+
+        const result = await controller.getStatusByCategory(category);
+
+        expect(result).toEqual([]);
+        // eslint-disable-next-line @typescript-eslint/unbound-method
+        expect(service.findByCategory).toHaveBeenCalledWith(category);
+      }
     });
   });
 });
+ 
