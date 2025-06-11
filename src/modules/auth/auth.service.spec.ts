@@ -117,8 +117,6 @@ describe('AuthService', () => {
           id: mockUser.id,
           email: mockUser.email,
           displayName: mockUser.displayName,
-          createdAt: mockUser.createdAt,
-          updatedAt: mockUser.updatedAt,
         },
       });
 
@@ -136,7 +134,6 @@ describe('AuthService', () => {
       const expectedRefreshToken = 'new-refresh-token';
       const mockPayload = {
         sub: mockUser.id,
-        email: mockUser.email,
       };
 
       jwtService.verify.mockReturnValue(mockPayload);
@@ -154,8 +151,6 @@ describe('AuthService', () => {
           id: mockUser.id,
           email: mockUser.email,
           displayName: mockUser.displayName,
-          createdAt: mockUser.createdAt,
-          updatedAt: mockUser.updatedAt,
         },
       });
 
@@ -171,7 +166,6 @@ describe('AuthService', () => {
       };
       const mockPayload = {
         sub: 'nonexistent-user-id',
-        email: 'test@example.com',
       };
 
       jwtService.verify.mockReturnValue(mockPayload);

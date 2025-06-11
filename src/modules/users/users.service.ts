@@ -13,6 +13,7 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { UserResponseDto } from './dto/user-response.dto';
 import { StatusService } from '../status/status.service';
 import { UserStatus } from '../status/enums/status.enum';
+import { EmailService } from '../email/email.service';
 
 @Injectable()
 export class UsersService {
@@ -22,6 +23,7 @@ export class UsersService {
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     private readonly statusService: StatusService,
+    private readonly emailService: EmailService,
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<UserResponseDto> {
@@ -61,6 +63,7 @@ export class UsersService {
     this.logger.log(
       `Utilisateur créé avec succès: ${savedUser.email} (ID: ${savedUser.id})`,
     );
+    await this.emailService.sendWelcome(savedUser.email, savedUser.displayName);
 
     return this.findById(savedUser.id);
   }

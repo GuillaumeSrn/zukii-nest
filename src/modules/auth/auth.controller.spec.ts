@@ -41,8 +41,6 @@ describe('AuthController', () => {
           id: 'test-user-id',
           email: 'test@example.com',
           displayName: 'Test User',
-          createdAt: new Date('2024-01-15T10:00:00.000Z'),
-          updatedAt: new Date('2024-01-15T10:00:00.000Z'),
         },
       };
 
@@ -68,8 +66,6 @@ describe('AuthController', () => {
           id: 'test-user-id',
           email: 'test@example.com',
           displayName: 'Test User',
-          createdAt: new Date('2024-01-15T10:00:00.000Z'),
-          updatedAt: new Date('2024-01-15T10:00:00.000Z'),
         },
       };
 
