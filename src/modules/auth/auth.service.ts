@@ -67,6 +67,7 @@ export class AuthService {
     this.logger.log('Tentative de renouvellement de token');
 
     try {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       const rawPayload = this.jwtService.verify(refreshTokenDto.refresh_token);
 
       if (!this.isValidTokenPayload(rawPayload)) {

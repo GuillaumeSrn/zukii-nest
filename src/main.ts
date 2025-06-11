@@ -58,7 +58,7 @@ async function bootstrap() {
   const config = new DocumentBuilder()
     .setTitle('Zukii API')
     .setDescription(
-      "API REST pour application collaborative d'analyse de données CSV avec IA",
+      "API REST Zukii : application collaborative d'analyse de données CSV",
     )
     .setVersion('1.0')
     .addBearerAuth(

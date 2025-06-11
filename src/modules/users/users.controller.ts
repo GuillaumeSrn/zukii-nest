@@ -50,7 +50,7 @@ export class UsersController {
   @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
   @ApiOperation({
     summary: 'Créer un nouvel utilisateur',
-    description: "Création d'un compte utilisateur avec validation des données",
+    description: "Création d'un compte utilisateur",
   })
   @ApiBody({ type: CreateUserDto })
   @ApiResponse({

@@ -18,7 +18,7 @@ export class AppController {
       name: 'Zukii API',
       version: '1.0.0',
       description:
-        "API REST pour application collaborative d'analyse de données CSV avec IA",
+        "API Zukii : application collaborative d'analyse de données CSV",
       endpoints: {
         auth: '/auth',
         users: '/users',
@@ -30,7 +30,7 @@ export class AppController {
       name: 'Zukii API',
       version: '1.0.0',
       description:
-        "API REST pour application collaborative d'analyse de données CSV avec IA",
+        "API Zukii : application collaborative d'analyse de données CSV",
       endpoints: {
         auth: '/auth',
         users: '/users',

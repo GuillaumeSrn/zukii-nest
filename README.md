@@ -1,6 +1,6 @@
 # Zukii NestJS API
 
-API REST pour application collaborative d'analyse de données CSV avec IA.
+API REST Zukii : Application collaborative d'analyse de données CSV.
 
 ## 🚀 Démarrage rapide
 
@@ -192,7 +192,7 @@ npm run format                    # Formatage automatique
 - **Content Types** : TextContent, FileContent, AnalysisContent spécialisés
 - **Invitations** : Système d'invitation avec tokens temporaires
 - **🆕 Analysis Templates** : Templates préconfigurés pour IA (analyse prévisionnelle, extraction données, etc.)
-- **🆕 Microservice IA** : Intégration Lambda AWS Python + OpenAI via API REST
+- **🆕 Microservice IA** : Intégration Lambda AWS Python -> Microservice de traitement IA et processing des données
 
 ## 🏗️ Architecture
 

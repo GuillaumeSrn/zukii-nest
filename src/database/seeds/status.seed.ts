@@ -6,7 +6,6 @@ export class StatusSeeder {
   static async run(dataSource: DataSource): Promise<void> {
     const repository = dataSource.getRepository(Status);
 
-    // Génération automatique des statuts à partir des enums
     const statusesToSeed = ALL_STATUSES.map((statusId) => {
       const [category, name] = statusId.split('-');
       return {
@@ -20,7 +19,6 @@ export class StatusSeeder {
     console.log(`🌱 Seeding ${statusesToSeed.length} statuts...`);
 
     try {
-      // Utilisation d'upsert pour éviter les erreurs de duplication
       for (const statusData of statusesToSeed) {
         await repository.save(statusData);
         console.log(`✅ Status: ${statusData.id}`);

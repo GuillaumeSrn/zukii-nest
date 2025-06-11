@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { User } from './modules/users/entities/user.entity';
@@ -10,11 +10,25 @@ import { UsersModule } from './modules/users/users.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 import { APP_GUARD } from '@nestjs/core';
+import { MailerModule } from '@nestjs-modules/mailer';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({
-      isGlobal: true,
+    ConfigModule.forRoot({ isGlobal: true }),
+    MailerModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: (configService: ConfigService) => ({
+        transport: {
+          host: configService.get<string>('SMTP_HOST')!,
+          port: +configService.get<string>('SMTP_PORT')!,
+          auth: {
+            user: configService.get<string>('SMTP_USER')!,
+            pass: configService.get<string>('SMTP_PASS')!,
+          },
+        },
+        defaults: { from: configService.get<string>('SMTP_FROM')! },
+      }),
+      inject: [ConfigService],
     }),
     TypeOrmModule.forRoot({
       type: 'postgres',

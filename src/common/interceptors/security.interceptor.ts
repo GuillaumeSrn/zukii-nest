@@ -21,6 +21,7 @@ export class SecurityInterceptor implements NestInterceptor {
   private readonly logger = new Logger(SecurityInterceptor.name);
 
   // Limites différenciées selon le type de contenu
+  // TODO A VERIFIER CAR DEFAULT
   private readonly MAX_JSON_SIZE = 1024 * 1024; // 1MB pour JSON
   private readonly MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB pour uploads
 
