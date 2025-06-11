@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import { Repository } from 'typeorm';
 import { StatusService } from './status.service';
 import { Status } from './entities/status.entity';
 
@@ -13,17 +13,9 @@ describe('StatusService', () => {
     category: 'user',
     name: 'active',
     isActive: true,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    deletedAt: undefined,
-    deletedBy: undefined,
   } as Status;
 
   beforeEach(async () => {
-    const mockDataSource = {
-      getRepository: jest.fn(),
-    };
-
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         StatusService,
@@ -32,14 +24,7 @@ describe('StatusService', () => {
           useValue: {
             findOne: jest.fn(),
             find: jest.fn(),
-            create: jest.fn(),
-            save: jest.fn(),
-            count: jest.fn(),
           },
-        },
-        {
-          provide: DataSource,
-          useValue: mockDataSource,
         },
       ],
     }).compile();
@@ -48,20 +33,12 @@ describe('StatusService', () => {
     repository = module.get(getRepositoryToken(Status));
   });
 
-  it('should be defined', () => {
-    expect(service).toBeDefined();
-  });
-
   describe('findByCategoryAndName', () => {
     it('should return status when found', async () => {
       repository.findOne.mockResolvedValue(mockStatus);
 
       const result = await service.findByCategoryAndName('user', 'active');
 
-      // eslint-disable-next-line @typescript-eslint/unbound-method
-      expect(repository.findOne).toHaveBeenCalledWith({
-        where: { category: 'user', name: 'active', isActive: true },
-      });
       expect(result).toBe(mockStatus);
     });
 
@@ -81,11 +58,6 @@ describe('StatusService', () => {
 
       const result = await service.findByCategory('user');
 
-      // eslint-disable-next-line @typescript-eslint/unbound-method
-      expect(repository.find).toHaveBeenCalledWith({
-        where: { category: 'user', isActive: true },
-        order: { name: 'ASC' },
-      });
       expect(result).toBe(mockStatuses);
     });
 

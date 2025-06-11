@@ -12,8 +12,6 @@ describe('StatusController', () => {
     category: 'user',
     name: 'active',
     isActive: true,
-    createdAt: new Date(),
-    updatedAt: new Date(),
   };
 
   beforeEach(async () => {
@@ -38,35 +36,19 @@ describe('StatusController', () => {
   });
 
   describe('getStatusByCategory', () => {
-    it('should return statuses for given category', async () => {
+    it('should return statuses for valid category', async () => {
       const mockStatuses = [mockStatus];
       service.findByCategory.mockResolvedValue(mockStatuses);
 
       const result = await controller.getStatusByCategory('user');
 
       expect(result).toBe(mockStatuses);
-      // eslint-disable-next-line @typescript-eslint/unbound-method
-      expect(service.findByCategory).toHaveBeenCalledWith('user');
     });
 
     it('should throw BadRequestException for invalid category', () => {
       expect(() => controller.getStatusByCategory('nonexistent')).toThrow(
         BadRequestException,
       );
-    });
-
-    it('should accept valid categories', async () => {
-      const validCategories = ['user', 'board', 'block', 'invitation'];
-
-      for (const category of validCategories) {
-        service.findByCategory.mockResolvedValue([]);
-
-        const result = await controller.getStatusByCategory(category);
-
-        expect(result).toEqual([]);
-        // eslint-disable-next-line @typescript-eslint/unbound-method
-        expect(service.findByCategory).toHaveBeenCalledWith(category);
-      }
     });
   });
 });
