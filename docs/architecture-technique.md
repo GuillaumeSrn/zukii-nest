@@ -205,7 +205,6 @@ Configuration via fichier `.env` basé sur `.env.example` :
 ## Tests et validation
 
 ### Stratégie
-- Tests e2e avec base de données réelle
 - Tests unitaires avec mocks pour services
 - Validation de la compilation TypeScript
 - Linting et formatage automatiques

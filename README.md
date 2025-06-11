@@ -173,7 +173,6 @@ docker compose --profile tools up -d adminer # Accès à la base de données, 80
 ```bash
 npm run build                     # Compilation
 npm run start:dev                 # Développement local (sans Docker)
-npm run test:e2e                  # Tests d'intégration
 npm run lint                      # Vérification code
 npm run format                    # Formatage automatique
 ```
@@ -246,7 +245,7 @@ src/
 
 1. Créer une branche : `git checkout -b feature/ma-fonctionnalite`
 2. Développer avec tests unitaires obligatoires
-3. Valider : `npm run lint && npm run format && npm run test:e2e`
+3. Valider : `npm run lint && npm run format && npm run test`
 4. Commit : `git commit -m "feat: description"`
 5. Push et créer une PR
 
