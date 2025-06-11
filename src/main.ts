@@ -8,9 +8,6 @@ import { SecurityInterceptor } from './common/interceptors/security.interceptor'
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // 🛡️ Protection sécuritaire globale
-
-  // Headers de sécurité avec Helmet
   app.use(
     helmet({
       contentSecurityPolicy: {
@@ -54,7 +51,7 @@ async function bootstrap() {
   // Interceptor de sécurité global
   app.useGlobalInterceptors(new SecurityInterceptor());
 
-  // Configuration Swagger
+  // Conf Swagger
   const config = new DocumentBuilder()
     .setTitle('Zukii API')
     .setDescription(

@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException } from '@nestjs/common';
 import { StatusController } from './status.controller';
 import { StatusService } from './status.service';
+import { Status } from './entities/status.entity';
 
 describe('StatusController', () => {
   let controller: StatusController;
@@ -12,7 +13,15 @@ describe('StatusController', () => {
     category: 'user',
     name: 'active',
     isActive: true,
-  };
+  } as Status;
+
+  const mockStatuses = [
+    {
+      ...mockStatus,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    },
+  ];
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -37,7 +46,6 @@ describe('StatusController', () => {
 
   describe('getStatusByCategory', () => {
     it('should return statuses for valid category', async () => {
-      const mockStatuses = [mockStatus];
       service.findByCategory.mockResolvedValue(mockStatuses);
 
       const result = await controller.getStatusByCategory('user');

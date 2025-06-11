@@ -6,11 +6,13 @@ import { UsersService } from './users.service';
 import { User } from './entities/user.entity';
 import { Status } from '../status/entities/status.entity';
 import { StatusService } from '../status/status.service';
+import { EmailService } from '../email/email.service';
 
 describe('UsersService', () => {
   let service: UsersService;
   let userRepository: jest.Mocked<Repository<User>>;
   let statusService: jest.Mocked<StatusService>;
+  let emailService: jest.Mocked<EmailService>;
 
   const mockStatus = {
     id: 'user-active',
@@ -26,6 +28,8 @@ describe('UsersService', () => {
     passwordHash: 'hashedPassword',
     statusId: 'status-id',
     status: mockStatus,
+    createdAt: new Date(),
+    updatedAt: new Date(),
   } as User;
 
   beforeEach(async () => {
@@ -46,12 +50,19 @@ describe('UsersService', () => {
             findByCategoryAndName: jest.fn(),
           },
         },
+        {
+          provide: EmailService,
+          useValue: {
+            sendWelcome: jest.fn().mockResolvedValue(undefined),
+          },
+        },
       ],
     }).compile();
 
     service = module.get<UsersService>(UsersService);
     userRepository = module.get(getRepositoryToken(User));
     statusService = module.get(StatusService);
+    emailService = module.get(EmailService);
   });
 
   describe('create', () => {
@@ -66,6 +77,7 @@ describe('UsersService', () => {
       statusService.findByCategoryAndName.mockResolvedValue(mockStatus);
       userRepository.create.mockReturnValue(mockUser);
       userRepository.save.mockResolvedValue(mockUser);
+      emailService.sendWelcome.mockResolvedValue(undefined);
       jest.spyOn(service, 'findById').mockResolvedValue({
         id: mockUser.id,
         email: mockUser.email,
