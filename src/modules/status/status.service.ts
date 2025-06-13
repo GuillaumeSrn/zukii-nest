@@ -2,6 +2,7 @@ import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { Status } from './entities/status.entity';
+import { StatusResponseDto } from './dto/status-response.dto';
 import { StatusSeeder } from '../../database/seeds/status.seed';
 
 @Injectable()
@@ -43,16 +44,27 @@ export class StatusService implements OnModuleInit {
   async findByCategoryAndName(
     category: string,
     name: string,
-  ): Promise<Status | null> {
-    return this.statusRepository.findOne({
+  ): Promise<StatusResponseDto | null> {
+    const status = await this.statusRepository.findOne({
       where: { category, name, isActive: true },
     });
+    return status ? this.toStatusResponseDto(status) : null;
   }
 
-  async findByCategory(category: string): Promise<Status[]> {
-    return this.statusRepository.find({
+  async findByCategory(category: string): Promise<StatusResponseDto[]> {
+    const statuses = await this.statusRepository.find({
       where: { category, isActive: true },
       order: { name: 'ASC' },
     });
+    return statuses.map((status) => this.toStatusResponseDto(status));
+  }
+
+  private toStatusResponseDto(status: Status): StatusResponseDto {
+    return {
+      id: status.id,
+      category: status.category,
+      name: status.name,
+      isActive: status.isActive,
+    };
   }
 }

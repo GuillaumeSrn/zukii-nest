@@ -118,7 +118,6 @@ export class UsersService {
       id: user.id,
       email: user.email,
       displayName: user.displayName,
-      createdAt: user.createdAt,
       updatedAt: user.updatedAt,
     };
   }

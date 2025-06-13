@@ -14,12 +14,6 @@ export class BoardStatusDto {
     example: 'active',
   })
   name: string;
-
-  @ApiProperty({
-    description: 'Catégorie du status',
-    example: 'board',
-  })
-  category: string;
 }
 
 export class BoardResponseDto {
@@ -68,15 +62,6 @@ export class BoardResponseDto {
   @Expose()
   @Type(() => BoardStatusDto)
   status: BoardStatusDto;
-
-  @ApiProperty({
-    description: 'Date de création du board',
-    example: '2024-01-15T10:30:00.000Z',
-    type: 'string',
-    format: 'date-time',
-  })
-  @Expose()
-  createdAt: Date;
 
   @ApiProperty({
     description: 'Date de dernière modification',

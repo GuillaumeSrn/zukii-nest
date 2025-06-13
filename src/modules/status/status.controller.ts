@@ -1,4 +1,11 @@
-import { Controller, Get, Param, BadRequestException } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  BadRequestException,
+  UseInterceptors,
+  ClassSerializerInterceptor,
+} from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -7,9 +14,11 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { StatusService } from './status.service';
+import { StatusResponseDto } from './dto/status-response.dto';
 
 @ApiTags('Statuts')
 @Controller('statuses')
+@UseInterceptors(ClassSerializerInterceptor)
 export class StatusController {
   constructor(private readonly statusService: StatusService) {}
 
@@ -28,14 +37,7 @@ export class StatusController {
   @ApiResponse({
     status: 200,
     description: 'Liste des statuts pour la catégorie',
-    example: [
-      {
-        id: 'user-active',
-        category: 'user',
-        name: 'active',
-        isActive: true,
-      },
-    ],
+    type: [StatusResponseDto],
   })
   @ApiResponse({
     status: 400,
@@ -45,7 +47,9 @@ export class StatusController {
     status: 401,
     description: 'Token JWT requis',
   })
-  getStatusByCategory(@Param('category') category: string) {
+  async getStatusByCategory(
+    @Param('category') category: string,
+  ): Promise<StatusResponseDto[]> {
     // Validation supplémentaire au niveau controller
     const validCategories = ['user', 'board', 'block', 'invitation'];
     if (!validCategories.includes(category)) {
