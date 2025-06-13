@@ -26,15 +26,6 @@ export class UserResponseDto {
   displayName: string;
 
   @ApiProperty({
-    description: 'Date de création du compte',
-    example: '2024-01-15T10:30:00.000Z',
-    type: 'string',
-    format: 'date-time',
-  })
-  @Expose()
-  createdAt: Date;
-
-  @ApiProperty({
     description: 'Date de dernière modification',
     example: '2024-01-15T12:45:00.000Z',
     type: 'string',
