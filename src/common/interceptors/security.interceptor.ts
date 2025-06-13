@@ -8,44 +8,41 @@ import {
 } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { Request } from 'express';
+import { filterXSS, IFilterXSSOptions } from 'xss';
 
 /**
- * Interceptor de sécurité global qui applique :
- * - Protection contre les injections XSS
- * - Limitation de taille intelligente (JSON vs Files)
- * - Validation des headers dangereux
+ * Intercepteur de sécurité moderne utilisant le package xss
+ * - Sanitise automatiquement tous les inputs contre les attaques XSS réelles
+ * - Validation de taille de payload intelligente
  * - Logging des tentatives d'attaque
+ *
+ * Remplace l'ancien intercepteur qui était inefficace contre les vraies attaques XSS
  */
 @Injectable()
 export class SecurityInterceptor implements NestInterceptor {
   private readonly logger = new Logger(SecurityInterceptor.name);
 
-  // Limites différenciées selon le type de contenu
-  // TODO A VERIFIER CAR DEFAULT
+  // Limites de taille différenciées
   private readonly MAX_JSON_SIZE = 1024 * 1024; // 1MB pour JSON
   private readonly MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB pour uploads
 
-  private readonly DANGEROUS_PATTERNS = [
-    /<script/gi,
-    /<iframe/gi,
-    /javascript:/gi,
-    /vbscript:/gi,
-    /onload=/gi,
-    /onerror=/gi,
-    /onclick=/gi,
-  ];
+  // Configuration XSS stricte pour API REST
+  private readonly xssOptions: IFilterXSSOptions = {
+    whiteList: {}, // Aucune balise HTML autorisée dans une API REST
+    stripIgnoreTag: true, // Supprime toutes les balises
+    stripIgnoreTagBody: ['script', 'style'], // Supprime contenu des balises dangereuses
+    allowCommentTag: false, // Aucun commentaire HTML
+    css: false, // Aucun CSS inline
+  };
 
-  intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
+  intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
     const request = context.switchToHttp().getRequest<Request>();
 
-    // Vérifie la taille du payload selon le type
+    // Vérification de la taille du payload
     this.validatePayloadSize(request);
 
-    // Vérifie les headers suspects
-    this.validateHeaders(request);
-
-    // Scan rapide du body pour patterns dangereux (uniquement JSON)
-    this.scanForDangerousPatterns(request);
+    // Sanitisation XSS moderne de tous les inputs
+    this.sanitizeUserInputs(request);
 
     return next.handle();
   }
@@ -74,42 +71,63 @@ export class SecurityInterceptor implements NestInterceptor {
     }
   }
 
-  private validateHeaders(request: Request): void {
-    const userAgent = request.headers['user-agent'];
-    const referer = request.headers.referer;
-
-    // Détecte les User-Agents suspects
-    if (userAgent && /sqlmap|nmap|nikto|dirb|gobuster/i.test(userAgent)) {
-      this.logger.warn(`User-Agent suspect détecté: ${userAgent}`);
-      throw new BadRequestException('Requête suspecte détectée');
+  private sanitizeUserInputs(request: Request): void {
+    // Sanitise le body JSON
+    if (request.body) {
+      const sanitizedBody = this.sanitizeValue(request.body);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (request as any).body = sanitizedBody;
     }
 
-    // Vérifie les referers dangereux
-    if (referer && /javascript:|vbscript:|data:/i.test(referer)) {
-      this.logger.warn(`Referer dangereux détecté: ${referer}`);
-      throw new BadRequestException('Referer invalide');
+    // Sanitise les query parameters
+    if (request.query) {
+      const sanitizedQuery = this.sanitizeValue(request.query);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (request as any).query = sanitizedQuery;
+    }
+
+    // Sanitise les paramètres d'URL
+    if (request.params) {
+      const sanitizedParams = this.sanitizeValue(request.params);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (request as any).params = sanitizedParams;
     }
   }
 
-  private scanForDangerousPatterns(request: Request): void {
-    // Ne scanne que les payloads JSON pour éviter les faux positifs sur les fichiers
-    const contentType = request.headers['content-type'] || '';
-
-    if (!contentType.includes('application/json') || !request.body) {
-      return;
+  private sanitizeValue(value: unknown): unknown {
+    if (value === null || value === undefined) {
+      return value;
     }
 
-    const bodyString = JSON.stringify(request.body).toLowerCase();
+    if (typeof value === 'string') {
+      const sanitized = filterXSS(value, this.xssOptions);
 
-    for (const pattern of this.DANGEROUS_PATTERNS) {
-      if (pattern.test(bodyString)) {
+      // Log si une attaque XSS potentielle a été détectée
+      if (sanitized !== value) {
         this.logger.warn(
-          `Pattern malveillant détecté dans le JSON: ${pattern}`,
-        );
-        throw new BadRequestException(
-          'Contenu potentiellement malveillant détecté',
+          `Attaque XSS potentielle neutralisée: ${value.substring(0, 100)}...`,
         );
       }
+
+      return sanitized;
     }
+
+    if (Array.isArray(value)) {
+      return value.map((item) => this.sanitizeValue(item));
+    }
+
+    if (typeof value === 'object') {
+      const sanitized: Record<string, unknown> = {};
+
+      for (const [key, val] of Object.entries(value)) {
+        // Sanitise aussi les clés pour éviter les attaques par nom d'attribut
+        const sanitizedKey = filterXSS(key, this.xssOptions);
+        sanitized[sanitizedKey] = this.sanitizeValue(val);
+      }
+
+      return sanitized;
+    }
+
+    return value;
   }
 }
