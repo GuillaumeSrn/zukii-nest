@@ -24,7 +24,7 @@ describe('AuthController', () => {
           provide: AuthService,
           useValue: {
             login: jest.fn(),
-            refreshToken: jest.fn(),
+            refreshTokenFromUserId: jest.fn(),
           },
         },
       ],
@@ -40,8 +40,11 @@ describe('AuthController', () => {
 
   describe('login', () => {
     it('should return auth response when login successful', async () => {
-      const loginDto = { email: 'test@example.com', password: 'MotDePasse123!' };
-      
+      const loginDto = {
+        email: 'test@example.com',
+        password: 'MotDePasse123!',
+      };
+
       service.login.mockResolvedValue(mockAuthResponse);
 
       const result = await controller.login(loginDto);
@@ -52,12 +55,15 @@ describe('AuthController', () => {
 
   describe('refreshToken', () => {
     it('should return new tokens when refresh token is valid', async () => {
-      const refreshTokenDto = { refresh_token: 'valid-refresh-token' };
-      
-      service.refreshToken.mockResolvedValue(mockAuthResponse);
+      const mockRequest = { user: { id: 'test-user-id' } };
 
-      const result = await controller.refreshToken(refreshTokenDto);
+      service.refreshTokenFromUserId.mockResolvedValue(mockAuthResponse);
 
+      const result = await controller.refreshToken(mockRequest);
+
+      expect(service.refreshTokenFromUserId).toHaveBeenCalledWith(
+        'test-user-id',
+      );
       expect(result).toBe(mockAuthResponse);
     });
   });

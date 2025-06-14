@@ -82,7 +82,6 @@ describe('UsersService', () => {
         id: mockUser.id,
         email: mockUser.email,
         displayName: mockUser.displayName,
-        createdAt: new Date(),
         updatedAt: new Date(),
       });
 

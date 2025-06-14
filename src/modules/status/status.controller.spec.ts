@@ -50,13 +50,13 @@ describe('StatusController', () => {
 
       const result = await controller.getStatusByCategory('user');
 
-      expect(result).toBe(mockStatuses);
+      expect(result).toStrictEqual(mockStatuses);
     });
 
-    it('should throw BadRequestException for invalid category', () => {
-      expect(() => controller.getStatusByCategory('nonexistent')).toThrow(
-        BadRequestException,
-      );
+    it('should throw BadRequestException for invalid category', async () => {
+      await expect(
+        controller.getStatusByCategory('nonexistent'),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 });

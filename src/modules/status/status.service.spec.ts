@@ -43,7 +43,7 @@ describe('StatusService', () => {
 
       const result = await service.findByCategoryAndName('user', 'active');
 
-      expect(result).toBe(mockStatus);
+      expect(result).toStrictEqual(mockStatus);
     });
 
     it('should return null when status not found', async () => {
@@ -62,7 +62,7 @@ describe('StatusService', () => {
 
       const result = await service.findByCategory('user');
 
-      expect(result).toBe(mockStatuses);
+      expect(result).toStrictEqual(mockStatuses);
     });
 
     it('should return empty array when no statuses found', async () => {

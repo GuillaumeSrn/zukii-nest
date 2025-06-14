@@ -11,7 +11,6 @@ describe('UsersController', () => {
     id: 'mock-id',
     email: 'test@example.com',
     displayName: 'Test User',
-    createdAt: new Date(),
     updatedAt: new Date(),
   };
 
@@ -82,11 +81,18 @@ describe('UsersController', () => {
     it('should update user successfully', async () => {
       const userId = 'mock-id';
       const updateUserDto = { displayName: 'Updated Name' };
-      const updatedUserResponse = { ...mockUserResponse, displayName: 'Updated Name' };
-      
+      const updatedUserResponse = {
+        ...mockUserResponse,
+        displayName: 'Updated Name',
+      };
+
       service.update.mockResolvedValue(updatedUserResponse);
 
-      const result = await controller.update(userId, updateUserDto, mockAuthRequest);
+      const result = await controller.update(
+        userId,
+        updateUserDto,
+        mockAuthRequest,
+      );
 
       expect(result).toBe(updatedUserResponse);
     });
@@ -114,7 +120,6 @@ describe('UsersController', () => {
         id: mockUserResponse.id,
         email: mockUserResponse.email,
         displayName: mockUserResponse.displayName,
-        createdAt: mockUserResponse.createdAt,
         updatedAt: mockUserResponse.updatedAt,
       });
     });
