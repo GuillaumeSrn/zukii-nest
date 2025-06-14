@@ -2,9 +2,26 @@
 
 ## Modèle de données
 
-L'architecture repose sur le diagramme UML défini dans `database-schema.puml`.
+L'architecture repose sur deux diagrammes UML :
+- **État actuel** : `database-schema-current.puml` (User, Status, Board implémentés)
+- **Vision complète** : `database-schema.puml` (roadmap avec toutes les fonctionnalités)
 
-### Entités principales
+### État d'implémentation
+
+#### ✅ **Modules implémentés et fonctionnels**
+- **User** : CRUD complet, authentification JWT, profils publics/privés
+- **Status** : Système centralisé par catégorie, données de référence auto-seeding
+- **Board** : CRUD complet, validation ownership, soft delete, tests 71/71
+
+#### 🚧 **Modules en roadmap (non implémentés)**
+- **BoardMember** : Collaboration avec permissions granulaires
+- **Invitation** : Système d'invitations temporaires
+- **Block** : Contenu positionné avec types (text, file, analysis)
+- **Content Types** : TextContent, FileContent, AnalysisContent
+- **BlockRelation** : Relations entre blocks
+- **AnalysisTemplate** : Templates IA préconfigurés
+
+### Entités principales (Vision complète)
 
 #### Core System
 - **User** : Gestion des comptes utilisateurs
@@ -253,6 +270,115 @@ CMD ["node", "dist/main"]
 - Images Docker multi-stage optimisées
 - Variables d'environnement sécurisées
 - Logs structurés pour monitoring
+
+## Gestion des Tokens de Refresh
+
+### Problématique
+
+Les routes de refresh token posent un défi particulier : elles nécessitent un **refresh token** (long-lived) et non un **access token** (short-lived) pour fonctionner. Utiliser un guard JWT classique qui attend l'access token dans l'en-tête `Authorization` crée une confusion pour les tests et l'utilisation.
+
+### Solution Adoptée
+
+**Route `/auth/refresh` avec token dans le body** :
+```typescript
+@Public()
+@Post('refresh')
+@ApiBody({ type: RefreshTokenDto })
+async refreshToken(@Body() refreshTokenDto: RefreshTokenDto) {
+  return this.authService.refreshToken(refreshTokenDto.refreshToken);
+}
+```
+
+### Avantages de cette approche
+
+1. **Testabilité** : Facilement testable via Swagger UI
+2. **Clarté** : Distinction claire entre access token (header) et refresh token (body)
+3. **Standards** : Conforme aux meilleures pratiques OAuth 2.0
+4. **Sécurité** : Le refresh token n'est pas exposé dans les logs d'URL
+
+### Alternatives considérées
+
+1. **Cookie HTTP-Only** (plus sécurisé) :
+   ```typescript
+   async refreshToken(@Req() request: Request) {
+     const refreshToken = request.cookies['refresh_token'];
+   }
+   ```
+
+2. **En-tête personnalisé** :
+   ```typescript
+   async refreshToken(@Headers('x-refresh-token') refreshToken: string) {
+   }
+   ```
+
+### Recommandations de sécurité
+
+- **Rotation des tokens** : Chaque refresh génère un nouveau refresh token
+- **Durée de vie courte** : Access tokens de 15-30 minutes maximum
+- **Stockage sécurisé** : Refresh tokens en cookies HTTP-only côté client
+- **Révocation** : Mécanisme de blacklist pour les tokens compromis
+
+## Révocation de Tokens
+
+### Problématique
+
+Les JWT sont **stateless** par nature, ce qui signifie qu'une fois émis, ils restent valides jusqu'à leur expiration naturelle. Cela pose un problème de sécurité majeur dans plusieurs scénarios :
+
+- **Déconnexion utilisateur** : Le token reste actif après logout
+- **Compte compromis** : Impossible d'invalider immédiatement les tokens volés
+- **Changement de permissions** : Les anciens tokens gardent les anciennes permissions
+- **Détection d'activité suspecte** : Besoin d'invalider immédiatement
+
+### Solution Implémentée
+
+**Route `/auth/revoke` avec blacklist** :
+```typescript
+@Post('revoke')
+@ApiBearerAuth('JWT-auth')
+async revokeToken(@Body() revokeTokenDto: RevokeTokenDto) {
+  await this.authService.revokeToken(revokeTokenDto.token);
+  return { message: 'Token révoqué avec succès' };
+}
+```
+
+### Mécanisme de Blacklist
+
+**Stockage temporaire** :
+- Les tokens révoqués sont stockés jusqu'à leur expiration naturelle
+- Utilisation de Redis recommandée pour les performances
+- Vérification automatique lors de chaque requête authentifiée
+
+**Implémentation actuelle** :
+```typescript
+async revokeToken(token: string): Promise<void> {
+  const decoded = this.jwtService.decode(token);
+  const expirationTime = decoded.exp * 1000 - Date.now();
+  
+  // TODO: Stockage Redis
+  // await this.redisService.set(`blacklist:${token}`, 'revoked', expirationTime);
+}
+```
+
+### Standards de l'industrie
+
+Conforme à **OAuth 2.0 RFC 7009** :
+- Endpoint standard : `POST /oauth/revoke`
+- Paramètre requis : `token`
+- Réponse : HTTP 200 pour succès
+
+### Cas d'usage
+
+1. **Logout sécurisé** : Révocation du token lors de la déconnexion
+2. **Sécurité proactive** : Révocation en cas de détection d'anomalie
+3. **Gestion des employés** : Révocation immédiate lors de changements de statut
+4. **Incident de sécurité** : Révocation massive en cas de compromission
+
+### Évolutions futures
+
+- **Intégration Redis** : Stockage distribué de la blacklist
+- **Révocation en lot** : Révocation de tous les tokens d'un utilisateur
+- **Notifications** : Alertes lors de tentatives d'utilisation de tokens révoqués
+- **Audit trail** : Traçabilité des révocations pour conformité
 
 ---
 

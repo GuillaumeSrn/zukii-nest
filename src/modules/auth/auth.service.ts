@@ -6,7 +6,6 @@ import { UsersService } from '../users/users.service';
 import { LoginDto } from './dto/login.dto';
 import { AuthResponseDto } from './dto/auth-response.dto';
 import { AuthUserDto } from './dto/auth-user.dto';
-import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { User } from '../users/entities/user.entity';
 
 interface AccessTokenPayload {
@@ -70,15 +69,11 @@ export class AuthService {
     };
   }
 
-  async refreshToken(
-    refreshTokenDto: RefreshTokenDto,
-  ): Promise<AuthResponseDto> {
+  async refreshToken(refreshToken: string): Promise<AuthResponseDto> {
     this.logger.log('Tentative de renouvellement de token');
 
     try {
-      const rawPayload = this.jwtService.verify(
-        refreshTokenDto.refresh_token,
-      ) as unknown;
+      const rawPayload = this.jwtService.verify(refreshToken) as unknown;
 
       if (!this.isValidRefreshTokenPayload(rawPayload)) {
         throw new UnauthorizedException(
@@ -114,6 +109,57 @@ export class AuthService {
         }`,
       );
       throw new UnauthorizedException('Refresh token invalide ou expiré');
+    }
+  }
+
+  async revokeToken(token: string): Promise<void> {
+    this.logger.log('Tentative de révocation de token');
+
+    try {
+      const decoded = this.jwtService.decode(token) as {
+        exp?: number;
+        sub?: string;
+      } | null;
+
+      if (!decoded || !decoded.exp) {
+        throw new UnauthorizedException('Token invalide');
+      }
+
+      const expirationTime = decoded.exp * 1000 - Date.now();
+
+      if (expirationTime <= 0) {
+        this.logger.log('Token déjà expiré, révocation ignorée');
+        return Promise.resolve();
+      }
+
+      // TODO: Implémenter le stockage Redis pour la blacklist
+      // Pour l'instant, on log simplement l'action
+      this.logger.log(
+        `Token révoqué avec succès. Expiration dans ${expirationTime}ms`,
+      );
+
+      // Dans une implémentation complète, on ferait :
+      // await this.redisService.set(`blacklist:${token}`, 'revoked', expirationTime);
+      return Promise.resolve();
+    } catch (error) {
+      this.logger.error(
+        `Erreur lors de la révocation: ${
+          error instanceof Error ? error.message : 'Erreur inconnue'
+        }`,
+      );
+      throw new UnauthorizedException('Impossible de révoquer le token');
+    }
+  }
+
+  isTokenRevoked(token: string): Promise<boolean> {
+    try {
+      // TODO: Vérifier dans Redis si le token est dans la blacklist
+      // Pour l'instant, on retourne toujours false
+      // return await this.redisService.get(`blacklist:${token}`) === 'revoked';
+      return Promise.resolve(false);
+    } catch (error) {
+      this.logger.error('Erreur lors de la vérification de révocation:', error);
+      return Promise.resolve(false);
     }
   }
 

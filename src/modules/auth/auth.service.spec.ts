@@ -119,7 +119,7 @@ describe('AuthService', () => {
   });
 
   describe('refreshToken', () => {
-    it('should return new tokens when refresh token is valid', async () => {
+    it('devrait renouveler les tokens avec un refresh token valide', async () => {
       const refreshPayload = { sub: 'test-user-id', type: 'refresh' };
       jwtService.verify.mockReturnValue(refreshPayload);
       usersService.findByIdEntity.mockResolvedValue(mockUser);
@@ -128,9 +128,7 @@ describe('AuthService', () => {
         .mockReturnValueOnce('new-refresh-token');
       configService.get.mockReturnValueOnce('15m').mockReturnValueOnce('7d');
 
-      const result = await service.refreshToken({
-        refresh_token: 'valid-refresh-token',
-      });
+      const result = await service.refreshToken('valid-refresh-token');
 
       expect(result).toEqual({
         access_token: 'new-access-token',
@@ -143,33 +141,33 @@ describe('AuthService', () => {
       });
     });
 
-    it('should throw UnauthorizedException when access token is provided instead of refresh token', async () => {
+    it('devrait rejeter un access token utilisé comme refresh token', async () => {
       const accessPayload = { sub: 'test-user-id', type: 'access' };
       jwtService.verify.mockReturnValue(accessPayload);
 
-      await expect(
-        service.refreshToken({ refresh_token: 'access-token' }),
-      ).rejects.toThrow(UnauthorizedException);
+      await expect(service.refreshToken('access-token')).rejects.toThrow(
+        'Refresh token invalide ou expiré',
+      );
     });
 
-    it('should throw UnauthorizedException when user not found', async () => {
+    it('devrait rejeter un refresh token pour un utilisateur inexistant', async () => {
       const refreshPayload = { sub: 'test-user-id', type: 'refresh' };
       jwtService.verify.mockReturnValue(refreshPayload);
       usersService.findByIdEntity.mockResolvedValue(null);
 
-      await expect(
-        service.refreshToken({ refresh_token: 'valid-refresh-token' }),
-      ).rejects.toThrow(UnauthorizedException);
+      await expect(service.refreshToken('valid-refresh-token')).rejects.toThrow(
+        'Refresh token invalide ou expiré',
+      );
     });
 
-    it('should throw UnauthorizedException when token verification fails', async () => {
+    it('devrait rejeter un refresh token invalide', async () => {
       jwtService.verify.mockImplementation(() => {
         throw new Error('Token expired');
       });
 
-      await expect(
-        service.refreshToken({ refresh_token: 'invalid-token' }),
-      ).rejects.toThrow(UnauthorizedException);
+      await expect(service.refreshToken('invalid-token')).rejects.toThrow(
+        'Refresh token invalide ou expiré',
+      );
     });
   });
 

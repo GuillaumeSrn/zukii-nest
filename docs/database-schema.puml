@@ -4,7 +4,7 @@
 !define FK(x) <i>x</i>
 !define IDX(x) <color:blue>x</color>
 
-title Modèle de base de données - Zukii
+title Modèle de base de données - Zukii (Vision Complète - Roadmap)
 
 ' === CORE ENTITIES ===
 TABLE(User, "User") {

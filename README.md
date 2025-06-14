@@ -183,9 +183,10 @@ npm run format                    # Formatage automatique
 - **Users** : CRUD avec authentification bcrypt et gestion des statuts
 - **Status** : États centralisés par catégorie
 - **Auth** : JWT, Guards, protection des routes sensibles
+- **Boards** : CRUD complet, validation ownership, soft delete (71/71 tests)
 
 ### 📋 Roadmap
-- **Boards** : Espaces collaboratifs avec membres et permissions granulaires
+- **BoardMember** : Collaboration avec permissions granulaires (view, edit, admin)
 - **Blocks** : Contenu interactif (text, file, analysis) avec positionnement
 - **Block Relations** : Liens entre blocks (generated_from, references, etc.)
 - **Content Types** : TextContent, FileContent, AnalysisContent spécialisés
