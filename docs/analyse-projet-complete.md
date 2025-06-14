@@ -80,7 +80,7 @@ graph TD
 src/modules/[entity]/
 ├── entities/[entity].entity.ts    # Modèle de données TypeORM
 ├── dto/                          # Validation et sérialisation
-│   ├── create-[entity].dto.ts    # Données d'entrée
+│   ├── create-[entity].dto.ts    # Données entrantes
 │   ├── update-[entity].dto.ts    # Mise à jour partielle
 │   └── [entity]-response.dto.ts  # Données de sortie
 ├── [entity].controller.ts        # Endpoints REST + Swagger

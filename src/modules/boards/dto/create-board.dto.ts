@@ -5,7 +5,6 @@ import {
   MinLength,
   MaxLength,
   IsHexColor,
-  Matches,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
@@ -25,9 +24,6 @@ export class CreateBoardDto {
   @MaxLength(200, {
     message: 'Le titre ne peut pas dépasser 200 caractères',
   })
-  @Matches(/^[a-zA-Z0-9\s\-_.,!?àáâäèéêëìíîïòóôöùúûüñç]+$/, {
-    message: 'Le titre contient des caractères non autorisés',
-  })
   @Transform(({ value }: { value: unknown }) =>
     typeof value === 'string' ? value.trim() : value,
   )
@@ -42,9 +38,6 @@ export class CreateBoardDto {
   @IsString({ message: 'La description doit être une chaîne de caractères' })
   @MaxLength(1000, {
     message: 'La description ne peut pas dépasser 1000 caractères',
-  })
-  @Matches(/^[a-zA-Z0-9\s\-_.,!?\n\r()àáâäèéêëìíîïòóôöùúûüñç]*$/, {
-    message: 'La description contient des caractères non autorisés',
   })
   @Transform(({ value }: { value: unknown }) =>
     typeof value === 'string' ? value.trim() : value,

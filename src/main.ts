@@ -1,12 +1,14 @@
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ValidationPipe } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { SecurityInterceptor } from './common/interceptors/security.interceptor';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  const configService = app.get(ConfigService);
 
   app.use(
     helmet({
@@ -28,7 +30,8 @@ async function bootstrap() {
 
   // CORS sécurisé
   app.enableCors({
-    origin: process.env.FRONTEND_URL || false,
+    origin:
+      configService.get<string>('CORS_ORIGIN')?.split(',') || false,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization'],
@@ -38,12 +41,12 @@ async function bootstrap() {
   app.useGlobalPipes(
     new ValidationPipe({
       transform: true,
-      whitelist: true, // Supprime les propriétés non définies dans les DTOs
-      forbidNonWhitelisted: true, // Rejette les propriétés inconnues
-      disableErrorMessages: process.env.NODE_ENV === 'production',
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      disableErrorMessages: configService.get<string>('NODE_ENV') === 'production',
       validationError: {
-        target: false, // Cache l'objet original dans les erreurs
-        value: false, // Cache la valeur dans les erreurs
+        target: false,
+        value: false,
       },
     }),
   );
@@ -74,7 +77,8 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
 
-  await app.listen(process.env.PORT ?? 3000);
+  const port = configService.get<number>('PORT', 3000);
+  await app.listen(port);
 }
 
 void bootstrap();

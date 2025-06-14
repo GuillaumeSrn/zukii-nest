@@ -22,6 +22,8 @@ export class AppController {
       endpoints: {
         auth: '/auth',
         users: '/users',
+        boards: '/boards',
+        statuses: '/statuses',
       },
     },
   })
@@ -34,6 +36,7 @@ export class AppController {
       endpoints: {
         auth: '/auth',
         users: '/users',
+        boards: '/boards',
         statuses: '/statuses',
       },
     };

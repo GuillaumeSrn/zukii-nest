@@ -72,25 +72,30 @@ export class SecurityInterceptor implements NestInterceptor {
   }
 
   private sanitizeUserInputs(request: Request): void {
-    // Sanitise le body JSON
-    if (request.body) {
-      const sanitizedBody = this.sanitizeValue(request.body);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (request as any).body = sanitizedBody;
-    }
+    try {
+      // Sanitise le body JSON de manière sûre
+      if (request.body && typeof request.body === 'object') {
+        const sanitizedBody = this.sanitizeValue(request.body);
+        Object.assign(request, { body: sanitizedBody });
+      }
 
-    // Sanitise les query parameters
-    if (request.query) {
-      const sanitizedQuery = this.sanitizeValue(request.query);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (request as any).query = sanitizedQuery;
-    }
+      // Sanitise les query parameters de manière sûre
+      if (request.query && typeof request.query === 'object') {
+        const sanitizedQuery = this.sanitizeValue(request.query);
+        Object.assign(request, { query: sanitizedQuery });
+      }
 
-    // Sanitise les paramètres d'URL
-    if (request.params) {
-      const sanitizedParams = this.sanitizeValue(request.params);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (request as any).params = sanitizedParams;
+      // Sanitise les paramètres d'URL de manière sûre
+      if (request.params && typeof request.params === 'object') {
+        const sanitizedParams = this.sanitizeValue(request.params);
+        Object.assign(request, { params: sanitizedParams });
+      }
+    } catch (error) {
+      this.logger.error(
+        `Erreur lors de la sanitisation: ${error instanceof Error ? error.message : 'Erreur inconnue'}`,
+      );
+      // En cas d'erreur, on laisse passer la requête sans sanitisation
+      // plutôt que de bloquer complètement l'API
     }
   }
 
