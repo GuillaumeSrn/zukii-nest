@@ -30,8 +30,7 @@ async function bootstrap() {
 
   // CORS sécurisé
   app.enableCors({
-    origin:
-      configService.get<string>('CORS_ORIGIN')?.split(',') || false,
+    origin: configService.get<string>('CORS_ORIGIN')?.split(',') || false,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization'],
@@ -43,7 +42,8 @@ async function bootstrap() {
       transform: true,
       whitelist: true,
       forbidNonWhitelisted: true,
-      disableErrorMessages: configService.get<string>('NODE_ENV') === 'production',
+      disableErrorMessages:
+        configService.get<string>('NODE_ENV') === 'production',
       validationError: {
         target: false,
         value: false,

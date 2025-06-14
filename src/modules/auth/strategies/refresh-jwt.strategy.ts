@@ -16,9 +16,7 @@ export class RefreshJwtStrategy extends PassportStrategy(
   'refresh-jwt',
 ) {
   constructor(private configService: ConfigService) {
-    const secret =
-      configService.get<string>('JWT_SECRET') ||
-      'secret_key';
+    const secret = configService.get<string>('JWT_SECRET') || 'secret_key';
 
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),

@@ -93,8 +93,12 @@ export class AuthController {
     status: 401,
     description: 'Refresh token invalide ou expiré',
   })
-  async refreshToken(@Request() req: { user: JwtUser }): Promise<AuthResponseDto> {
-    this.logger.log(`Renouvellement de token pour l'utilisateur: ${req.user.id}`);
+  async refreshToken(
+    @Request() req: { user: JwtUser },
+  ): Promise<AuthResponseDto> {
+    this.logger.log(
+      `Renouvellement de token pour l'utilisateur: ${req.user.id}`,
+    );
     try {
       const result = await this.authService.refreshTokenFromUserId(req.user.id);
       this.logger.log(`Token renouvelé avec succès pour: ${req.user.id}`);
