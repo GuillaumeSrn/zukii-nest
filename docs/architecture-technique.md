@@ -155,17 +155,40 @@ GET /[entity]?filter=...&page=...&limit=...
 - `500` : Erreur serveur
 
 ### Gestion d'erreurs
+
+#### Exception Filter global
 ```typescript
-// Exceptions métier
+// main.ts - Centralisation de toutes les erreurs
+app.useGlobalFilters(new HttpExceptionFilter());
+```
+
+#### Pipes de validation
+```typescript
+// Validation UUID automatique
+@Param('id', UuidValidationPipe) id: string
+```
+
+#### Exceptions métier dans les services
+```typescript
+// Services uniquement - pas dans les contrôleurs
 throw new ConflictException('Resource already exists');
 throw new NotFoundException('Resource not found');
 throw new ForbiddenException('Insufficient permissions');
+```
+
+#### Contrôleurs simplifiés
+```typescript
+// Pas de try/catch - exceptions propagées automatiquement
+async create(@Body() dto: CreateDto): Promise<ResponseDto> {
+  return this.service.create(dto);
+}
 ```
 
 ### Logging
 ```typescript
 private readonly logger = new Logger(ServiceName.name);
 
+// Dans les services uniquement
 this.logger.log('Operation started');
 this.logger.error('Operation failed', error.stack);
 ```
