@@ -1,5 +1,6 @@
 import { Injectable, UnauthorizedException, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcryptjs';
 import { UsersService } from '../users/users.service';
 import { LoginDto } from './dto/login.dto';
@@ -8,8 +9,16 @@ import { AuthUserDto } from './dto/auth-user.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { User } from '../users/entities/user.entity';
 
-interface TokenPayload {
+interface AccessTokenPayload {
   sub: string;
+  type: 'access';
+  iat?: number;
+  exp?: number;
+}
+
+interface RefreshTokenPayload {
+  sub: string;
+  type: 'refresh';
   iat?: number;
   exp?: number;
 }
@@ -21,6 +30,7 @@ export class AuthService {
   constructor(
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
+    private readonly configService: ConfigService,
   ) {}
 
   async validateUser(email: string, password: string): Promise<User> {
@@ -43,7 +53,6 @@ export class AuthService {
     this.logger.log(`Tentative de connexion pour: ${loginDto.email}`);
 
     const user = await this.validateUser(loginDto.email, loginDto.password);
-
     const { access_token, refresh_token } = this.generateTokens(user);
 
     this.logger.log(`Connexion réussie pour: ${user.email}`);
@@ -67,11 +76,14 @@ export class AuthService {
     this.logger.log('Tentative de renouvellement de token');
 
     try {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      const rawPayload = this.jwtService.verify(refreshTokenDto.refresh_token);
+      const rawPayload = this.jwtService.verify(
+        refreshTokenDto.refresh_token,
+      ) as unknown;
 
-      if (!this.isValidTokenPayload(rawPayload)) {
-        throw new UnauthorizedException('Payload du token invalide');
+      if (!this.isValidRefreshTokenPayload(rawPayload)) {
+        throw new UnauthorizedException(
+          'Token invalide - seuls les refresh tokens sont acceptés',
+        );
       }
 
       const user = await this.usersService.findByIdEntity(rawPayload.sub);
@@ -105,29 +117,119 @@ export class AuthService {
     }
   }
 
+  async refreshTokenFromUserId(userId: string): Promise<AuthResponseDto> {
+    this.logger.log(
+      `Génération de nouveaux tokens pour l'utilisateur: ${userId}`,
+    );
+
+    try {
+      const user = await this.usersService.findByIdEntity(userId);
+
+      if (!user) {
+        throw new UnauthorizedException('Utilisateur introuvable');
+      }
+
+      const { access_token, refresh_token } = this.generateTokens(user);
+
+      this.logger.log(`Nouveaux tokens générés pour: ${user.email}`);
+
+      const authUser: AuthUserDto = {
+        id: user.id,
+        email: user.email,
+        displayName: user.displayName,
+      };
+
+      return {
+        access_token,
+        refresh_token,
+        user: authUser,
+      };
+    } catch (error) {
+      this.logger.error(
+        `Erreur lors de la génération des tokens: ${
+          error instanceof Error ? error.message : 'Erreur inconnue'
+        }`,
+      );
+      throw new UnauthorizedException(
+        'Impossible de générer de nouveaux tokens',
+      );
+    }
+  }
+
+  validateAccessToken(token: string): AccessTokenPayload {
+    try {
+      const rawPayload = this.jwtService.verify(token) as unknown;
+
+      if (!this.isValidAccessTokenPayload(rawPayload)) {
+        throw new UnauthorizedException('Token invalide - access token requis');
+      }
+
+      return rawPayload;
+    } catch {
+      throw new UnauthorizedException('Access token invalide ou expiré');
+    }
+  }
+
+  validateRefreshToken(token: string): RefreshTokenPayload {
+    try {
+      const rawPayload = this.jwtService.verify(token) as unknown;
+
+      if (!this.isValidRefreshTokenPayload(rawPayload)) {
+        throw new UnauthorizedException(
+          'Token invalide - refresh token requis',
+        );
+      }
+
+      return rawPayload;
+    } catch {
+      throw new UnauthorizedException('Refresh token invalide ou expiré');
+    }
+  }
+
   private generateTokens(user: User): {
     access_token: string;
     refresh_token: string;
   } {
-    const payload: TokenPayload = {
+    const accessPayload: AccessTokenPayload = {
       sub: user.id,
+      type: 'access',
     };
 
-    const access_token = this.jwtService.sign(payload, {
-      expiresIn: process.env.JWT_EXPIRATION,
+    const refreshPayload: RefreshTokenPayload = {
+      sub: user.id,
+      type: 'refresh',
+    };
+
+    const access_token = this.jwtService.sign(accessPayload, {
+      expiresIn: this.configService.get<string>('JWT_EXPIRATION', '3h'),
     });
-    const refresh_token = this.jwtService.sign(payload, {
-      expiresIn: process.env.JWT_REFRESH_EXPIRATION,
+
+    const refresh_token = this.jwtService.sign(refreshPayload, {
+      expiresIn: this.configService.get<string>('JWT_REFRESH_EXPIRATION', '1d'),
     });
 
     return { access_token, refresh_token };
   }
 
-  private isValidTokenPayload(payload: unknown): payload is TokenPayload {
+  private isValidAccessTokenPayload(
+    payload: unknown,
+  ): payload is AccessTokenPayload {
     return (
       typeof payload === 'object' &&
       payload !== null &&
-      typeof (payload as TokenPayload).sub === 'string'
+      typeof (payload as AccessTokenPayload).sub === 'string' &&
+      (payload as AccessTokenPayload).type === 'access'
+    );
+  }
+
+  private isValidRefreshTokenPayload(
+    payload: unknown,
+  ): payload is RefreshTokenPayload {
+    return (
+      typeof payload === 'object' &&
+      payload !== null &&
+      typeof (payload as RefreshTokenPayload).sub === 'string' &&
+      (payload as RefreshTokenPayload).type === 'refresh'
     );
   }
 }

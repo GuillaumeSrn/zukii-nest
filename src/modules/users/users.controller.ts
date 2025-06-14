@@ -12,7 +12,6 @@ import {
   ValidationPipe,
   UsePipes,
   Logger,
-  UseGuards,
   Request,
   ForbiddenException,
 } from '@nestjs/common';
@@ -29,8 +28,8 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { UserResponseDto } from './dto/user-response.dto';
 import { PublicUserDto } from './dto/public-user.dto';
 import { UsersService } from './users.service';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { Public } from '../../common/decorators/public.decorator';
+import { UuidValidationPipe } from '../../common/pipes/uuid-validation.pipe';
 
 interface JwtUser {
   id: string;
@@ -70,21 +69,12 @@ export class UsersController {
     this.logger.log(
       `Requête de création d'utilisateur: ${createUserDto.email}`,
     );
-
-    try {
-      const user = await this.usersService.create(createUserDto);
-      this.logger.log(`Utilisateur créé avec succès: ${user.email}`);
-      return user;
-    } catch (error) {
-      this.logger.error(
-        `Erreur lors de la création de l'utilisateur: ${error instanceof Error ? error.message : 'Erreur inconnue'}`,
-      );
-      throw error;
-    }
+    const user = await this.usersService.create(createUserDto);
+    this.logger.log(`Utilisateur créé avec succès: ${user.email}`);
+    return user;
   }
 
   @Get('me')
-  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
     summary: 'Récupérer son propre profil',
@@ -95,28 +85,23 @@ export class UsersController {
     description: "Profil complet de l'utilisateur connecté",
     type: UserResponseDto,
   })
+  @ApiResponse({
+    status: 401,
+    description: 'Token JWT requis',
+  })
   async getMe(@Request() req: { user: JwtUser }): Promise<UserResponseDto> {
     this.logger.log(`Requête de profil personnel pour: ${req.user.id}`);
-
-    try {
-      const user = await this.usersService.findById(req.user.id);
-      this.logger.log(`Profil personnel retourné pour: ${user.email}`);
-      return {
-        id: user.id,
-        email: user.email,
-        displayName: user.displayName,
-        updatedAt: user.updatedAt,
-      };
-    } catch (error) {
-      this.logger.error(
-        `Erreur lors de la récupération du profil personnel: ${error instanceof Error ? error.message : 'Erreur inconnue'}`,
-      );
-      throw error;
-    }
+    const user = await this.usersService.findById(req.user.id);
+    this.logger.log(`Profil personnel retourné pour: ${user.email}`);
+    return {
+      id: user.id,
+      email: user.email,
+      displayName: user.displayName,
+      updatedAt: user.updatedAt,
+    };
   }
 
   @Get(':id/public')
-  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
     summary: "Récupérer le profil public d'un utilisateur",
@@ -134,30 +119,27 @@ export class UsersController {
     type: PublicUserDto,
   })
   @ApiResponse({
+    status: 400,
+    description: 'UUID invalide',
+  })
+  @ApiResponse({
     status: 404,
     description: 'Utilisateur non trouvé',
   })
-  async getPublicProfile(@Param('id') id: string): Promise<PublicUserDto> {
+  async getPublicProfile(
+    @Param('id', UuidValidationPipe) id: string,
+  ): Promise<PublicUserDto> {
     this.logger.log(`Requête de profil public pour: ${id}`);
-
-    try {
-      const user = await this.usersService.findById(id);
-      this.logger.log(`Profil public retourné pour l'utilisateur: ${id}`);
-      return {
-        id: user.id,
-        displayName: user.displayName,
-        isActive: true,
-      };
-    } catch (error) {
-      this.logger.error(
-        `Erreur lors de la récupération du profil public: ${error instanceof Error ? error.message : 'Erreur inconnue'}`,
-      );
-      throw error;
-    }
+    const user = await this.usersService.findById(id);
+    this.logger.log(`Profil public retourné pour l'utilisateur: ${id}`);
+    return {
+      id: user.id,
+      displayName: user.displayName,
+      isActive: true,
+    };
   }
 
   @Put(':id')
-  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('JWT-auth')
   @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
   @ApiOperation({
@@ -177,6 +159,10 @@ export class UsersController {
     type: UserResponseDto,
   })
   @ApiResponse({
+    status: 400,
+    description: 'UUID invalide',
+  })
+  @ApiResponse({
     status: 403,
     description:
       'Non autorisé - vous ne pouvez modifier que votre propre profil',
@@ -186,7 +172,7 @@ export class UsersController {
     description: 'Utilisateur non trouvé',
   })
   async update(
-    @Param('id') id: string,
+    @Param('id', UuidValidationPipe) id: string,
     @Body() updateUserDto: UpdateUserDto,
     @Request() req: { user: JwtUser },
   ): Promise<UserResponseDto> {
@@ -198,15 +184,8 @@ export class UsersController {
       );
     }
 
-    try {
-      const user = await this.usersService.update(id, updateUserDto);
-      this.logger.log(`Utilisateur mis à jour avec succès: ${user.email}`);
-      return user;
-    } catch (error) {
-      this.logger.error(
-        `Erreur lors de la mise à jour de l'utilisateur: ${error instanceof Error ? error.message : 'Erreur inconnue'}`,
-      );
-      throw error;
-    }
+    const user = await this.usersService.update(id, updateUserDto);
+    this.logger.log(`Utilisateur mis à jour avec succès: ${user.email}`);
+    return user;
   }
 }

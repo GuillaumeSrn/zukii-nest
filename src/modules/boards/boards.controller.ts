@@ -6,7 +6,6 @@ import {
   Patch,
   Param,
   Delete,
-  UseGuards,
   Logger,
   HttpStatus,
   HttpCode,
@@ -28,7 +27,7 @@ import { BoardsService } from './boards.service';
 import { CreateBoardDto } from './dto/create-board.dto';
 import { UpdateBoardDto } from './dto/update-board.dto';
 import { BoardResponseDto } from './dto/board-response.dto';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { UuidValidationPipe } from '../../common/pipes/uuid-validation.pipe';
 
 interface JwtUser {
   id: string;
@@ -43,7 +42,6 @@ export class BoardsController {
   constructor(private readonly boardsService: BoardsService) {}
 
   @Post()
-  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('JWT-auth')
   @HttpCode(HttpStatus.CREATED)
   @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
@@ -79,23 +77,12 @@ export class BoardsController {
     @Request() req: { user: JwtUser },
   ): Promise<BoardResponseDto> {
     this.logger.log(`Création d'un board par l'utilisateur ${req.user.id}`);
-    try {
-      const board = await this.boardsService.create(
-        createBoardDto,
-        req.user.id,
-      );
-      this.logger.log(`Board ${board.id} créé avec succès`);
-      return board;
-    } catch (error) {
-      this.logger.error(
-        `Erreur lors de la création du board: ${error instanceof Error ? error.message : 'Erreur inconnue'}`,
-      );
-      throw error;
-    }
+    const board = await this.boardsService.create(createBoardDto, req.user.id);
+    this.logger.log(`Board ${board.id} créé avec succès`);
+    return board;
   }
 
   @Get()
-  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
     summary: 'Lister mes boards',
@@ -116,22 +103,14 @@ export class BoardsController {
     this.logger.log(
       `Récupération des boards pour l'utilisateur ${req.user.id}`,
     );
-    try {
-      const boards = await this.boardsService.findMyBoards(req.user.id);
-      this.logger.log(
-        `${boards.length} boards récupérés pour l'utilisateur ${req.user.id}`,
-      );
-      return boards;
-    } catch (error) {
-      this.logger.error(
-        `Erreur lors de la récupération des boards: ${error instanceof Error ? error.message : 'Erreur inconnue'}`,
-      );
-      throw error;
-    }
+    const boards = await this.boardsService.findMyBoards(req.user.id);
+    this.logger.log(
+      `${boards.length} boards récupérés pour l'utilisateur ${req.user.id}`,
+    );
+    return boards;
   }
 
   @Get(':id')
-  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
     summary: 'Récupérer un board par ID',
@@ -141,12 +120,16 @@ export class BoardsController {
   @ApiParam({
     name: 'id',
     description: 'Identifiant UUID du board',
-    example: 'board-abc123',
+    example: '123e4567-e89b-12d3-a456-426614174000',
   })
   @ApiResponse({
     status: 200,
     description: 'Board récupéré avec succès',
     type: BoardResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'UUID invalide',
   })
   @ApiResponse({
     status: 401,
@@ -161,26 +144,18 @@ export class BoardsController {
     description: 'Board non trouvé',
   })
   async findOne(
-    @Param('id') id: string,
+    @Param('id', UuidValidationPipe) id: string,
     @Request() req: { user: JwtUser },
   ): Promise<BoardResponseDto> {
     this.logger.log(
       `Récupération du board ${id} par l'utilisateur ${req.user.id}`,
     );
-    try {
-      const board = await this.boardsService.findById(id, req.user.id);
-      this.logger.log(`Board ${id} récupéré avec succès`);
-      return board;
-    } catch (error) {
-      this.logger.error(
-        `Erreur lors de la récupération du board ${id}: ${error instanceof Error ? error.message : 'Erreur inconnue'}`,
-      );
-      throw error;
-    }
+    const board = await this.boardsService.findById(id, req.user.id);
+    this.logger.log(`Board ${id} récupéré avec succès`);
+    return board;
   }
 
   @Patch(':id')
-  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('JWT-auth')
   @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
   @ApiOperation({
@@ -190,7 +165,7 @@ export class BoardsController {
   @ApiParam({
     name: 'id',
     description: 'Identifiant UUID du board',
-    example: 'board-abc123',
+    example: '123e4567-e89b-12d3-a456-426614174000',
   })
   @ApiBody({ type: UpdateBoardDto })
   @ApiResponse({
@@ -200,7 +175,7 @@ export class BoardsController {
   })
   @ApiResponse({
     status: 400,
-    description: 'Données de mise à jour invalides',
+    description: 'Données de mise à jour invalides ou UUID invalide',
   })
   @ApiResponse({
     status: 401,
@@ -215,31 +190,23 @@ export class BoardsController {
     description: 'Board non trouvé',
   })
   async update(
-    @Param('id') id: string,
+    @Param('id', UuidValidationPipe) id: string,
     @Body() updateBoardDto: UpdateBoardDto,
     @Request() req: { user: JwtUser },
   ): Promise<BoardResponseDto> {
     this.logger.log(
       `Mise à jour du board ${id} par l'utilisateur ${req.user.id}`,
     );
-    try {
-      const board = await this.boardsService.update(
-        id,
-        updateBoardDto,
-        req.user.id,
-      );
-      this.logger.log(`Board ${id} mis à jour avec succès`);
-      return board;
-    } catch (error) {
-      this.logger.error(
-        `Erreur lors de la mise à jour du board ${id}: ${error instanceof Error ? error.message : 'Erreur inconnue'}`,
-      );
-      throw error;
-    }
+    const board = await this.boardsService.update(
+      id,
+      updateBoardDto,
+      req.user.id,
+    );
+    this.logger.log(`Board ${id} mis à jour avec succès`);
+    return board;
   }
 
   @Delete(':id')
-  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('JWT-auth')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({
@@ -249,11 +216,15 @@ export class BoardsController {
   @ApiParam({
     name: 'id',
     description: 'Identifiant UUID du board',
-    example: 'board-abc123',
+    example: '123e4567-e89b-12d3-a456-426614174000',
   })
   @ApiResponse({
     status: 204,
     description: 'Board supprimé avec succès',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'UUID invalide',
   })
   @ApiResponse({
     status: 401,
@@ -268,20 +239,13 @@ export class BoardsController {
     description: 'Board non trouvé',
   })
   async remove(
-    @Param('id') id: string,
+    @Param('id', UuidValidationPipe) id: string,
     @Request() req: { user: JwtUser },
   ): Promise<void> {
     this.logger.log(
       `Suppression du board ${id} par l'utilisateur ${req.user.id}`,
     );
-    try {
-      await this.boardsService.remove(id, req.user.id);
-      this.logger.log(`Board ${id} supprimé avec succès`);
-    } catch (error) {
-      this.logger.error(
-        `Erreur lors de la suppression du board ${id}: ${error instanceof Error ? error.message : 'Erreur inconnue'}`,
-      );
-      throw error;
-    }
+    await this.boardsService.remove(id, req.user.id);
+    this.logger.log(`Board ${id} supprimé avec succès`);
   }
 }

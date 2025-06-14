@@ -26,7 +26,7 @@ export class CreateUserDto {
   @ApiProperty({
     description: "Mot de passe de l'utilisateur",
     example: 'MotDePasse123!',
-    minLength: 8,
+    minLength: 6,
     pattern:
       '^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]',
   })
@@ -42,14 +42,13 @@ export class CreateUserDto {
   password: string;
 
   @ApiPropertyOptional({
-    description: "Nom d'affichage de l'utilisateur",
+    description: "Nom d'affichage de l'utilisateur (optionnel, email utilisé par défaut)",
     example: 'Jean Dupont',
   })
   @IsOptional()
   @IsString({
     message: "Le nom d'affichage doit être une chaîne de caractères",
   })
-  @IsNotEmpty({ message: "Le nom d'affichage est obligatoire" })
   @MinLength(2, {
     message: "Le nom d'affichage doit contenir au moins 2 caractères",
   })
@@ -59,5 +58,5 @@ export class CreateUserDto {
   @Transform(({ value }: { value: string }) =>
     typeof value === 'string' ? value.trim() : value,
   )
-  displayName: string;
+  displayName?: string;
 }

@@ -3,15 +3,18 @@ import { PassportStrategy } from '@nestjs/passport';
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
-interface AccessTokenPayload {
+interface RefreshTokenPayload {
   sub: string;
-  type: 'access';
+  type: 'refresh';
   iat?: number;
   exp?: number;
 }
 
 @Injectable()
-export class JwtStrategy extends PassportStrategy(Strategy) {
+export class RefreshJwtStrategy extends PassportStrategy(
+  Strategy,
+  'refresh-jwt',
+) {
   constructor(private configService: ConfigService) {
     const secret = configService.get<string>('JWT_SECRET') || 'secret_key';
 
@@ -23,22 +26,22 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   validate(payload: unknown) {
-    // Vérifier que c'est bien un access token
+    // Vérifier que c'est bien un refresh token
     if (
       typeof payload !== 'object' ||
       payload === null ||
-      typeof (payload as AccessTokenPayload).sub !== 'string' ||
-      (payload as AccessTokenPayload).type !== 'access'
+      typeof (payload as RefreshTokenPayload).sub !== 'string' ||
+      (payload as RefreshTokenPayload).type !== 'refresh'
     ) {
       throw new UnauthorizedException(
-        'Token invalide - access token requis pour cette route',
+        'Token invalide - refresh token requis pour cette route',
       );
     }
 
-    const accessPayload = payload as AccessTokenPayload;
+    const refreshPayload = payload as RefreshTokenPayload;
 
     return {
-      id: accessPayload.sub,
+      id: refreshPayload.sub,
     };
   }
 }
