@@ -76,19 +76,25 @@ export class SecurityInterceptor implements NestInterceptor {
       // Sanitise le body JSON de manière sûre
       if (request.body && typeof request.body === 'object') {
         const sanitizedBody = this.sanitizeValue(request.body);
-        Object.assign(request, { body: sanitizedBody });
+        request.body = sanitizedBody;
       }
 
       // Sanitise les query parameters de manière sûre
       if (request.query && typeof request.query === 'object') {
         const sanitizedQuery = this.sanitizeValue(request.query);
-        Object.assign(request, { query: sanitizedQuery });
+        // Remplacer les propriétés individuellement plutôt que l'objet entier
+        Object.keys(request.query).forEach((key) => delete request.query[key]);
+        Object.assign(request.query, sanitizedQuery);
       }
 
       // Sanitise les paramètres d'URL de manière sûre
       if (request.params && typeof request.params === 'object') {
         const sanitizedParams = this.sanitizeValue(request.params);
-        Object.assign(request, { params: sanitizedParams });
+        // Remplacer les propriétés individuellement plutôt que l'objet entier
+        Object.keys(request.params).forEach(
+          (key) => delete request.params[key],
+        );
+        Object.assign(request.params, sanitizedParams);
       }
     } catch (error) {
       this.logger.error(

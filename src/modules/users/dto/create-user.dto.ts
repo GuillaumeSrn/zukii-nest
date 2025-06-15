@@ -26,13 +26,13 @@ export class CreateUserDto {
   @ApiProperty({
     description: "Mot de passe de l'utilisateur",
     example: 'MotDePasse123!',
-    minLength: 6,
+    minLength: 8,
     pattern:
       '^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]',
   })
   @IsString({ message: 'Le mot de passe doit être une chaîne de caractères' })
-  @MinLength(6, {
-    message: 'Le mot de passe doit contenir au moins 6 caractères',
+  @MinLength(8, {
+    message: 'Le mot de passe doit contenir au moins 8 caractères',
   })
   @IsNotEmpty({ message: 'Le mot de passe est requis' })
   @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/, {

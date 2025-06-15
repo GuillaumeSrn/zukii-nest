@@ -75,7 +75,11 @@ export class BoardMembersService {
 
     // Récupérer le statut par défaut
     const defaultStatus = await this.statusRepository.findOne({
-      where: { category: 'board-member', name: 'active', isActive: true },
+      where: {
+        category: 'board-member-active',
+        name: 'active',
+        isActive: true,
+      },
     });
 
     if (!defaultStatus) {

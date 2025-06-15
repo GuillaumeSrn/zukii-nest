@@ -127,6 +127,7 @@ board.statusId = BoardStatus.ARCHIVED;
 **Statuts disponibles :**
 - **Users** : `user-active`, `user-inactive`
 - **Boards** : `board-active`, `board-archived`
+- **BoardMembers** : `board-member-active`, `board-member-inactive`
 - **Blocks** : `block-draft`, `block-active`, `block-archived`
 - **Invitations** : `invitation-pending`, `invitation-accepted`, `invitation-declined`, `invitation-expired`
 
@@ -179,14 +180,20 @@ npm run format                    # Formatage automatique
 
 ## 📊 État du projet
 
-### ✅ Modules opérationnels
+### ✅ Modules opérationnels (92/92 tests ✅)
 - **Users** : CRUD avec authentification bcrypt et gestion des statuts
-- **Status** : États centralisés par catégorie
+- **Status** : États centralisés par catégorie avec auto-seeding
 - **Auth** : JWT, Guards, protection des routes sensibles
-- **Boards** : CRUD complet, validation ownership, soft delete (71/71 tests)
+- **Boards** : CRUD complet, validation ownership, soft delete
+- **BoardMembers** : Collaboration avec permissions granulaires (view, edit, admin)
+
+### 🏗️ Architecture consolidée
+- **Interfaces centralisées** : JwtUser, test mocks typés
+- **ESLint strict** : Configuration spécialisée pour tests
+- **BaseEntity** : Héritage cohérent avec timestamps et soft delete
+- **Séparation permissions/statuts** : Architecture claire et maintenable
 
 ### 📋 Roadmap
-- **BoardMember** : Collaboration avec permissions granulaires (view, edit, admin)
 - **Blocks** : Contenu interactif (text, file, analysis) avec positionnement
 - **Block Relations** : Liens entre blocks (generated_from, references, etc.)
 - **Content Types** : TextContent, FileContent, AnalysisContent spécialisés
@@ -237,6 +244,7 @@ src/
 ## 📚 Documentation
 
 ### Référence technique
+- **[`docs/DEVELOPMENT_GUIDE.md`](docs/DEVELOPMENT_GUIDE.md)** : Guide de développement complet
 - **[`docs/architecture-technique.md`](docs/architecture-technique.md)** : Architecture détaillée
 - **[`docs/database-schema.puml`](docs/database-schema.puml)** : Modèle de données
 - **[`docs/ci-cd.md`](docs/ci-cd.md)** : Pipeline CI/CD
