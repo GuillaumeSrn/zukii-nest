@@ -27,7 +27,6 @@
     "db:reset": "npm run docker:stop && docker volume rm zukii-nest_postgres_data && npm run docker:run"
   },
   "dependencies": {
-    "@nestjs-modules/mailer": "^2.0.2",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.2",
     "@nestjs/core": "^11.0.1",
@@ -35,14 +34,10 @@
     "@nestjs/passport": "^11.0.5",
     "@nestjs/platform-express": "^11.0.1",
     "@nestjs/typeorm": "^11.0.0",
-    "@types/dompurify": "^3.0.5",
     "@types/passport-local": "^1.0.38",
     "bcryptjs": "^3.0.2",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.2",
-    "helmet": "^8.1.0",
-    "isomorphic-dompurify": "^2.25.0",
-    "nodemailer": "^7.0.3",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "passport-local": "^1.0.0",
@@ -50,8 +45,7 @@
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
     "typeorm": "^0.3.24",
-    "uuid": "^11.1.0",
-    "xss": "^1.0.15"
+    "uuid": "^11.1.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",

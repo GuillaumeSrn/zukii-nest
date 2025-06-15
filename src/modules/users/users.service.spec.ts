@@ -1,24 +1,23 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, IsNull } from 'typeorm';
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { User } from './entities/user.entity';
 import { Status } from '../status/entities/status.entity';
 import { StatusService } from '../status/status.service';
-import { EmailService } from '../email/email.service';
+import { UserResponseDto } from './dto/user-response.dto';
 
 describe('UsersService', () => {
   let service: UsersService;
   let userRepository: jest.Mocked<Repository<User>>;
   let statusService: jest.Mocked<StatusService>;
-  let emailService: jest.Mocked<EmailService>;
 
   const mockStatus = {
     id: 'status-id',
     category: 'user',
     name: 'active',
-    isActive: true,
+    description: 'Utilisateur actif',
   } as Status;
 
   const mockUser = {
@@ -28,33 +27,38 @@ describe('UsersService', () => {
     passwordHash: 'hashedPassword',
     statusId: 'status-id',
     status: mockStatus,
-    createdAt: new Date(),
-    updatedAt: new Date(),
   } as User;
 
+  const mockUserResponse = {
+    id: '123e4567-e89b-12d3-a456-426614174000',
+    email: 'test@example.com',
+    displayName: 'Test User',
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  } as UserResponseDto;
+
   beforeEach(async () => {
+    const mockUserRepository = {
+      findOne: jest.fn(),
+      create: jest.fn(),
+      save: jest.fn(),
+      find: jest.fn(),
+    };
+
+    const mockStatusService = {
+      findByCategoryAndName: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         UsersService,
         {
           provide: getRepositoryToken(User),
-          useValue: {
-            findOne: jest.fn(),
-            create: jest.fn(),
-            save: jest.fn(),
-          },
+          useValue: mockUserRepository,
         },
         {
           provide: StatusService,
-          useValue: {
-            findByCategoryAndName: jest.fn(),
-          },
-        },
-        {
-          provide: EmailService,
-          useValue: {
-            sendWelcome: jest.fn().mockResolvedValue(undefined),
-          },
+          useValue: mockStatusService,
         },
       ],
     }).compile();
@@ -62,7 +66,10 @@ describe('UsersService', () => {
     service = module.get<UsersService>(UsersService);
     userRepository = module.get(getRepositoryToken(User));
     statusService = module.get(StatusService);
-    emailService = module.get(EmailService);
+  });
+
+  it('should be defined', () => {
+    expect(service).toBeDefined();
   });
 
   describe('create', () => {
@@ -77,18 +84,20 @@ describe('UsersService', () => {
       statusService.findByCategoryAndName.mockResolvedValue(mockStatus);
       userRepository.create.mockReturnValue(mockUser);
       userRepository.save.mockResolvedValue(mockUser);
-      emailService.sendWelcome.mockResolvedValue(undefined);
-      jest.spyOn(service, 'findById').mockResolvedValue({
-        id: mockUser.id,
-        email: mockUser.email,
-        displayName: mockUser.displayName,
-        updatedAt: new Date(),
-      });
+      jest.spyOn(service, 'findById').mockResolvedValue(mockUserResponse);
 
       const result = await service.create(createUserDto);
 
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(userRepository.findOne).toHaveBeenCalledWith({
+        where: { email: createUserDto.email, deletedAt: IsNull() },
+      });
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(statusService.findByCategoryAndName).toHaveBeenCalledWith(
+        'user',
+        'active',
+      );
       expect(result).toBeDefined();
-      expect(result.email).toBe(createUserDto.email);
     });
 
     it('should throw ConflictException when user already exists', async () => {
@@ -116,7 +125,11 @@ describe('UsersService', () => {
       const result = await service.findById(mockUser.id);
 
       expect(result).toBeDefined();
-      expect(result.id).toBe(mockUser.id);
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(userRepository.findOne).toHaveBeenCalledWith({
+        where: { id: mockUser.id, deletedAt: IsNull() },
+        relations: ['status'],
+      });
     });
 
     it('should throw NotFoundException when user not found', async () => {
@@ -135,6 +148,11 @@ describe('UsersService', () => {
       const result = await service.findByEmail(mockUser.email);
 
       expect(result).toBe(mockUser);
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(userRepository.findOne).toHaveBeenCalledWith({
+        where: { email: mockUser.email, deletedAt: IsNull() },
+        relations: ['status'],
+      });
     });
 
     it('should return null when user not found', async () => {

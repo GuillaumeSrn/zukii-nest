@@ -1,21 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
-import { MockAuthResponse } from '../../common/interfaces/test-mocks.interface';
 
 describe('AuthController', () => {
   let controller: AuthController;
   let service: jest.Mocked<AuthService>;
-
-  const mockAuthResponse: MockAuthResponse = {
-    access_token: 'jwt-token',
-    refresh_token: 'refresh-token',
-    user: {
-      id: 'test-user-id',
-      email: 'test@example.com',
-      displayName: 'Test User',
-    },
-  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -25,7 +14,6 @@ describe('AuthController', () => {
           provide: AuthService,
           useValue: {
             login: jest.fn(),
-            refreshToken: jest.fn(),
           },
         },
       ],
@@ -41,31 +29,23 @@ describe('AuthController', () => {
 
   describe('login', () => {
     it('should return auth response when login successful', async () => {
-      const loginDto = {
-        email: 'test@example.com',
-        password: 'MotDePasse123!',
+      const loginDto = { email: 'test@example.com', password: 'password' };
+      const mockResponse = {
+        access_token: 'mock-token',
+        user: {
+          id: '1',
+          email: 'test@example.com',
+          displayName: 'Test',
+        },
       };
 
-      service.login.mockResolvedValue(mockAuthResponse);
+      service.login.mockResolvedValue(mockResponse);
 
       const result = await controller.login(loginDto);
 
-      expect(result).toBe(mockAuthResponse);
-    });
-  });
-
-  describe('refreshToken', () => {
-    it('should return new tokens when refresh token is valid', async () => {
-      const refreshTokenDto = {
-        refreshToken: 'valid-refresh-token',
-      };
-
-      service.refreshToken.mockResolvedValue(mockAuthResponse);
-
-      const result = await controller.refreshToken(refreshTokenDto);
-
-      expect(service.refreshToken).toHaveBeenCalledWith('valid-refresh-token');
-      expect(result).toBe(mockAuthResponse);
+      expect(result).toBe(mockResponse);
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(service.login).toHaveBeenCalledWith(loginDto);
     });
   });
 });

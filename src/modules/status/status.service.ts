@@ -1,42 +1,66 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Status } from './entities/status.entity';
-import { StatusResponseDto } from './dto/status-response.dto';
 
 @Injectable()
-export class StatusService {
-  private readonly logger = new Logger(StatusService.name);
-
+export class StatusService implements OnModuleInit {
   constructor(
     @InjectRepository(Status)
     private readonly statusRepository: Repository<Status>,
   ) {}
 
+  async onModuleInit() {
+    await this.seedStatuses();
+  }
+
+  private async seedStatuses() {
+    const statusesToSeed = [
+      // User statuses
+      { category: 'user', name: 'active' },
+      { category: 'user', name: 'inactive' },
+
+      // Board statuses
+      { category: 'board', name: 'active' },
+      { category: 'board', name: 'archived' },
+
+      // Block statuses
+      { category: 'block', name: 'draft' },
+      { category: 'block', name: 'active' },
+      { category: 'block', name: 'archived' },
+
+      // Invitation statuses
+      { category: 'invitation', name: 'pending' },
+      { category: 'invitation', name: 'accepted' },
+      { category: 'invitation', name: 'declined' },
+      { category: 'invitation', name: 'expired' },
+    ];
+
+    for (const statusData of statusesToSeed) {
+      const exists = await this.statusRepository.findOne({
+        where: { category: statusData.category, name: statusData.name },
+      });
+
+      if (!exists) {
+        const status = this.statusRepository.create(statusData);
+        await this.statusRepository.save(status);
+      }
+    }
+  }
+
   async findByCategoryAndName(
     category: string,
     name: string,
-  ): Promise<StatusResponseDto | null> {
-    const status = await this.statusRepository.findOne({
+  ): Promise<Status | null> {
+    return this.statusRepository.findOne({
       where: { category, name, isActive: true },
     });
-    return status ? this.toStatusResponseDto(status) : null;
   }
 
-  async findByCategory(category: string): Promise<StatusResponseDto[]> {
-    const statuses = await this.statusRepository.find({
+  async findByCategory(category: string): Promise<Status[]> {
+    return this.statusRepository.find({
       where: { category, isActive: true },
       order: { name: 'ASC' },
     });
-    return statuses.map((status) => this.toStatusResponseDto(status));
-  }
-
-  private toStatusResponseDto(status: Status): StatusResponseDto {
-    return {
-      id: status.id,
-      category: status.category,
-      name: status.name,
-      isActive: status.isActive,
-    };
   }
 }

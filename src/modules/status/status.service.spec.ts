@@ -13,6 +13,10 @@ describe('StatusService', () => {
     category: 'user',
     name: 'active',
     isActive: true,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    deletedAt: undefined,
+    deletedBy: undefined,
   } as Status;
 
   beforeEach(async () => {
@@ -24,11 +28,9 @@ describe('StatusService', () => {
           useValue: {
             findOne: jest.fn(),
             find: jest.fn(),
+            create: jest.fn(),
+            save: jest.fn(),
           },
-        },
-        {
-          provide: DataSource,
-          useValue: {},
         },
       ],
     }).compile();
@@ -37,13 +39,21 @@ describe('StatusService', () => {
     repository = module.get(getRepositoryToken(Status));
   });
 
+  it('should be defined', () => {
+    expect(service).toBeDefined();
+  });
+
   describe('findByCategoryAndName', () => {
     it('should return status when found', async () => {
       repository.findOne.mockResolvedValue(mockStatus);
 
       const result = await service.findByCategoryAndName('user', 'active');
 
-      expect(result).toStrictEqual(mockStatus);
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(repository.findOne).toHaveBeenCalledWith({
+        where: { category: 'user', name: 'active', isActive: true },
+      });
+      expect(result).toBe(mockStatus);
     });
 
     it('should return null when status not found', async () => {
@@ -62,7 +72,12 @@ describe('StatusService', () => {
 
       const result = await service.findByCategory('user');
 
-      expect(result).toStrictEqual(mockStatuses);
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(repository.find).toHaveBeenCalledWith({
+        where: { category: 'user', isActive: true },
+        order: { name: 'ASC' },
+      });
+      expect(result).toBe(mockStatuses);
     });
 
     it('should return empty array when no statuses found', async () => {

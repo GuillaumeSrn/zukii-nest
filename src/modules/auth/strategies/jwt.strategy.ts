@@ -1,19 +1,19 @@
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { PassportStrategy } from '@nestjs/passport';
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
-interface AccessTokenPayload {
+interface JwtPayload {
   sub: string;
-  type: 'access';
-  iat?: number;
-  exp?: number;
+  email: string;
 }
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(private configService: ConfigService) {
-    const secret = configService.get<string>('JWT_SECRET') || 'secret_key';
+    const secret =
+      configService.get<string>('JWT_SECRET') ||
+      'zukii-default-secret-change-in-production';
 
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
@@ -22,23 +22,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  validate(payload: unknown) {
-    // Vérifier que c'est bien un access token
-    if (
-      typeof payload !== 'object' ||
-      payload === null ||
-      typeof (payload as AccessTokenPayload).sub !== 'string' ||
-      (payload as AccessTokenPayload).type !== 'access'
-    ) {
-      throw new UnauthorizedException(
-        'Token invalide - access token requis pour cette route',
-      );
-    }
-
-    const accessPayload = payload as AccessTokenPayload;
-
+  validate(payload: JwtPayload) {
     return {
-      id: accessPayload.sub,
+      id: payload.sub,
+      email: payload.email,
     };
   }
 }
