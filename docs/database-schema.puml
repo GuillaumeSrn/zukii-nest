@@ -4,7 +4,7 @@
 !define FK(x) <i>x</i>
 !define IDX(x) <color:blue>x</color>
 
-title Modèle de base de données - Zukii
+title Modèle de base de données - Zukii (Vision Complète - Roadmap)
 
 ' === CORE ENTITIES ===
 TABLE(User, "User") {
@@ -37,8 +37,9 @@ TABLE(BoardMember, "BoardMember") {
   FK(board_id): UUID NOT NULL
   FK(user_id): UUID NOT NULL
   permission_level: ENUM('view', 'edit', 'admin') NOT NULL
-  joined_at: TIMESTAMP DEFAULT NOW()
+  FK(status_id): UUID NOT NULL
   updated_by: UUID NULL
+  created_at: TIMESTAMP DEFAULT NOW()
   updated_at: TIMESTAMP DEFAULT NOW()
   deleted_at: TIMESTAMP NULL
   deleted_by: UUID NULL
@@ -51,10 +52,12 @@ TABLE(Invitation, "Invitation") {
   email: VARCHAR(255) NOT NULL
   permission_level: ENUM('view', 'edit', 'admin') NOT NULL
   IDX(invitation_token): VARCHAR(128) UNIQUE NOT NULL
-  invited_by: UUID NOT NULL
-  expires_at: TIMESTAMP NOT NULL
+  FK(invited_by): UUID NOT NULL
+  expires_at: TIMESTAMP NOT NULL CHECK (expires_at > created_at)
   created_at: TIMESTAMP DEFAULT NOW()
+  updated_at: TIMESTAMP DEFAULT NOW()
   deleted_at: TIMESTAMP NULL
+  deleted_by: UUID NULL
 }
 
 ' === BLOCK SYSTEM (Refactorisé) ===
@@ -96,7 +99,7 @@ TABLE(FileContent, "FileContent") {
   file_name: VARCHAR(255) NOT NULL
   s3_key: VARCHAR(500) NOT NULL
   s3_bucket: VARCHAR(100) NOT NULL
-  file_size: BIGINT NOT NULL
+  file_size: BIGINT NOT NULL CHECK (file_size > 0)
   file_type: VARCHAR(50) NOT NULL
   mime_type: VARCHAR(100) NOT NULL
   FK(uploaded_by): UUID NOT NULL
@@ -109,14 +112,30 @@ TABLE(AnalysisContent, "AnalysisContent") {
   PK(id): UUID
   analysis_type: VARCHAR(100) NOT NULL
   result_data: JSONB NOT NULL
-  FK(source_file_id): UUID
+  FK(source_file_id): UUID NULL
   execution_status: ENUM('pending', 'running', 'completed', 'failed') DEFAULT 'pending'
   execution_time: INTEGER
   error_message: TEXT
   created_at: TIMESTAMP DEFAULT NOW()
   updated_at: TIMESTAMP DEFAULT NOW()
   IDX(analysis_search): (analysis_type, execution_status)
-  IDX(jsonb_conversation): USING GIN ((result_data->'conversationId'))
+}
+
+' === TEMPLATES D'ANALYSE IA ===
+TABLE(AnalysisTemplate, "AnalysisTemplate") {
+  PK(id): UUID
+  name: VARCHAR(200) NOT NULL
+  description: TEXT
+  analysis_type: VARCHAR(100) NOT NULL
+  prompt_template: TEXT NOT NULL
+  parameters: JSONB DEFAULT '{}'
+  input_requirements: JSONB
+  is_active: BOOLEAN DEFAULT TRUE
+  created_at: TIMESTAMP DEFAULT NOW()
+  updated_at: TIMESTAMP DEFAULT NOW()
+  deleted_at: TIMESTAMP NULL
+  deleted_by: UUID NULL
+  IDX(analysis_type_active): (analysis_type, is_active)
 }
 
 ' === RELATIONS ENTRE BLOCKS ===
@@ -136,15 +155,13 @@ TABLE(BlockRelation, "BlockRelation") {
 }
 
 TABLE(Status, "Status") {
-  PK(id): UUID
+  PK(id): VARCHAR PRIMARY KEY
   IDX(category_name): (category, name) UNIQUE
   category: VARCHAR(50) NOT NULL
   name: VARCHAR(50) NOT NULL
-  description: TEXT
   is_active: BOOLEAN DEFAULT TRUE
   created_at: TIMESTAMP DEFAULT NOW()
   updated_at: TIMESTAMP DEFAULT NOW()
-  deleted_at: TIMESTAMP NULL
 }
 
 ' === RELATIONS PRINCIPALES ===
@@ -154,9 +171,11 @@ Board ||--o{ BoardMember
 Board ||--o{ Invitation
 Board ||--o{ Block
 User ||--o{ Block
+User ||--o{ Invitation : "invited_by"
 
 Status ||--o{ User
 Status ||--o{ Board
+Status ||--o{ BoardMember
 Status ||--o{ Block
 
 ' === RELATIONS CONTENU ===
@@ -182,8 +201,9 @@ end note
 note right of AnalysisContent
   Stockage Plotly/IA :
   - result_data: JSON complet (graphiques, etc.)
-  - Index JSONB pour recherches rapides
-  - Traçabilité vers fichier source
+  - Index optimisé pour recherches
+  - Traçabilité vers fichier source (optionnelle)
+  - Contraintes d'exécution
 end note
 
 note right of Status
@@ -191,6 +211,14 @@ note right of Status
   - (category, name) UNIQUE
   - Recherches optimisées
   - Ex: status('user', 'active')
+  - IDs VARCHAR fixes (non UUID)
+end note
+
+note right of AnalysisTemplate
+  Templates système pour IA :
+  - Prompts préconfigurés OpenAI
+  - Paramètres par type d'analyse
+  - Menu déroulant frontend Angular
 end note
 
 @enduml 

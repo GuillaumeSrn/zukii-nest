@@ -3,15 +3,37 @@ import { Controller, Get } from '@nestjs/common';
 @Controller()
 export class AppController {
   @Get()
+  @ApiOperation({
+    summary: "Informations de l'API",
+    description: "Retourne les informations générales sur l'API Zukii",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Informations de l'API",
+    example: {
+      name: 'Zukii API',
+      version: '1.0.0',
+      description:
+        "API Zukii : application collaborative d'analyse de données CSV",
+      endpoints: {
+        auth: '/auth',
+        users: '/users',
+        boards: '/boards',
+        statuses: '/statuses',
+      },
+    },
+  })
   getApiInfo(): object {
     return {
       name: 'Zukii API',
       version: '1.0.0',
       description:
-        "API REST pour application collaborative d'analyse de données CSV avec IA",
+        "API Zukii : application collaborative d'analyse de données CSV",
       endpoints: {
         auth: '/auth',
         users: '/users',
+        boards: '/boards',
+        statuses: '/statuses',
       },
     };
   }

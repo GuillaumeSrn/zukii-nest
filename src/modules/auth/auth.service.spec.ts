@@ -1,48 +1,53 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
 import { UnauthorizedException } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
 import { AuthService } from './auth.service';
 import { UsersService } from '../users/users.service';
 import { User } from '../users/entities/user.entity';
 
+// Mock bcrypt
+jest.mock('bcryptjs');
+
 describe('AuthService', () => {
   let service: AuthService;
   let usersService: jest.Mocked<UsersService>;
   let jwtService: jest.Mocked<JwtService>;
+  let configService: jest.Mocked<ConfigService>;
 
   const mockUser = {
     id: '123e4567-e89b-12d3-a456-426614174000',
     email: 'test@example.com',
     displayName: 'Test User',
     passwordHash: 'hashedPassword',
-    statusId: 'status-id',
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    deletedAt: null,
-    deletedBy: null,
-    status: undefined,
-  } as unknown as User;
+    status: { isActive: true },
+  } as User;
 
   beforeEach(async () => {
-    const mockUsersService = {
-      findByEmail: jest.fn(),
-    };
-
-    const mockJwtService = {
-      sign: jest.fn(),
-    };
-
+    (bcrypt.compare as jest.Mock).mockClear();
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AuthService,
         {
           provide: UsersService,
-          useValue: mockUsersService,
+          useValue: {
+            findByEmail: jest.fn(),
+            findByIdEntity: jest.fn(),
+          },
         },
         {
           provide: JwtService,
-          useValue: mockJwtService,
+          useValue: {
+            sign: jest.fn(),
+            verify: jest.fn(),
+          },
+        },
+        {
+          provide: ConfigService,
+          useValue: {
+            get: jest.fn(),
+          },
         },
       ],
     }).compile();
@@ -50,6 +55,7 @@ describe('AuthService', () => {
     service = module.get<AuthService>(AuthService);
     usersService = module.get(UsersService);
     jwtService = module.get(JwtService);
+    configService = module.get(ConfigService);
   });
 
   it('should be defined', () => {
@@ -58,67 +64,140 @@ describe('AuthService', () => {
 
   describe('validateUser', () => {
     it('should return user when credentials are valid', async () => {
-      const email = 'test@example.com';
-      const password = 'password123';
-
       usersService.findByEmail.mockResolvedValue(mockUser);
-      jest.spyOn(bcrypt, 'compare').mockImplementation(() => true);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
 
-      const result = await service.validateUser(email, password);
+      const result = await service.validateUser('test@example.com', 'password');
 
       expect(result).toBe(mockUser);
-      // eslint-disable-next-line @typescript-eslint/unbound-method
-      expect(usersService.findByEmail).toHaveBeenCalledWith(email);
+      expect(usersService.findByEmail).toHaveBeenCalledWith('test@example.com');
+      expect(bcrypt.compare).toHaveBeenCalledWith('password', 'hashedPassword');
     });
 
     it('should throw UnauthorizedException when user not found', async () => {
-      const email = 'nonexistent@example.com';
-      const password = 'password123';
-
       usersService.findByEmail.mockResolvedValue(null);
 
-      await expect(service.validateUser(email, password)).rejects.toThrow(
-        UnauthorizedException,
-      );
+      await expect(
+        service.validateUser('test@example.com', 'password'),
+      ).rejects.toThrow(UnauthorizedException);
     });
 
     it('should throw UnauthorizedException when password is invalid', async () => {
-      const email = 'test@example.com';
-      const password = 'wrongpassword';
-
       usersService.findByEmail.mockResolvedValue(mockUser);
-      jest.spyOn(bcrypt, 'compare').mockImplementation(() => false);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(false);
 
-      await expect(service.validateUser(email, password)).rejects.toThrow(
-        UnauthorizedException,
-      );
+      await expect(
+        service.validateUser('test@example.com', 'wrongpassword'),
+      ).rejects.toThrow(UnauthorizedException);
     });
   });
 
   describe('login', () => {
-    it('should return access token and user info', async () => {
-      const loginDto = { email: 'test@example.com', password: 'password123' };
-      const expectedToken = 'jwt-token';
+    it('should return auth response when login is successful', async () => {
+      usersService.findByEmail.mockResolvedValue(mockUser);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+      jwtService.sign
+        .mockReturnValueOnce('access-token')
+        .mockReturnValueOnce('refresh-token');
+      configService.get.mockReturnValueOnce('15m').mockReturnValueOnce('7d');
 
-      jest.spyOn(service, 'validateUser').mockResolvedValue(mockUser);
-      jwtService.sign.mockReturnValue(expectedToken);
-
-      const result = await service.login(loginDto);
+      const result = await service.login({
+        email: 'test@example.com',
+        password: 'password',
+      });
 
       expect(result).toEqual({
-        access_token: expectedToken,
+        access_token: 'access-token',
+        refresh_token: 'refresh-token',
         user: {
           id: mockUser.id,
           email: mockUser.email,
           displayName: mockUser.displayName,
         },
       });
+    });
+  });
 
-      // eslint-disable-next-line @typescript-eslint/unbound-method
-      expect(jwtService.sign).toHaveBeenCalledWith({
-        sub: mockUser.id,
-        email: mockUser.email,
+  describe('refreshToken', () => {
+    it('devrait renouveler les tokens avec un refresh token valide', async () => {
+      const refreshPayload = { sub: 'test-user-id', type: 'refresh' };
+      jwtService.verify.mockReturnValue(refreshPayload);
+      usersService.findByIdEntity.mockResolvedValue(mockUser);
+      jwtService.sign
+        .mockReturnValueOnce('new-access-token')
+        .mockReturnValueOnce('new-refresh-token');
+      configService.get.mockReturnValueOnce('15m').mockReturnValueOnce('7d');
+
+      const result = await service.refreshToken('valid-refresh-token');
+
+      expect(result).toEqual({
+        access_token: 'new-access-token',
+        refresh_token: 'new-refresh-token',
+        user: {
+          id: mockUser.id,
+          email: mockUser.email,
+          displayName: mockUser.displayName,
+        },
       });
+    });
+
+    it('devrait rejeter un access token utilisé comme refresh token', async () => {
+      const accessPayload = { sub: 'test-user-id', type: 'access' };
+      jwtService.verify.mockReturnValue(accessPayload);
+
+      await expect(service.refreshToken('access-token')).rejects.toThrow(
+        'Refresh token invalide ou expiré',
+      );
+    });
+
+    it('devrait rejeter un refresh token pour un utilisateur inexistant', async () => {
+      const refreshPayload = { sub: 'test-user-id', type: 'refresh' };
+      jwtService.verify.mockReturnValue(refreshPayload);
+      usersService.findByIdEntity.mockResolvedValue(null);
+
+      await expect(service.refreshToken('valid-refresh-token')).rejects.toThrow(
+        'Refresh token invalide ou expiré',
+      );
+    });
+
+    it('devrait rejeter un refresh token invalide', async () => {
+      jwtService.verify.mockImplementation(() => {
+        throw new Error('Token expired');
+      });
+
+      await expect(service.refreshToken('invalid-token')).rejects.toThrow(
+        'Refresh token invalide ou expiré',
+      );
+    });
+  });
+
+  describe('refreshTokenFromUserId', () => {
+    it('should return new tokens when user exists', async () => {
+      usersService.findByIdEntity.mockResolvedValue(mockUser);
+      jwtService.sign
+        .mockReturnValueOnce('new-access-token')
+        .mockReturnValueOnce('new-refresh-token');
+      configService.get.mockReturnValueOnce('15m').mockReturnValueOnce('7d');
+
+      const result = await service.refreshTokenFromUserId('test-user-id');
+
+      expect(result).toEqual({
+        access_token: 'new-access-token',
+        refresh_token: 'new-refresh-token',
+        user: {
+          id: mockUser.id,
+          email: mockUser.email,
+          displayName: mockUser.displayName,
+        },
+      });
+    });
+
+    it('should throw UnauthorizedException when user not found', async () => {
+      usersService.findByIdEntity.mockResolvedValue(null);
+
+      await expect(
+        service.refreshTokenFromUserId('nonexistent-user-id'),
+      ).rejects.toThrow(UnauthorizedException);
     });
   });
 });

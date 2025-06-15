@@ -12,6 +12,8 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UserResponseDto } from './dto/user-response.dto';
 import { StatusService } from '../status/status.service';
+import { UserStatus } from '../status/enums/status.enum';
+import { EmailService } from '../email/email.service';
 
 @Injectable()
 export class UsersService {
@@ -21,6 +23,7 @@ export class UsersService {
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     private readonly statusService: StatusService,
+    private readonly emailService: EmailService,
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<UserResponseDto> {
@@ -60,6 +63,7 @@ export class UsersService {
     this.logger.log(
       `Utilisateur créé avec succès: ${savedUser.email} (ID: ${savedUser.id})`,
     );
+    await this.emailService.sendWelcome(savedUser.email, savedUser.displayName);
 
     return this.findById(savedUser.id);
   }
@@ -80,6 +84,13 @@ export class UsersService {
   async findByEmail(email: string): Promise<User | null> {
     return this.userRepository.findOne({
       where: { email, deletedAt: IsNull() },
+      relations: ['status'],
+    });
+  }
+
+  async findByIdEntity(id: string): Promise<User | null> {
+    return this.userRepository.findOne({
+      where: { id, deletedAt: IsNull() },
       relations: ['status'],
     });
   }
@@ -107,7 +118,6 @@ export class UsersService {
       id: user.id,
       email: user.email,
       displayName: user.displayName,
-      createdAt: user.createdAt,
       updatedAt: user.updatedAt,
     };
   }

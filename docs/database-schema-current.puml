@@ -1,0 +1,75 @@
+@startuml Database_Model_Zukii_Current
+!define TABLE(name,desc) class name as "desc" << (T,#FFAAAA) >>
+!define PK(x) <u>x</u>
+!define FK(x) <i>x</i>
+!define IDX(x) <color:blue>x</color>
+
+title Modèle de base de données - Zukii (État Actuel - Implémenté)
+
+' === ENTITÉS IMPLÉMENTÉES ===
+TABLE(User, "User") {
+  PK(id): UUID
+  IDX(email): VARCHAR(255) UNIQUE NOT NULL
+  password_hash: VARCHAR(255) NOT NULL
+  display_name: VARCHAR(100) NOT NULL
+  FK(status_id): VARCHAR NOT NULL
+  created_at: TIMESTAMP DEFAULT NOW()
+  updated_at: TIMESTAMP DEFAULT NOW()
+  deleted_at: TIMESTAMP NULL
+  deleted_by: UUID NULL
+}
+
+TABLE(Board, "Board") {
+  PK(id): UUID
+  title: VARCHAR(200) NOT NULL
+  description: TEXT
+  FK(owner_id): UUID NOT NULL
+  FK(status_id): VARCHAR NOT NULL
+  background_color: VARCHAR(7) DEFAULT '#FFFFFF'
+  created_at: TIMESTAMP DEFAULT NOW()
+  updated_at: TIMESTAMP DEFAULT NOW()
+  deleted_at: TIMESTAMP NULL
+  deleted_by: UUID NULL
+}
+
+TABLE(Status, "Status") {
+  PK(id): VARCHAR PRIMARY KEY
+  IDX(category_name): (category, name) UNIQUE
+  category: VARCHAR(50) NOT NULL
+  name: VARCHAR(50) NOT NULL
+  is_active: BOOLEAN DEFAULT TRUE
+  created_at: TIMESTAMP DEFAULT NOW()
+  updated_at: TIMESTAMP DEFAULT NOW()
+}
+
+' === RELATIONS ACTUELLES ===
+User ||--o{ Board : "owner_id"
+Status ||--o{ User : "status_id"
+Status ||--o{ Board : "status_id"
+
+' === DONNÉES DE RÉFÉRENCE ===
+note right of Status
+  Statuts pré-configurés :
+  - user-active, user-inactive
+  - board-active, board-archived
+  - block-draft, block-active, block-archived (pour futur)
+  - invitation-pending, invitation-accepted, etc. (pour futur)
+end note
+
+note right of Board
+  Fonctionnalités actuelles :
+  - CRUD complet (Create, Read, Update, Delete)
+  - Validation ownership (seul le propriétaire peut modifier)
+  - Soft delete via BaseEntity
+  - Tests unitaires complets (71/71)
+end note
+
+note right of User
+  Authentification complète :
+  - JWT avec refresh tokens
+  - Bcrypt pour mots de passe
+  - Profils publics/privés
+  - Gestion des statuts
+end note
+
+@enduml 

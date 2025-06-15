@@ -11,9 +11,6 @@ export class UserResponseDto {
   displayName: string;
 
   @Expose()
-  createdAt: Date;
-
-  @Expose()
   updatedAt: Date;
 
   @Exclude()

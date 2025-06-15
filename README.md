@@ -1,6 +1,6 @@
 # Zukii NestJS API
 
-API REST pour application collaborative d'analyse de données CSV avec IA.
+API REST Zukii : Application collaborative d'analyse de données CSV.
 
 ## 🚀 Démarrage rapide
 
@@ -27,6 +27,131 @@ API REST pour application collaborative d'analyse de données CSV avec IA.
    - API : http://localhost:3000
    - Base de données : localhost:5432
    
+## 🚀 Installation et configuration
+
+### Prérequis
+- Node.js 20+
+- Docker et Docker Compose
+- PostgreSQL (via Docker)
+
+### Installation
+```bash
+# Installation des dépendances
+npm install
+
+# Configuration de l'environnement
+cp .env.example .env
+# Modifier les variables selon vos besoins
+```
+
+#### Variables d'environnement requises
+```env
+# === DATABASE ===
+DB_HOST=localhost
+DB_PORT=5432
+DB_USERNAME=zukii_user
+DB_PASSWORD=zukii_password
+DB_DATABASE=zukii_db
+
+# === JWT ===
+JWT_SECRET=your_jwt_secret_key_change_in_production
+JWT_EXPIRES_IN=24h
+
+# === APPLICATION ===
+NODE_ENV=development
+PORT=3000
+APP_URL=http://localhost:3000
+
+# === MICROSERVICE IA ===
+MICROSERVICE_API_KEY=your_secure_random_key_here_change_in_production
+MICROSERVICE_URL=https://your-lambda-url.execute-api.region.amazonaws.com/prod
+MICROSERVICE_TIMEOUT=30000
+
+# === TESTS ===
+TEST_USER_PASSWORD=MotDePasse123!
+```
+
+### Base de données
+
+#### Démarrage de PostgreSQL
+```bash
+# Démarrer PostgreSQL et Adminer
+docker compose up -d db
+docker compose --profile tools up -d adminer
+```
+
+#### Initialisation des données de référence
+```bash
+# ✅ Auto-seeding 
+# Les statuts de référence sont automatiquement initialisés au démarrage
+# si la table statuses est vide
+
+# Aucune action manuelle requise - tout est automatique
+```
+
+#### Accès aux outils
+- **Adminer** : http://localhost:8080
+  - Serveur : `db`
+  - Utilisateur : `zukii_user`
+  - Mot de passe : `zukii_password`
+  - Base : `zukii_db`
+
+### Démarrage de l'application
+
+```bash
+# Développement avec hot-reload
+npm run start:dev
+
+# Production
+npm run build
+npm run start:prod
+```
+
+#### Accès aux services
+- **API** : http://localhost:3000
+- **Documentation Swagger** : http://localhost:3000/api
+
+### Données de référence
+
+Le projet utilise un système de statuts centralisé pour gérer les états des différentes entités :
+
+```typescript
+// Exemples d'utilisation
+import { UserStatus, BoardStatus } from './modules/status/enums/status.enum';
+
+// Dans le code
+user.statusId = UserStatus.ACTIVE;
+board.statusId = BoardStatus.ARCHIVED;
+```
+
+**Statuts disponibles :**
+- **Users** : `user-active`, `user-inactive`
+- **Boards** : `board-active`, `board-archived`
+- **BoardMembers** : `board-member-active`, `board-member-inactive`
+- **Blocks** : `block-draft`, `block-active`, `block-archived`
+- **Invitations** : `invitation-pending`, `invitation-accepted`, `invitation-declined`, `invitation-expired`
+
+### Scripts disponibles
+
+```bash
+# Tests
+npm run test              # Tests unitaires
+npm run test:watch        # Tests en mode watch
+npm run test:cov          # Tests avec couverture
+
+# Code quality
+npm run lint              # ESLint
+npm run format            # Prettier
+npm run lint:check        # Vérification sans correction
+npm run format:check      # Vérification formatage
+
+# Base de données (Auto-seeding)
+# Aucune commande manuelle requise - seeding automatique au démarrage
+
+# Docker
+npm run docker:build     # Build de l'image Docker
+```
+
 ## 🛠️ Développement
 
 ### Commandes essentielles
@@ -46,24 +171,32 @@ docker compose exec api sh        # Accès conteneur
 ```bash
 npm run build                     # Compilation
 npm run start:dev                 # Développement local (sans Docker)
-npm run test:e2e                  # Tests d'intégration
 npm run lint                      # Vérification code
 npm run format                    # Formatage automatique
 ```
 
 ## 📊 État du projet
 
-### ✅ Modules opérationnels
+### ✅ Modules opérationnels (92/92 tests ✅)
 - **Users** : CRUD avec authentification bcrypt et gestion des statuts
-- **Status** : États centralisés par catégorie (user, board, block, invitation)
+- **Status** : États centralisés par catégorie avec auto-seeding
 - **Auth** : JWT, Guards, protection des routes sensibles
+- **Boards** : CRUD complet, validation ownership, soft delete
+- **BoardMembers** : Collaboration avec permissions granulaires (view, edit, admin)
+
+### 🏗️ Architecture consolidée
+- **Interfaces centralisées** : JwtUser, test mocks typés
+- **ESLint strict** : Configuration spécialisée pour tests
+- **BaseEntity** : Héritage cohérent avec timestamps et soft delete
+- **Séparation permissions/statuts** : Architecture claire et maintenable
 
 ### 📋 Roadmap
-- **Boards** : Espaces collaboratifs avec membres et permissions granulaires
 - **Blocks** : Contenu interactif (text, file, analysis) avec positionnement
 - **Block Relations** : Liens entre blocks (generated_from, references, etc.)
 - **Content Types** : TextContent, FileContent, AnalysisContent spécialisés
 - **Invitations** : Système d'invitation avec tokens temporaires
+- **🆕 Analysis Templates** : Templates préconfigurés pour IA (analyse prévisionnelle, extraction données, etc.)
+- **🆕 Microservice IA** : Intégration Lambda AWS Python -> Microservice de traitement IA et processing des données
 
 ## 🏗️ Architecture
 
@@ -108,6 +241,7 @@ src/
 ## 📚 Documentation
 
 ### Référence technique
+- **[`docs/DEVELOPMENT_GUIDE.md`](docs/DEVELOPMENT_GUIDE.md)** : Guide de développement complet
 - **[`docs/architecture-technique.md`](docs/architecture-technique.md)** : Architecture détaillée
 - **[`docs/database-schema.puml`](docs/database-schema.puml)** : Modèle de données
 - **[`docs/ci-cd.md`](docs/ci-cd.md)** : Pipeline CI/CD
@@ -116,7 +250,7 @@ src/
 
 1. Créer une branche : `git checkout -b feature/ma-fonctionnalite`
 2. Développer avec tests unitaires obligatoires
-3. Valider : `npm run lint && npm run format && npm run test:e2e`
+3. Valider : `npm run lint && npm run format && npm run test`
 4. Commit : `git commit -m "feat: description"`
 5. Push et créer une PR
 

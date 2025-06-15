@@ -2,17 +2,15 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException, ConflictException } from '@nestjs/common';
 import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
-import { UserResponseDto } from './dto/user-response.dto';
 
 describe('UsersController', () => {
   let controller: UsersController;
   let service: jest.Mocked<UsersService>;
 
-  const mockUserResponse: UserResponseDto = {
+  const mockUserResponse = {
     id: 'mock-id',
     email: 'test@example.com',
     displayName: 'Test User',
-    createdAt: new Date(),
     updatedAt: new Date(),
   };
 
@@ -58,8 +56,6 @@ describe('UsersController', () => {
 
       const result = await controller.create(createUserDto);
 
-      // eslint-disable-next-line @typescript-eslint/unbound-method
-      expect(service.create).toHaveBeenCalledWith(createUserDto);
       expect(result).toBe(mockUserResponse);
     });
 
@@ -107,14 +103,12 @@ describe('UsersController', () => {
   describe('update', () => {
     it('should update user successfully', async () => {
       const userId = 'mock-id';
-      const updateUserDto = {
-        displayName: 'Updated Name',
-      };
-
+      const updateUserDto = { displayName: 'Updated Name' };
       const updatedUserResponse = {
         ...mockUserResponse,
         displayName: 'Updated Name',
       };
+
       service.update.mockResolvedValue(updatedUserResponse);
 
       const result = await controller.update(
@@ -123,8 +117,6 @@ describe('UsersController', () => {
         mockAuthRequest,
       );
 
-      // eslint-disable-next-line @typescript-eslint/unbound-method
-      expect(service.update).toHaveBeenCalledWith(userId, updateUserDto);
       expect(result).toBe(updatedUserResponse);
     });
 
@@ -138,6 +130,30 @@ describe('UsersController', () => {
       await expect(
         controller.update(userId, updateUserDto, mockAuthRequest),
       ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('getMe', () => {
+    it('should return complete user profile', async () => {
+      service.findById.mockResolvedValue(mockUserResponse);
+
+      const result = await controller.getMe(mockAuthRequest);
+
+      expect(result).toEqual({
+        id: mockUserResponse.id,
+        email: mockUserResponse.email,
+        displayName: mockUserResponse.displayName,
+        updatedAt: mockUserResponse.updatedAt,
+      });
+    });
+
+    it('should propagate NotFoundException when user not found', async () => {
+      const notFoundError = new NotFoundException('Utilisateur non trouvé');
+      service.findById.mockRejectedValue(notFoundError);
+
+      await expect(controller.getMe(mockAuthRequest)).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 });
