@@ -42,7 +42,8 @@ export class CreateUserDto {
   password: string;
 
   @ApiPropertyOptional({
-    description: "Nom d'affichage de l'utilisateur (optionnel, email utilisé par défaut)",
+    description:
+      "Nom d'affichage de l'utilisateur (optionnel, email utilisé par défaut)",
     example: 'Jean Dupont',
   })
   @IsOptional()

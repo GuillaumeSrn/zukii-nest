@@ -1,22 +1,7 @@
 import { Exclude, Expose, Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 import { PublicUserDto } from '../../users/dto/public-user.dto';
-
-class BoardStatusDto {
-  @ApiProperty({
-    description: 'Identifiant du statut',
-    example: 'board-active',
-  })
-  @Expose()
-  id: string;
-
-  @ApiProperty({
-    description: 'Nom du statut',
-    example: 'active',
-  })
-  @Expose()
-  name: string;
-}
+import { StatusResponseDto } from '../../status/dto/status-response.dto';
 
 export class BoardResponseDto {
   @ApiProperty({
@@ -59,11 +44,11 @@ export class BoardResponseDto {
 
   @ApiProperty({
     description: 'Status du board',
-    type: BoardStatusDto,
+    type: StatusResponseDto,
   })
   @Expose()
-  @Type(() => BoardStatusDto)
-  status: BoardStatusDto;
+  @Type(() => StatusResponseDto)
+  status: StatusResponseDto;
 
   @ApiProperty({
     description: 'Date de dernière modification',

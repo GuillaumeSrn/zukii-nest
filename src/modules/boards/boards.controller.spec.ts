@@ -14,19 +14,21 @@ describe('BoardsController', () => {
   let service: jest.Mocked<BoardsService>;
 
   const mockBoardResponse = {
-    id: 'board-mock-id',
+    id: 'board-123',
     title: 'Test Board',
     description: 'Test Description',
     backgroundColor: '#FFFFFF',
     updatedAt: new Date(),
     owner: {
-      id: 'user-mock-id',
+      id: 'user-123',
       displayName: 'Test User',
       isActive: true,
     },
     status: {
       id: 'board-active',
+      category: 'board',
       name: 'active',
+      isActive: true,
     },
   };
 

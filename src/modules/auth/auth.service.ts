@@ -116,10 +116,7 @@ export class AuthService {
     this.logger.log('Tentative de révocation de token');
 
     try {
-      const decoded = this.jwtService.decode(token) as {
-        exp?: number;
-        sub?: string;
-      } | null;
+      const decoded = this.jwtService.decode(token);
 
       if (!decoded || !decoded.exp) {
         throw new UnauthorizedException('Token invalide');

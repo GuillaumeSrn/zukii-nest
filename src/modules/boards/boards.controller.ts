@@ -12,8 +12,6 @@ import {
   Request,
   UseInterceptors,
   ClassSerializerInterceptor,
-  ValidationPipe,
-  UsePipes,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -28,10 +26,7 @@ import { CreateBoardDto } from './dto/create-board.dto';
 import { UpdateBoardDto } from './dto/update-board.dto';
 import { BoardResponseDto } from './dto/board-response.dto';
 import { UuidValidationPipe } from '../../common/pipes/uuid-validation.pipe';
-
-interface JwtUser {
-  id: string;
-}
+import { JwtUser } from '../../common/interfaces/jwt-user.interface';
 
 @ApiTags('Boards')
 @Controller('boards')
@@ -44,7 +39,6 @@ export class BoardsController {
   @Post()
   @ApiBearerAuth('JWT-auth')
   @HttpCode(HttpStatus.CREATED)
-  @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
   @ApiOperation({
     summary: 'Créer un nouveau board',
     description:
@@ -157,7 +151,6 @@ export class BoardsController {
 
   @Patch(':id')
   @ApiBearerAuth('JWT-auth')
-  @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
   @ApiOperation({
     summary: 'Mettre à jour un board',
     description: 'Met à jour un board existant (propriétaire uniquement)',

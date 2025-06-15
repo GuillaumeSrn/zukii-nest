@@ -8,6 +8,11 @@ export enum BoardStatus {
   ARCHIVED = 'board-archived',
 }
 
+export enum BoardMemberStatus {
+  ACTIVE = 'board-member-active',
+  INACTIVE = 'board-member-inactive',
+}
+
 export enum BlockStatus {
   DRAFT = 'block-draft',
   ACTIVE = 'block-active',
@@ -25,6 +30,7 @@ export enum InvitationStatus {
 export const ALL_STATUSES = [
   ...Object.values(UserStatus),
   ...Object.values(BoardStatus),
+  ...Object.values(BoardMemberStatus),
   ...Object.values(BlockStatus),
   ...Object.values(InvitationStatus),
 ] as const;
@@ -33,6 +39,7 @@ export const ALL_STATUSES = [
 export const STATUS_BY_CATEGORY = {
   user: UserStatus,
   board: BoardStatus,
+  'board-member': BoardMemberStatus,
   block: BlockStatus,
   invitation: InvitationStatus,
 } as const;
