@@ -1,54 +1,50 @@
 import { Exclude, Expose, Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 import { PublicUserDto } from '../../users/dto/public-user.dto';
+import { BoardMemberPermission } from '../enums/board-member.enum';
 import { StatusResponseDto } from '../../status/dto/status-response.dto';
 
-export class BoardResponseDto {
+export class BoardMemberResponseDto {
   @ApiProperty({
-    description: 'Identifiant unique du board',
-    example: 'board-abc123',
+    description: 'Identifiant unique du membre',
+    example: 'member-abc123',
     format: 'uuid',
   })
   @Expose()
   id: string;
 
   @ApiProperty({
-    description: 'Titre du board',
-    example: 'Mon Tableau de Bord Projet',
+    description: 'Niveau de permission du membre',
+    enum: BoardMemberPermission,
+    example: BoardMemberPermission.VIEW,
   })
   @Expose()
-  title: string;
+  permissionLevel: BoardMemberPermission;
 
   @ApiProperty({
-    description: 'Description du board',
-    example: 'Ce tableau contient les analyses de données de notre projet.',
-    nullable: true,
-  })
-  @Expose()
-  description?: string;
-
-  @ApiProperty({
-    description: 'Couleur de fond du board',
-    example: '#F5F5F5',
-  })
-  @Expose()
-  backgroundColor: string;
-
-  @ApiProperty({
-    description: 'Propriétaire du board',
+    description: 'Utilisateur membre',
     type: PublicUserDto,
   })
   @Expose()
   @Type(() => PublicUserDto)
-  owner: PublicUserDto;
+  user: PublicUserDto;
 
   @ApiProperty({
-    description: 'Status du board',
+    description: 'Status du membre',
     type: StatusResponseDto,
   })
   @Expose()
   @Type(() => StatusResponseDto)
   status: StatusResponseDto;
+
+  @ApiProperty({
+    description: "Date d'ajout au board",
+    example: '2024-01-15T12:45:00.000Z',
+    type: 'string',
+    format: 'date-time',
+  })
+  @Expose()
+  createdAt: Date;
 
   @ApiProperty({
     description: 'Date de dernière modification',

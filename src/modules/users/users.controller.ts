@@ -9,8 +9,6 @@ import {
   HttpStatus,
   UseInterceptors,
   ClassSerializerInterceptor,
-  ValidationPipe,
-  UsePipes,
   Logger,
   Request,
   ForbiddenException,
@@ -30,10 +28,7 @@ import { PublicUserDto } from './dto/public-user.dto';
 import { UsersService } from './users.service';
 import { Public } from '../../common/decorators/public.decorator';
 import { UuidValidationPipe } from '../../common/pipes/uuid-validation.pipe';
-
-interface JwtUser {
-  id: string;
-}
+import { JwtUser } from '../../common/interfaces/jwt-user.interface';
 
 @ApiTags('Utilisateurs')
 @Controller('users')
@@ -46,7 +41,6 @@ export class UsersController {
   @Public()
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
   @ApiOperation({
     summary: 'Créer un nouvel utilisateur',
     description: "Création d'un compte utilisateur",
@@ -141,7 +135,6 @@ export class UsersController {
 
   @Put(':id')
   @ApiBearerAuth('JWT-auth')
-  @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
   @ApiOperation({
     summary: 'Mettre à jour un utilisateur',
     description:

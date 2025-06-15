@@ -8,8 +8,6 @@ import {
   Logger,
   UseInterceptors,
   ClassSerializerInterceptor,
-  ValidationPipe,
-  UsePipes,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -38,7 +36,6 @@ export class AuthController {
   @Post('login')
   @UseGuards(LocalAuthGuard)
   @HttpCode(HttpStatus.OK)
-  @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
   @ApiOperation({
     summary: 'Connexion utilisateur',
     description: 'Authentifie un utilisateur avec email et mot de passe',
@@ -74,7 +71,6 @@ export class AuthController {
   @Public()
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
-  @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
   @ApiOperation({
     summary: 'Renouvellement des tokens',
     description:
@@ -115,7 +111,6 @@ export class AuthController {
   @Post('revoke')
   @ApiBearerAuth('JWT-auth')
   @HttpCode(HttpStatus.OK)
-  @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
   @ApiOperation({
     summary: 'Révocation de token',
     description:

@@ -1,12 +1,13 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { MockAuthResponse } from '../../common/interfaces/test-mocks.interface';
 
 describe('AuthController', () => {
   let controller: AuthController;
   let service: jest.Mocked<AuthService>;
 
-  const mockAuthResponse = {
+  const mockAuthResponse: MockAuthResponse = {
     access_token: 'jwt-token',
     refresh_token: 'refresh-token',
     user: {

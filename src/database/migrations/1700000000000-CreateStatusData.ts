@@ -8,6 +8,8 @@ export class CreateStatusData1700000000000 implements MigrationInterface {
       ('user-inactive', 'user', 'inactive', true),
       ('board-active', 'board', 'active', true),
       ('board-archived', 'board', 'archived', true),
+      ('board-member-active', 'board-member', 'active', true),
+      ('board-member-inactive', 'board-member', 'inactive', true),
       ('block-draft', 'block', 'draft', true),
       ('block-active', 'block', 'active', true),
       ('block-archived', 'block', 'archived', true),
@@ -23,7 +25,8 @@ export class CreateStatusData1700000000000 implements MigrationInterface {
     await queryRunner.query(`
       DELETE FROM statuses WHERE id IN (
         'user-active', 'user-inactive',
-        'board-active', 'board-archived', 
+        'board-active', 'board-archived',
+        'board-member-active', 'board-member-inactive',
         'block-draft', 'block-active', 'block-archived',
         'invitation-pending', 'invitation-accepted', 'invitation-declined', 'invitation-expired'
       );

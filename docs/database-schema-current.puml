@@ -40,7 +40,6 @@ TABLE(Status, "Status") {
   is_active: BOOLEAN DEFAULT TRUE
   created_at: TIMESTAMP DEFAULT NOW()
   updated_at: TIMESTAMP DEFAULT NOW()
-  deleted_at: TIMESTAMP NULL
 }
 
 ' === RELATIONS ACTUELLES ===

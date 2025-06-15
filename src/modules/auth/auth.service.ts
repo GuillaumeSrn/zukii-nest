@@ -116,30 +116,11 @@ export class AuthService {
     this.logger.log('Tentative de révocation de token');
 
     try {
-      const decoded = this.jwtService.decode(token) as {
-        exp?: number;
-        sub?: string;
-      } | null;
-
-      if (!decoded || !decoded.exp) {
-        throw new UnauthorizedException('Token invalide');
-      }
-
-      const expirationTime = decoded.exp * 1000 - Date.now();
-
-      if (expirationTime <= 0) {
-        this.logger.log('Token déjà expiré, révocation ignorée');
-        return Promise.resolve();
-      }
-
-      // TODO: Implémenter le stockage Redis pour la blacklist
+      // TODO: Implémenter la logique de révocation avec Redis
       // Pour l'instant, on log simplement l'action
       this.logger.log(
-        `Token révoqué avec succès. Expiration dans ${expirationTime}ms`,
+        `Token révoqué avec succès: ${token.substring(0, 10)}...`,
       );
-
-      // Dans une implémentation complète, on ferait :
-      // await this.redisService.set(`blacklist:${token}`, 'revoked', expirationTime);
       return Promise.resolve();
     } catch (error) {
       this.logger.error(
@@ -155,7 +136,10 @@ export class AuthService {
     try {
       // TODO: Vérifier dans Redis si le token est dans la blacklist
       // Pour l'instant, on retourne toujours false
-      // return await this.redisService.get(`blacklist:${token}`) === 'revoked';
+      // En attendant l'implémentation Redis, on log le token pour debug
+      this.logger.debug(
+        `Vérification révocation pour: ${token.substring(0, 10)}...`,
+      );
       return Promise.resolve(false);
     } catch (error) {
       this.logger.error('Erreur lors de la vérification de révocation:', error);

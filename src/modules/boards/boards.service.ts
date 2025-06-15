@@ -143,15 +143,11 @@ export class BoardsService {
     owner: User,
     status: Status,
   ): BoardResponseDto {
-    const ownerDto = {
-      id: owner.id,
-      displayName: owner.displayName,
-      isActive: owner.status?.isActive ?? true,
-    };
-
     const statusDto = {
       id: status.id,
+      category: status.category,
       name: status.name,
+      isActive: status.isActive,
     };
 
     return {
@@ -159,7 +155,11 @@ export class BoardsService {
       title: board.title,
       description: board.description,
       backgroundColor: board.backgroundColor,
-      owner: ownerDto,
+      owner: {
+        id: owner.id,
+        displayName: owner.displayName,
+        isActive: true,
+      },
       status: statusDto,
       updatedAt: board.updatedAt,
     };
