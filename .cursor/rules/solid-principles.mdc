@@ -1,0 +1,6 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+Respecter les principes SOLID : SRP (une responsabilité par classe), OCP (ouvert extension, fermé modification), LSP (substitution), ISP (interfaces séparées), DIP (injection de dépendances NestJS obligatoire, jamais de new direct).

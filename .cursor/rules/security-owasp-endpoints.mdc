@@ -1,0 +1,18 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+Chaque endpoint doit être protégé contre les 10 vulnérabilités OWASP Top 10 :
+- A01 Broken Access Control : JWT Guards + validation ownership
+- A02 Cryptographic Failures : @Exclude sur données sensibles, bcrypt pour mots de passe
+- A03 Injection : DTOs class-validator + sanitisation XSS + TypeORM paramétré
+- A04 Insecure Design : Architecture modulaire + principes SOLID
+- A05 Security Misconfiguration : Headers Helmet + CORS strict + variables d'environnement
+- A06 Vulnerable Components : Audit npm automatique + dépendances à jour
+- A07 Identity & Auth Failures : JWT strategy + LocalAuthGuard + validation stricte
+- A08 Software Integrity Failures : ValidationPipe global + whitelist + DTOs typés
+- A09 Logging Failures : Logger NestJS sur erreurs/accès + pas de données sensibles
+- A10 SSRF : Validation stricte des URLs + pas d'appels externes non contrôlés
+
+Utiliser SecurityInterceptor global pour protection automatique XSS/payload/headers, si possible, sans faire une usine à gaz.
