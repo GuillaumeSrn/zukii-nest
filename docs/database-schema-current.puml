@@ -42,16 +42,34 @@ TABLE(Status, "Status") {
   updated_at: TIMESTAMP DEFAULT NOW()
 }
 
+TABLE(BoardMember, "BoardMember") {
+  PK(id): UUID
+  FK(board_id): UUID NOT NULL
+  FK(user_id): UUID NOT NULL
+  IDX(unique_membership): (board_id, user_id) UNIQUE
+  permission_level: ENUM('view', 'edit', 'admin') DEFAULT 'view'
+  FK(status_id): VARCHAR NOT NULL
+  FK(updated_by): UUID NULL
+  created_at: TIMESTAMP DEFAULT NOW()
+  updated_at: TIMESTAMP DEFAULT NOW()
+  deleted_at: TIMESTAMP NULL
+  deleted_by: UUID NULL
+}
+
 ' === RELATIONS ACTUELLES ===
 User ||--o{ Board : "owner_id"
+User ||--o{ BoardMember : "user_id"
+Board ||--o{ BoardMember : "board_id"
 Status ||--o{ User : "status_id"
 Status ||--o{ Board : "status_id"
+Status ||--o{ BoardMember : "status_id"
 
 ' === DONNÉES DE RÉFÉRENCE ===
 note right of Status
   Statuts pré-configurés :
   - user-active, user-inactive
   - board-active, board-archived
+  - board-member-active, board-member-inactive
   - block-draft, block-active, block-archived (pour futur)
   - invitation-pending, invitation-accepted, etc. (pour futur)
 end note
@@ -60,8 +78,18 @@ note right of Board
   Fonctionnalités actuelles :
   - CRUD complet (Create, Read, Update, Delete)
   - Validation ownership (seul le propriétaire peut modifier)
+  - Système de collaboration via BoardMember
   - Soft delete via BaseEntity
   - Tests unitaires complets (71/71)
+end note
+
+note right of BoardMember
+  Collaboration opérationnelle :
+  - Permissions granulaires (view, edit, admin)
+  - Contrainte d'unicité (user_id, board_id)
+  - Soft delete via BaseEntity
+  - Tests unitaires complets (21/21)
+  - Gestion des membres par les admins
 end note
 
 note right of User

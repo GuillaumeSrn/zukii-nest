@@ -12,9 +12,9 @@ L'architecture repose sur deux diagrammes UML :
 - **User** : CRUD complet, authentification JWT, profils publics/privés
 - **Status** : Système centralisé par catégorie, données de référence auto-seeding
 - **Board** : CRUD complet, validation ownership, soft delete, tests 71/71
+- **BoardMember** : Collaboration opérationnelle avec permissions granulaires, tests 21/21
 
 #### 🚧 **Modules en roadmap (non implémentés)**
-- **BoardMember** : Collaboration avec permissions granulaires
 - **Invitation** : Système d'invitations temporaires
 - **Block** : Contenu positionné avec types (text, file, analysis)
 - **Content Types** : TextContent, FileContent, AnalysisContent
@@ -47,13 +47,18 @@ L'architecture repose sur deux diagrammes UML :
 #### Relations entre Blocks
 - **BlockRelation** : Relations inter-blocks (generated_from, references, comment_on, derived_from)
 
-### Relations
-- User 1..N Board (propriétaire)
-- User 1..N BoardMember N..1 Board (permissions granulaires)
+### Relations (Actuelles et Futures)
+
+#### ✅ **Relations implémentées**
+- User 1..N Board (propriétaire) - `board.ownerId`
+- User 1..N BoardMember N..1 Board (permissions granulaires) - `board_member.userId` / `board_member.boardId`
+- Status 1..N User/Board/BoardMember - `*.statusId`
+
+#### 🚧 **Relations futures (roadmap)**
 - Board 1..N Block
 - Block 1..1 TextContent|FileContent|AnalysisContent (via content_id)
 - Block N..N Block (via BlockRelation)
-- Status 1..N User/Board/Block
+- Status 1..N Block
 
 ### Permissions simplifiées
 Les permissions sont gérées **uniquement au niveau des boards** via la table `BoardMember` :
@@ -114,8 +119,9 @@ L'application implémente une sécurité robuste sur plusieurs niveaux :
 #### Authentification & Autorisation
 - **Hachage bcrypt** : Mots de passe avec 12 rounds de sel
 - **JWT Strategy** : Tokens sécurisés pour authentification
-- **Guards NestJS** : Protection automatique des routes sensibles
-- **Permissions granulaires** : Contrôle au niveau des boards uniquement
+- **JWT Guard Global** : Protection automatique de TOUTES les routes via `APP_GUARD`
+- **LocalAuthGuard** : Authentification spécifique pour login/register
+- **Permissions granulaires** : Contrôle au niveau des boards uniquement (view/edit/admin)
 
 #### Validation & Protection
 - **DTOs class-validator** : Validation stricte de toutes les entrées

@@ -127,9 +127,9 @@ board.statusId = BoardStatus.ARCHIVED;
 **Statuts disponibles :**
 - **Users** : `user-active`, `user-inactive`
 - **Boards** : `board-active`, `board-archived`
-- **BoardMembers** : `board-member-active`, `board-member-inactive`
-- **Blocks** : `block-draft`, `block-active`, `block-archived`
-- **Invitations** : `invitation-pending`, `invitation-accepted`, `invitation-declined`, `invitation-expired`
+- **BoardMembers** : `board-member-active`, `board-member-inactive` ✅ *Implémenté*
+- **Blocks** : `block-draft`, `block-active`, `block-archived` *Future*
+- **Invitations** : `invitation-pending`, `invitation-accepted`, `invitation-declined`, `invitation-expired` *Future*
 
 ### Scripts disponibles
 
@@ -185,7 +185,7 @@ npm run format                    # Formatage automatique
 - **Status** : États centralisés par catégorie avec auto-seeding
 - **Auth** : JWT, Guards, protection des routes sensibles
 - **Boards** : CRUD complet, validation ownership, soft delete
-- **BoardMembers** : Collaboration avec permissions granulaires (view, edit, admin)
+- **BoardMembers** : Collaboration opérationnelle avec permissions granulaires (view, edit, admin)
 
 ### 🏗️ Architecture consolidée
 - **Interfaces centralisées** : JwtUser, test mocks typés
@@ -193,11 +193,17 @@ npm run format                    # Formatage automatique
 - **BaseEntity** : Héritage cohérent avec timestamps et soft delete
 - **Séparation permissions/statuts** : Architecture claire et maintenable
 
-### 📋 Roadmap
+### 📋 Roadmap (modules à implémenter)
 - **Blocks** : Contenu interactif (text, file, analysis) avec positionnement
 - **Block Relations** : Liens entre blocks (generated_from, references, etc.)
 - **Content Types** : TextContent, FileContent, AnalysisContent spécialisés
 - **Invitations** : Système d'invitation avec tokens temporaires
+
+### 🎯 Fonctionnalités de collaboration actuelles
+- **Gestion des membres** : Ajout/suppression de membres aux boards
+- **Permissions granulaires** : view (consultation), edit (modification), admin (gestion membres)
+- **Validation ownership** : Seuls les propriétaires et admins peuvent gérer les membres
+- **Protection des accès** : Vérification des permissions sur chaque action
 - **🆕 Analysis Templates** : Templates préconfigurés pour IA (analyse prévisionnelle, extraction données, etc.)
 - **🆕 Microservice IA** : Intégration Lambda AWS Python -> Microservice de traitement IA et processing des données
 
