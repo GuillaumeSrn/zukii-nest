@@ -11,7 +11,6 @@ import {
   ClassSerializerInterceptor,
   Logger,
   Request,
-  ForbiddenException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -133,52 +132,33 @@ export class UsersController {
     };
   }
 
-  @Put(':id')
+  @Put('me')
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
-    summary: 'Mettre à jour un utilisateur',
-    description:
-      "Modification des informations d'un utilisateur (utilisateur connecté uniquement)",
-  })
-  @ApiParam({
-    name: 'id',
-    description: "Identifiant UUID de l'utilisateur",
-    example: '123e4567-e89b-12d3-a456-426614174000',
+    summary: 'Mettre à jour son propre profil',
+    description: "Modification des informations de l'utilisateur connecté",
   })
   @ApiBody({ type: UpdateUserDto })
   @ApiResponse({
     status: 200,
-    description: 'Utilisateur mis à jour avec succès',
+    description: 'Profil mis à jour avec succès',
     type: UserResponseDto,
   })
   @ApiResponse({
     status: 400,
-    description: 'UUID invalide',
+    description: 'Données invalides',
   })
   @ApiResponse({
-    status: 403,
-    description:
-      'Non autorisé - vous ne pouvez modifier que votre propre profil',
+    status: 401,
+    description: 'Token JWT requis',
   })
-  @ApiResponse({
-    status: 404,
-    description: 'Utilisateur non trouvé',
-  })
-  async update(
-    @Param('id', UuidValidationPipe) id: string,
+  async updateMe(
     @Body() updateUserDto: UpdateUserDto,
     @Request() req: { user: JwtUser },
   ): Promise<UserResponseDto> {
-    this.logger.log(`Requête de mise à jour d'utilisateur: ${id}`);
-
-    if (req.user.id !== id) {
-      throw new ForbiddenException(
-        'Vous ne pouvez modifier que votre propre profil',
-      );
-    }
-
-    const user = await this.usersService.update(id, updateUserDto);
-    this.logger.log(`Utilisateur mis à jour avec succès: ${user.email}`);
+    this.logger.log(`Requête de mise à jour de profil pour: ${req.user.id}`);
+    const user = await this.usersService.update(req.user.id, updateUserDto);
+    this.logger.log(`Profil mis à jour avec succès: ${user.email}`);
     return user;
   }
 }
