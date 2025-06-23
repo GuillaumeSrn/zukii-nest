@@ -13,6 +13,11 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { BoardMemberPermission } from './enums/board-member.enum';
+import { SoftDeleteHelper } from '../../common/helpers/soft-delete.helper';
+
+// Mock du SoftDeleteHelper
+jest.mock('../../common/helpers/soft-delete.helper');
+const mockedSoftDeleteHelper = jest.mocked(SoftDeleteHelper);
 
 describe('BoardMembersService', () => {
   let service: BoardMembersService;
@@ -27,6 +32,7 @@ describe('BoardMembersService', () => {
     find: jest.fn(),
     findOne: jest.fn(),
     softDelete: jest.fn(),
+    update: jest.fn(),
   };
 
   const mockBoardRepository = {
@@ -278,21 +284,21 @@ describe('BoardMembersService', () => {
   describe('remove', () => {
     it('should remove board member successfully', async () => {
       // Arrange
-      const mockUpdateResult: UpdateResult = {
-        affected: 1,
-        raw: {},
-        generatedMaps: [],
-      };
       boardRepository.findOne.mockResolvedValue(mockBoard as any);
       boardMemberRepository.findOne.mockResolvedValue(mockBoardMember as any);
-      boardMemberRepository.softDelete.mockResolvedValue(mockUpdateResult);
+      mockedSoftDeleteHelper.softDeleteWithUser.mockResolvedValue();
 
       // Act
       await service.remove('board-123', 'member-123', 'owner-123');
 
       // Assert
-      expect(boardMemberRepository.softDelete).toHaveBeenCalledWith(
+      expect(mockedSoftDeleteHelper.softDeleteWithUser).toHaveBeenCalledWith(
+        boardMemberRepository,
+        statusRepository,
         'member-123',
+        'owner-123',
+        'board-member',
+        'inactive',
       );
     });
 

@@ -17,6 +17,7 @@ import { User } from '../users/entities/user.entity';
 import { Board } from '../boards/entities/board.entity';
 import { Status } from '../status/entities/status.entity';
 import { BoardMemberPermission } from './enums/board-member.enum';
+import { SoftDeleteHelper } from '../../common/helpers/soft-delete.helper';
 
 @Injectable()
 export class BoardMembersService {
@@ -76,7 +77,7 @@ export class BoardMembersService {
     // Récupérer le statut par défaut
     const defaultStatus = await this.statusRepository.findOne({
       where: {
-        category: 'board-member-active',
+        id: 'board-member-active',
         name: 'active',
         isActive: true,
       },
@@ -174,12 +175,18 @@ export class BoardMembersService {
     const board = await this.findBoardEntity(boardId);
     await this.validatePermission(board, currentUserId);
 
-    // Trouver le membre
-    const member = await this.findBoardMemberEntity(memberId, boardId);
+    // Vérifier que le membre existe
+    await this.findBoardMemberEntity(memberId, boardId);
 
-    // Soft delete
-    member.deletedBy = currentUserId;
-    await this.boardMemberRepository.softDelete(memberId);
+    // Utiliser le helper pour le soft delete avec traçabilité
+    await SoftDeleteHelper.softDeleteWithUser(
+      this.boardMemberRepository,
+      this.statusRepository,
+      memberId,
+      currentUserId,
+      'board-member',
+      'inactive',
+    );
 
     this.logger.log(`Membre supprimé avec succès: ${memberId}`);
   }

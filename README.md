@@ -193,6 +193,11 @@ npm run format                    # Formatage automatique
 - **BaseEntity** : Héritage cohérent avec timestamps et soft delete
 - **Séparation permissions/statuts** : Architecture claire et maintenable
 
+### 🔗 Soft Delete avec traçabilité
+
+Utiliser `SoftDeleteHelper` pour maintenir `deletedBy` + statut.  
+**Détails** : [`docs/architecture-technique.md`](docs/architecture-technique.md#soft-delete)
+
 ### 📋 Roadmap (modules à implémenter)
 - **Blocks** : Contenu interactif (text, file, analysis) avec positionnement
 - **Block Relations** : Liens entre blocks (generated_from, references, etc.)
