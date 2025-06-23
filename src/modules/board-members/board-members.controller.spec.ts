@@ -10,8 +10,8 @@ describe('BoardMembersController', () => {
   const mockBoardMembersService = {
     create: jest.fn(),
     findBoardMembers: jest.fn(),
-    update: jest.fn(),
-    remove: jest.fn(),
+    updateUserPermission: jest.fn(),
+    removeByUserId: jest.fn(),
   };
 
   const mockJwtUser = { id: 'user-123' };
@@ -124,32 +124,32 @@ describe('BoardMembersController', () => {
     });
   });
 
-  describe('update', () => {
+  describe('updateUserPermission', () => {
     const updateDto = {
       permissionLevel: BoardMemberPermission.EDIT,
     };
 
-    it('should update board member successfully', async () => {
+    it('should update user permissions successfully', async () => {
       // Arrange
       const updatedMember = {
         ...mockBoardMemberResponse,
         permissionLevel: BoardMemberPermission.EDIT,
       };
-      service.update.mockResolvedValue(updatedMember);
+      service.updateUserPermission.mockResolvedValue(updatedMember);
 
       // Act
-      const result = await controller.update(
+      const result = await controller.updateUserPermission(
         'board-123',
-        'member-123',
+        'user-456',
         updateDto,
         mockRequest as any,
       );
 
       // Assert
       expect(result).toEqual(updatedMember);
-      expect(service.update).toHaveBeenCalledWith(
+      expect(service.updateUserPermission).toHaveBeenCalledWith(
         'board-123',
-        'member-123',
+        'user-456',
         updateDto,
         'user-123',
       );
@@ -157,33 +157,33 @@ describe('BoardMembersController', () => {
 
     it('should propagate service errors', async () => {
       // Arrange
-      const error = new Error('Update error');
-      service.update.mockRejectedValue(error);
+      const error = new Error('Update permission error');
+      service.updateUserPermission.mockRejectedValue(error);
 
       // Act & Assert
       await expect(
-        controller.update(
+        controller.updateUserPermission(
           'board-123',
-          'member-123',
+          'user-456',
           updateDto,
           mockRequest as any,
         ),
-      ).rejects.toThrow('Update error');
+      ).rejects.toThrow('Update permission error');
     });
   });
 
   describe('remove', () => {
-    it('should remove board member successfully', async () => {
+    it('should remove user from board successfully', async () => {
       // Arrange
-      service.remove.mockResolvedValue(undefined);
+      service.removeByUserId.mockResolvedValue(undefined);
 
       // Act
-      await controller.remove('board-123', 'member-123', mockRequest as any);
+      await controller.remove('board-123', 'user-456', mockRequest as any);
 
       // Assert
-      expect(service.remove).toHaveBeenCalledWith(
+      expect(service.removeByUserId).toHaveBeenCalledWith(
         'board-123',
-        'member-123',
+        'user-456',
         'user-123',
       );
     });
@@ -191,11 +191,11 @@ describe('BoardMembersController', () => {
     it('should propagate service errors', async () => {
       // Arrange
       const error = new Error('Remove error');
-      service.remove.mockRejectedValue(error);
+      service.removeByUserId.mockRejectedValue(error);
 
       // Act & Assert
       await expect(
-        controller.remove('board-123', 'member-123', mockRequest as any),
+        controller.remove('board-123', 'user-456', mockRequest as any),
       ).rejects.toThrow('Remove error');
     });
   });

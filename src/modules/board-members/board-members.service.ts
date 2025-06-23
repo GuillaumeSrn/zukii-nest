@@ -10,7 +10,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, IsNull } from 'typeorm';
 import { BoardMember } from './entities/board-member.entity';
 import { CreateBoardMemberDto } from './dto/create-board-member.dto';
-import { UpdateBoardMemberDto } from './dto/update-board-member.dto';
+import { UpdateBoardMemberPermissionDto } from './dto/update-board-member.dto';
 import { BoardMemberResponseDto } from './dto/board-member-response.dto';
 import { UsersService } from '../users/users.service';
 import { User } from '../users/entities/user.entity';
@@ -131,30 +131,29 @@ export class BoardMembersService {
     );
   }
 
-  async update(
+  async updateUserPermission(
     boardId: string,
-    memberId: string,
-    updateBoardMemberDto: UpdateBoardMemberDto,
+    userId: string,
+    updatePermissionDto: UpdateBoardMemberPermissionDto,
     currentUserId: string,
   ): Promise<BoardMemberResponseDto> {
     this.logger.log(
-      `Mise à jour du membre ${memberId} du board ${boardId} par l'utilisateur ${currentUserId}`,
+      `Mise à jour des permissions de l'utilisateur ${userId} du board ${boardId} par ${currentUserId}`,
     );
 
-    // Vérifier l'accès au board
     const board = await this.findBoardEntity(boardId);
     await this.validatePermission(board, currentUserId);
 
-    // Trouver le membre
-    const member = await this.findBoardMemberEntity(memberId, boardId);
+    const member = await this.findBoardMemberByUserId(userId, boardId);
 
-    // Mettre à jour
-    Object.assign(member, updateBoardMemberDto);
+    Object.assign(member, updatePermissionDto);
     member.updatedBy = currentUserId;
 
     const updatedMember = await this.boardMemberRepository.save(member);
 
-    this.logger.log(`Membre mis à jour avec succès: ${updatedMember.id}`);
+    this.logger.log(
+      `Permissions mises à jour avec succès pour l'utilisateur ${userId}`,
+    );
     return this.toBoardMemberResponseDto(
       updatedMember,
       member.user,
@@ -162,33 +161,30 @@ export class BoardMembersService {
     );
   }
 
-  async remove(
+  async removeByUserId(
     boardId: string,
-    memberId: string,
+    userId: string,
     currentUserId: string,
   ): Promise<void> {
     this.logger.log(
-      `Suppression du membre ${memberId} du board ${boardId} par l'utilisateur ${currentUserId}`,
+      `Suppression de l'utilisateur ${userId} du board ${boardId} par l'utilisateur ${currentUserId}`,
     );
 
-    // Vérifier l'accès au board
     const board = await this.findBoardEntity(boardId);
     await this.validatePermission(board, currentUserId);
 
-    // Vérifier que le membre existe
-    await this.findBoardMemberEntity(memberId, boardId);
+    const member = await this.findBoardMemberByUserId(userId, boardId);
 
-    // Utiliser le helper pour le soft delete avec traçabilité
     await SoftDeleteHelper.softDeleteWithUser(
       this.boardMemberRepository,
       this.statusRepository,
-      memberId,
+      member.id,
       currentUserId,
       'board-member',
       'inactive',
     );
 
-    this.logger.log(`Membre supprimé avec succès: ${memberId}`);
+    this.logger.log(`Utilisateur supprimé avec succès: ${userId}`);
   }
 
   private async findBoardEntity(id: string): Promise<Board> {
@@ -215,6 +211,23 @@ export class BoardMembersService {
 
     if (!member) {
       throw new NotFoundException('Membre non trouvé');
+    }
+
+    return member;
+  }
+
+  // Méthode réutilisant le code existant pour rechercher par userId
+  private async findBoardMemberByUserId(
+    userId: string,
+    boardId: string,
+  ): Promise<BoardMember> {
+    const member = await this.boardMemberRepository.findOne({
+      where: { userId, boardId, deletedAt: IsNull() },
+      relations: ['user', 'status'],
+    });
+
+    if (!member) {
+      throw new NotFoundException('Utilisateur non trouvé');
     }
 
     return member;
