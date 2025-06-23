@@ -14,6 +14,7 @@ import { BoardResponseDto } from './dto/board-response.dto';
 import { UsersService } from '../users/users.service';
 import { User } from '../users/entities/user.entity';
 import { Status } from '../status/entities/status.entity';
+import { SoftDeleteHelper } from '../../common/helpers/soft-delete.helper';
 
 @Injectable()
 export class BoardsService {
@@ -112,7 +113,16 @@ export class BoardsService {
     const board = await this.findBoardEntity(id);
     this.validateOwnership(board, currentUserId);
 
-    await this.boardRepository.softDelete(id);
+    // Utiliser le helper pour le soft delete avec traçabilité
+    await SoftDeleteHelper.softDeleteWithUser(
+      this.boardRepository,
+      this.statusRepository,
+      id,
+      currentUserId,
+      'board',
+      'archived',
+    );
+
     this.logger.log(`Board supprimé avec succès: ${id}`);
   }
 

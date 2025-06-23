@@ -11,6 +11,11 @@ import { Board } from './entities/board.entity';
 import { User } from '../users/entities/user.entity';
 import { Status } from '../status/entities/status.entity';
 import { UsersService } from '../users/users.service';
+import { SoftDeleteHelper } from '../../common/helpers/soft-delete.helper';
+
+// Mock du SoftDeleteHelper
+jest.mock('../../common/helpers/soft-delete.helper');
+const mockedSoftDeleteHelper = jest.mocked(SoftDeleteHelper);
 
 describe('BoardsService', () => {
   let service: BoardsService;
@@ -236,15 +241,18 @@ describe('BoardsService', () => {
   describe('remove', () => {
     it('should remove board successfully when user is owner', async () => {
       boardRepository.findOne.mockResolvedValue(mockBoard);
-      boardRepository.softDelete.mockResolvedValue({
-        affected: 1,
-        raw: [],
-        generatedMaps: [],
-      });
+      mockedSoftDeleteHelper.softDeleteWithUser.mockResolvedValue();
 
       await service.remove(mockBoard.id, mockUser.id);
 
-      expect(boardRepository.softDelete).toHaveBeenCalledWith(mockBoard.id);
+      expect(mockedSoftDeleteHelper.softDeleteWithUser).toHaveBeenCalledWith(
+        boardRepository,
+        statusRepository,
+        mockBoard.id,
+        mockUser.id,
+        'board',
+        'archived',
+      );
     });
 
     it('should throw NotFoundException when board not found', async () => {

@@ -140,6 +140,27 @@ L'application couvre les 10 vulnérabilités critiques avec protections automati
 
 > **Référence complète** : Voir [`docs/security-guide.md`](security-guide.md) pour détails d'implémentation et checklist par endpoint.
 
+## Soft Delete
+
+### Utiliser `SoftDeleteHelper` pour la traçabilité
+
+```typescript
+import { SoftDeleteHelper } from '../../common/helpers/soft-delete.helper';
+
+// ❌ Incorrect
+await this.repository.softDelete(id);  // deletedBy reste NULL !
+
+// ✅ Correct
+await SoftDeleteHelper.softDeleteWithUser(
+  this.repository,
+  this.statusRepository,
+  id,
+  currentUserId,
+  'board',      // catégorie
+  'archived'    // statut final
+);
+```
+
 ## Conventions API
 
 ### Endpoints REST
