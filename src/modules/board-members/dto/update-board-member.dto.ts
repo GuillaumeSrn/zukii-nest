@@ -1,4 +1,8 @@
-import { PartialType } from '@nestjs/swagger';
+import { PickType } from '@nestjs/swagger';
 import { CreateBoardMemberDto } from './create-board-member.dto';
 
-export class UpdateBoardMemberDto extends PartialType(CreateBoardMemberDto) {}
+// DTO spécialisé pour modifier uniquement les permissions
+export class UpdateBoardMemberPermissionDto extends PickType(
+  CreateBoardMemberDto,
+  ['permissionLevel'] as const,
+) {}

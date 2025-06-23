@@ -239,44 +239,84 @@ describe('BoardMembersService', () => {
     });
   });
 
-  describe('update', () => {
-    const updateDto = {
-      permissionLevel: BoardMemberPermission.EDIT,
-    };
+  describe('updateUserPermission', () => {
+    it('devrait mettre à jour les permissions par userId', async () => {
+      const boardId = 'board-1';
+      const userId = 'user-2';
+      const updateDto = { permissionLevel: BoardMemberPermission.ADMIN };
 
-    it('should update board member successfully', async () => {
-      // Arrange
-      boardRepository.findOne.mockResolvedValue(mockBoard as any);
-      boardMemberRepository.findOne.mockResolvedValue({
-        ...mockBoardMember,
-        save: jest.fn(),
-      } as any);
-      boardMemberRepository.save.mockResolvedValue({
-        ...mockBoardMember,
-        permissionLevel: BoardMemberPermission.EDIT,
-      } as any);
+      // Mock board avec propriétaire
+      const mockBoard = { id: boardId, ownerId: 'user-1' } as Board;
+      boardRepository.findOne.mockResolvedValueOnce(mockBoard);
 
-      // Act
-      const result = await service.update(
-        'board-123',
-        'member-123',
+      // Mock member trouvé par userId
+      const mockMember = {
+        id: 'member-1',
+        userId,
+        boardId,
+        permissionLevel: BoardMemberPermission.VIEW,
+        user: mockUser,
+        status: mockStatus,
+      } as BoardMember;
+      boardMemberRepository.findOne.mockResolvedValueOnce(mockMember);
+      boardMemberRepository.save.mockResolvedValueOnce({
+        ...mockMember,
+        ...updateDto,
+        updatedBy: 'user-1',
+      });
+
+      const result = await service.updateUserPermission(
+        boardId,
+        userId,
         updateDto,
-        'owner-123',
+        'user-1',
       );
 
+      expect(boardMemberRepository.findOne).toHaveBeenCalledWith({
+        where: { userId, boardId, deletedAt: expect.any(Object) },
+        relations: ['user', 'status'],
+      });
+      expect(result.permissionLevel).toBe(BoardMemberPermission.ADMIN);
+    });
+  });
+
+  describe('removeByUserId', () => {
+    it('should remove user from board successfully', async () => {
+      // Arrange
+      boardRepository.findOne.mockResolvedValue(mockBoard as any);
+      boardMemberRepository.findOne.mockResolvedValue(mockBoardMember as any);
+      mockedSoftDeleteHelper.softDeleteWithUser.mockResolvedValue();
+
+      // Act
+      await service.removeByUserId('board-123', 'user-123', 'owner-123');
+
       // Assert
-      expect(result).toBeDefined();
-      expect(boardMemberRepository.save).toHaveBeenCalled();
+      expect(boardMemberRepository.findOne).toHaveBeenCalledWith({
+        where: {
+          userId: 'user-123',
+          boardId: 'board-123',
+          deletedAt: expect.any(Object),
+        },
+        relations: ['user', 'status'],
+      });
+      expect(mockedSoftDeleteHelper.softDeleteWithUser).toHaveBeenCalledWith(
+        boardMemberRepository,
+        statusRepository,
+        'member-123', // L'ID du membre trouvé
+        'owner-123',
+        'board-member',
+        'inactive',
+      );
     });
 
-    it('should throw NotFoundException when member not found', async () => {
+    it('should throw NotFoundException when user not member', async () => {
       // Arrange
       boardRepository.findOne.mockResolvedValue(mockBoard as any);
       boardMemberRepository.findOne.mockResolvedValue(null);
 
       // Act & Assert
       await expect(
-        service.update('board-123', 'member-123', updateDto, 'owner-123'),
+        service.removeByUserId('board-123', 'user-456', 'owner-123'),
       ).rejects.toThrow(NotFoundException);
     });
   });
