@@ -11,7 +11,7 @@ L'architecture repose sur deux diagrammes UML :
 #### ✅ **Modules implémentés et fonctionnels**
 - **User** : CRUD complet, authentification JWT, profils publics/privés
 - **Status** : Système centralisé par catégorie, données de référence auto-seeding
-- **Board** : CRUD complet, validation ownership, soft delete, tests 71/71
+- **Board** : CRUD complet, validation ownership, suppression permanente, tests 71/71
 - **BoardMember** : Collaboration opérationnelle avec permissions granulaires, tests 21/21
 
 #### 🚧 **Modules en roadmap (non implémentés)**
@@ -72,7 +72,7 @@ Les permissions sont gérées **uniquement au niveau des boards** via la table `
 ```
 src/
 ├── common/
-│   └── entities/base.entity.ts    # Entité abstraite avec soft delete
+  │   └── entities/base.entity.ts    # Entité abstraite avec timestamps
 ├── modules/
 │   ├── [entity]/
 │   │   ├── entities/              # Modèles de données
@@ -140,26 +140,43 @@ L'application couvre les 10 vulnérabilités critiques avec protections automati
 
 > **Référence complète** : Voir [`docs/security-guide.md`](security-guide.md) pour détails d'implémentation et checklist par endpoint.
 
-## Soft Delete
+## Suppression des données
 
-### Utiliser `SoftDeleteHelper` pour la traçabilité
+### Suppression permanente avec cascade automatique
+
+**Suppression définitive des enregistrements** :
 
 ```typescript
-import { SoftDeleteHelper } from '../../common/helpers/soft-delete.helper';
+// ✅ Suppression permanente avec TypeORM
+await this.repository.delete(id);
 
-// ❌ Incorrect
-await this.repository.softDelete(id);  // deletedBy reste NULL !
-
-// ✅ Correct
-await SoftDeleteHelper.softDeleteWithUser(
-  this.repository,
-  this.statusRepository,
-  id,
-  currentUserId,
-  'board',      // catégorie
-  'archived'    // statut final
-);
+// ✅ Suppression avec vérification du résultat
+const result = await this.repository.delete(id);
+if (result.affected === 0) {
+  throw new NotFoundException('Entité non trouvée');
+}
 ```
+
+**Cascade automatique au niveau base de données** :
+```typescript
+// Configuration dans l'entité enfant
+@ManyToOne(() => ParentEntity, { onDelete: 'CASCADE' })
+@JoinColumn({ name: 'parentId' })
+parent: ParentEntity;
+```
+
+**Sécurité et validation** :
+- Toujours valider les permissions avant suppression
+- Logger les suppressions importantes pour audit
+- La cascade est gérée automatiquement par la base de données
+- Pas besoin de transactions manuelles pour les suppressions cascades
+
+> **Pourquoi cascade DB vs TypeORM ?**
+> 
+> - `onDelete: 'CASCADE'` : Gérée par PostgreSQL, fonctionne avec `delete()`
+> - `cascade: ['remove']` : Gérée par TypeORM, nécessite `remove()` et chargement des entités
+> - **Performance** : La cascade DB est plus rapide (pas de requêtes SELECT/DELETE multiples)
+> - **Fiabilité** : Garantie au niveau base de données, même en cas d'accès direct SQL
 
 ## Conventions API
 
@@ -170,7 +187,7 @@ await SoftDeleteHelper.softDeleteWithUser(
 POST   /[entity]           # Création
 GET    /[entity]/:id       # Lecture
 PUT    /[entity]/:id       # Mise à jour
-DELETE /[entity]/:id       # Suppression (logique)
+DELETE /[entity]/:id       # Suppression permanente
 ```
 
 #### Ressources imbriquées
@@ -242,7 +259,7 @@ this.logger.error('Operation failed', error.stack);
 ### Base de données
 - PostgreSQL avec TypeORM
 - UUID pour toutes les clés primaires
-- Soft delete via BaseEntity
+- Timestamps via BaseEntity
 - Relations chargées explicitement
 - Index optimisés pour performance spatiale et JSONB
 

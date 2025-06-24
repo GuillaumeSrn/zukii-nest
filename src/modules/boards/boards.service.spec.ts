@@ -11,11 +11,6 @@ import { Board } from './entities/board.entity';
 import { User } from '../users/entities/user.entity';
 import { Status } from '../status/entities/status.entity';
 import { UsersService } from '../users/users.service';
-import { SoftDeleteHelper } from '../../common/helpers/soft-delete.helper';
-
-// Mock du SoftDeleteHelper
-jest.mock('../../common/helpers/soft-delete.helper');
-const mockedSoftDeleteHelper = jest.mocked(SoftDeleteHelper);
 
 describe('BoardsService', () => {
   let service: BoardsService;
@@ -48,7 +43,6 @@ describe('BoardsService', () => {
     status: mockStatus,
     createdAt: new Date(),
     updatedAt: new Date(),
-    deletedAt: undefined,
   } as Board;
 
   beforeEach(async () => {
@@ -62,7 +56,7 @@ describe('BoardsService', () => {
             findOne: jest.fn(),
             create: jest.fn(),
             save: jest.fn(),
-            softDelete: jest.fn(),
+            delete: jest.fn(),
           },
         },
         {
@@ -146,7 +140,6 @@ describe('BoardsService', () => {
       expect(boardRepository.find).toHaveBeenCalledWith({
         where: {
           ownerId: mockUser.id,
-          deletedAt: expect.anything(),
         },
         relations: ['owner', 'status'],
         order: { updatedAt: 'DESC' },
@@ -171,7 +164,7 @@ describe('BoardsService', () => {
       const result = await service.findById(mockBoard.id, mockUser.id);
 
       expect(boardRepository.findOne).toHaveBeenCalledWith({
-        where: { id: mockBoard.id, deletedAt: expect.anything() },
+        where: { id: mockBoard.id },
         relations: ['owner', 'status'],
       });
       expect(result.id).toBe(mockBoard.id);
@@ -241,18 +234,33 @@ describe('BoardsService', () => {
   describe('remove', () => {
     it('should remove board successfully when user is owner', async () => {
       boardRepository.findOne.mockResolvedValue(mockBoard);
-      mockedSoftDeleteHelper.softDeleteWithUser.mockResolvedValue();
+      boardRepository.delete.mockResolvedValue({
+        affected: 1,
+        raw: {},
+      } as any);
 
       await service.remove(mockBoard.id, mockUser.id);
 
-      expect(mockedSoftDeleteHelper.softDeleteWithUser).toHaveBeenCalledWith(
-        boardRepository,
-        statusRepository,
-        mockBoard.id,
-        mockUser.id,
-        'board',
-        'archived',
-      );
+      expect(boardRepository.delete).toHaveBeenCalledWith(mockBoard.id);
+    });
+
+    it('should remove board with cascade delete of members', async () => {
+      const boardWithMembers = {
+        ...mockBoard,
+        members: [
+          { id: 'member-1', userId: 'user-1' },
+          { id: 'member-2', userId: 'user-2' },
+        ],
+      };
+      boardRepository.findOne.mockResolvedValue(boardWithMembers as any);
+      boardRepository.delete.mockResolvedValue({
+        affected: 1,
+        raw: {},
+      } as any);
+
+      await service.remove(mockBoard.id, mockUser.id);
+
+      expect(boardRepository.delete).toHaveBeenCalledWith(mockBoard.id);
     });
 
     it('should throw NotFoundException when board not found', async () => {
@@ -273,6 +281,26 @@ describe('BoardsService', () => {
       await expect(service.remove(mockBoard.id, mockUser.id)).rejects.toThrow(
         ForbiddenException,
       );
+    });
+
+    it('should verify cascade configuration is properly set up', async () => {
+      const boardWithMembersEntity = {
+        ...mockBoard,
+        members: [
+          { id: 'member-1', boardId: mockBoard.id, userId: 'user-1' },
+          { id: 'member-2', boardId: mockBoard.id, userId: 'user-2' },
+        ],
+      };
+
+      boardRepository.findOne.mockResolvedValue(boardWithMembersEntity as any);
+      boardRepository.delete.mockResolvedValue({
+        affected: 1,
+        raw: {},
+      } as any);
+
+      await service.remove(mockBoard.id, mockUser.id);
+
+      expect(boardRepository.delete).toHaveBeenCalledWith(mockBoard.id);
     });
   });
 });

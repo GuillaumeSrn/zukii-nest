@@ -1,4 +1,11 @@
-import { Entity, Column, ManyToOne, JoinColumn, Index } from 'typeorm';
+import {
+  Entity,
+  Column,
+  ManyToOne,
+  OneToMany,
+  JoinColumn,
+  Index,
+} from 'typeorm';
 import {
   IsNotEmpty,
   MinLength,
@@ -9,6 +16,7 @@ import {
 import { BaseEntity } from '../../../common/entities/base.entity';
 import { User } from '../../users/entities/user.entity';
 import { Status } from '../../status/entities/status.entity';
+import { BoardMember } from '../../board-members/entities/board-member.entity';
 
 @Entity('boards')
 export class Board extends BaseEntity {
@@ -50,4 +58,9 @@ export class Board extends BaseEntity {
   @ManyToOne(() => Status, { eager: false })
   @JoinColumn({ name: 'statusId' })
   status: Status;
+
+  @OneToMany(() => BoardMember, (boardMember) => boardMember.board, {
+    eager: false,
+  })
+  members: BoardMember[];
 }
