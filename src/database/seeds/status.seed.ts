@@ -20,7 +20,9 @@ export class StatusSeeder {
       }
 
       const statusesToSeed = ALL_STATUSES.map((statusId) => {
-        const [category, name] = statusId.split('-', 2);
+        const lastDashIndex = statusId.lastIndexOf('-');
+        const category = statusId.substring(0, lastDashIndex);
+        const name = statusId.substring(lastDashIndex + 1);
         return repository.create({
           id: statusId,
           category,

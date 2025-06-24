@@ -36,10 +36,4 @@ export class UserResponseDto {
 
   @Exclude()
   passwordHash?: string;
-
-  @Exclude()
-  deletedAt?: Date;
-
-  @Exclude()
-  deletedBy?: string;
 }

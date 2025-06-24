@@ -184,19 +184,19 @@ npm run format                    # Formatage automatique
 - **Users** : CRUD avec authentification bcrypt et gestion des statuts
 - **Status** : États centralisés par catégorie avec auto-seeding
 - **Auth** : JWT, Guards, protection des routes sensibles
-- **Boards** : CRUD complet, validation ownership, soft delete
+- **Boards** : CRUD complet, validation ownership, suppression permanente
 - **BoardMembers** : Collaboration opérationnelle avec permissions granulaires (view, edit, admin)
 
 ### 🏗️ Architecture consolidée
 - **Interfaces centralisées** : JwtUser, test mocks typés
 - **ESLint strict** : Configuration spécialisée pour tests
-- **BaseEntity** : Héritage cohérent avec timestamps et soft delete
+- **BaseEntity** : Héritage cohérent avec timestamps
 - **Séparation permissions/statuts** : Architecture claire et maintenable
 
-### 🔗 Soft Delete avec traçabilité
+### 🔗 Suppression permanente avec sécurité
 
-Utiliser `SoftDeleteHelper` pour maintenir `deletedBy` + statut.  
-**Détails** : [`docs/architecture-technique.md`](docs/architecture-technique.md#soft-delete)
+Suppressions définitives avec validation des permissions et logging.
+**Détails** : [`docs/architecture-technique.md`](docs/architecture-technique.md#suppression-des-données)
 
 ### 📋 Roadmap (modules à implémenter)
 - **Blocks** : Contenu interactif (text, file, analysis) avec positionnement
@@ -216,7 +216,7 @@ Utiliser `SoftDeleteHelper` pour maintenir `deletedBy` + statut.
 
 - **NestJS** : Framework, injection de dépendances
 - **PostgreSQL** : Base de données relationnelle
-- **TypeORM** : ORM avec soft delete
+- **TypeORM** : ORM avec gestion des relations
 - **Docker** : Environnement de développement
 
 ### Structure du projet

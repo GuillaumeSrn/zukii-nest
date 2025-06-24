@@ -15,8 +15,6 @@ TABLE(User, "User") {
   FK(status_id): UUID NOT NULL
   created_at: TIMESTAMP DEFAULT NOW()
   updated_at: TIMESTAMP DEFAULT NOW()
-  deleted_at: TIMESTAMP NULL
-  deleted_by: UUID NULL
 }
 
 TABLE(Board, "Board") {
@@ -28,8 +26,6 @@ TABLE(Board, "Board") {
   background_color: VARCHAR(7) DEFAULT '#FFFFFF'
   created_at: TIMESTAMP DEFAULT NOW()
   updated_at: TIMESTAMP DEFAULT NOW()
-  deleted_at: TIMESTAMP NULL
-  deleted_by: UUID NULL
 }
 
 TABLE(BoardMember, "BoardMember") {
@@ -41,9 +37,7 @@ TABLE(BoardMember, "BoardMember") {
   updated_by: UUID NULL
   created_at: TIMESTAMP DEFAULT NOW()
   updated_at: TIMESTAMP DEFAULT NOW()
-  deleted_at: TIMESTAMP NULL
-  deleted_by: UUID NULL
-  IDX(UNIQUE): (user_id, board_id) WHERE deleted_at IS NULL
+  IDX(UNIQUE): (user_id, board_id)
 }
 
 TABLE(Invitation, "Invitation") {
@@ -56,8 +50,6 @@ TABLE(Invitation, "Invitation") {
   expires_at: TIMESTAMP NOT NULL CHECK (expires_at > created_at)
   created_at: TIMESTAMP DEFAULT NOW()
   updated_at: TIMESTAMP DEFAULT NOW()
-  deleted_at: TIMESTAMP NULL
-  deleted_by: UUID NULL
 }
 
 ' === BLOCK SYSTEM (Refactorisé) ===
@@ -80,8 +72,6 @@ TABLE(Block, "Block") {
   last_modified_by: UUID
   created_at: TIMESTAMP DEFAULT NOW()
   updated_at: TIMESTAMP DEFAULT NOW()
-  deleted_at: TIMESTAMP NULL
-  deleted_by: UUID NULL
   IDX(board_spatial): (board_id, position_x, position_y)
   IDX(content_lookup): (content_id, block_type)
 }
@@ -133,8 +123,6 @@ TABLE(AnalysisTemplate, "AnalysisTemplate") {
   is_active: BOOLEAN DEFAULT TRUE
   created_at: TIMESTAMP DEFAULT NOW()
   updated_at: TIMESTAMP DEFAULT NOW()
-  deleted_at: TIMESTAMP NULL
-  deleted_by: UUID NULL
   IDX(analysis_type_active): (analysis_type, is_active)
 }
 
@@ -147,9 +135,7 @@ TABLE(BlockRelation, "BlockRelation") {
   metadata: JSONB
   FK(created_by): UUID NOT NULL
   created_at: TIMESTAMP DEFAULT NOW()
-  deleted_at: TIMESTAMP NULL
-  deleted_by: UUID NULL
-  IDX(UNIQUE): (source_block_id, target_block_id, relation_type) WHERE deleted_at IS NULL
+  IDX(UNIQUE): (source_block_id, target_block_id, relation_type)
   IDX(source_relations): (source_block_id)
   IDX(target_relations): (target_block_id)
 }

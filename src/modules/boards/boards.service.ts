@@ -6,7 +6,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull } from 'typeorm';
+import { Repository } from 'typeorm';
 import { Board } from './entities/board.entity';
 import { CreateBoardDto } from './dto/create-board.dto';
 import { UpdateBoardDto } from './dto/update-board.dto';
@@ -14,7 +14,6 @@ import { BoardResponseDto } from './dto/board-response.dto';
 import { UsersService } from '../users/users.service';
 import { User } from '../users/entities/user.entity';
 import { Status } from '../status/entities/status.entity';
-import { SoftDeleteHelper } from '../../common/helpers/soft-delete.helper';
 
 @Injectable()
 export class BoardsService {
@@ -64,7 +63,6 @@ export class BoardsService {
     const boards = await this.boardRepository.find({
       where: {
         ownerId,
-        deletedAt: IsNull(),
       },
       relations: ['owner', 'status'],
       order: { updatedAt: 'DESC' },
@@ -113,22 +111,14 @@ export class BoardsService {
     const board = await this.findBoardEntity(id);
     this.validateOwnership(board, currentUserId);
 
-    // Utiliser le helper pour le soft delete avec traçabilité
-    await SoftDeleteHelper.softDeleteWithUser(
-      this.boardRepository,
-      this.statusRepository,
-      id,
-      currentUserId,
-      'board',
-      'archived',
-    );
+    await this.boardRepository.delete(id);
 
-    this.logger.log(`Board supprimé avec succès: ${id}`);
+    this.logger.log(`Board et ses membres supprimés avec succès: ${id}`);
   }
 
   private async findBoardEntity(id: string): Promise<Board> {
     const board = await this.boardRepository.findOne({
-      where: { id, deletedAt: IsNull() },
+      where: { id },
       relations: ['owner', 'status'],
     });
 

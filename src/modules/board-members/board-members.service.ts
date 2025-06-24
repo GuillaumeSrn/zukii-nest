@@ -7,7 +7,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull } from 'typeorm';
+import { Repository } from 'typeorm';
 import { BoardMember } from './entities/board-member.entity';
 import { CreateBoardMemberDto } from './dto/create-board-member.dto';
 import { UpdateBoardMemberPermissionDto } from './dto/update-board-member.dto';
@@ -17,7 +17,6 @@ import { User } from '../users/entities/user.entity';
 import { Board } from '../boards/entities/board.entity';
 import { Status } from '../status/entities/status.entity';
 import { BoardMemberPermission } from './enums/board-member.enum';
-import { SoftDeleteHelper } from '../../common/helpers/soft-delete.helper';
 
 @Injectable()
 export class BoardMembersService {
@@ -59,7 +58,6 @@ export class BoardMembersService {
       where: {
         boardId,
         userId: userToAdd.id,
-        deletedAt: IsNull(),
       },
     });
 
@@ -77,7 +75,7 @@ export class BoardMembersService {
     // Récupérer le statut par défaut
     const defaultStatus = await this.statusRepository.findOne({
       where: {
-        id: 'board-member-active',
+        category: 'board-member',
         name: 'active',
         isActive: true,
       },
@@ -120,7 +118,6 @@ export class BoardMembersService {
     const members = await this.boardMemberRepository.find({
       where: {
         boardId,
-        deletedAt: IsNull(),
       },
       relations: ['user', 'status'],
       order: { createdAt: 'ASC' },
@@ -175,21 +172,15 @@ export class BoardMembersService {
 
     const member = await this.findBoardMemberByUserId(userId, boardId);
 
-    await SoftDeleteHelper.softDeleteWithUser(
-      this.boardMemberRepository,
-      this.statusRepository,
-      member.id,
-      currentUserId,
-      'board-member',
-      'inactive',
-    );
+    // Suppression permanente
+    await this.boardMemberRepository.delete(member.id);
 
     this.logger.log(`Utilisateur supprimé avec succès: ${userId}`);
   }
 
   private async findBoardEntity(id: string): Promise<Board> {
     const board = await this.boardRepository.findOne({
-      where: { id, deletedAt: IsNull() },
+      where: { id },
       relations: ['owner'],
     });
 
@@ -205,7 +196,7 @@ export class BoardMembersService {
     boardId: string,
   ): Promise<BoardMember> {
     const member = await this.boardMemberRepository.findOne({
-      where: { id: memberId, boardId, deletedAt: IsNull() },
+      where: { id: memberId, boardId },
       relations: ['user', 'status'],
     });
 
@@ -222,7 +213,7 @@ export class BoardMembersService {
     boardId: string,
   ): Promise<BoardMember> {
     const member = await this.boardMemberRepository.findOne({
-      where: { userId, boardId, deletedAt: IsNull() },
+      where: { userId, boardId },
       relations: ['user', 'status'],
     });
 
@@ -248,7 +239,6 @@ export class BoardMembersService {
         boardId: board.id,
         userId: currentUserId,
         permissionLevel: BoardMemberPermission.ADMIN,
-        deletedAt: IsNull(),
       },
     });
 
@@ -276,7 +266,6 @@ export class BoardMembersService {
       where: {
         boardId: board.id,
         userId: currentUserId,
-        deletedAt: IsNull(),
       },
     });
 

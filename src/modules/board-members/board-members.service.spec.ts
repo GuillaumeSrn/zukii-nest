@@ -13,11 +13,6 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { BoardMemberPermission } from './enums/board-member.enum';
-import { SoftDeleteHelper } from '../../common/helpers/soft-delete.helper';
-
-// Mock du SoftDeleteHelper
-jest.mock('../../common/helpers/soft-delete.helper');
-const mockedSoftDeleteHelper = jest.mocked(SoftDeleteHelper);
 
 describe('BoardMembersService', () => {
   let service: BoardMembersService;
@@ -31,7 +26,7 @@ describe('BoardMembersService', () => {
     save: jest.fn(),
     find: jest.fn(),
     findOne: jest.fn(),
-    softDelete: jest.fn(),
+    delete: jest.fn(),
     update: jest.fn(),
   };
 
@@ -123,7 +118,6 @@ describe('BoardMembersService', () => {
     };
 
     it('should create a board member successfully', async () => {
-      // Arrange
       boardRepository.findOne.mockResolvedValue(mockBoard as any);
       usersService.findByEmail.mockResolvedValue(mockUser as any);
       boardMemberRepository.findOne.mockResolvedValue(null);
@@ -131,10 +125,8 @@ describe('BoardMembersService', () => {
       boardMemberRepository.create.mockReturnValue(mockBoardMember as any);
       boardMemberRepository.save.mockResolvedValue(mockBoardMember as any);
 
-      // Act
       const result = await service.create('board-123', createDto, 'owner-123');
 
-      // Assert
       expect(result).toBeDefined();
       expect(result.id).toBe('member-123');
       expect(result.permissionLevel).toBe(BoardMemberPermission.VIEW);
@@ -142,57 +134,47 @@ describe('BoardMembersService', () => {
     });
 
     it('should throw NotFoundException when board not found', async () => {
-      // Arrange
       boardRepository.findOne.mockResolvedValue(null);
 
-      // Act & Assert
       await expect(
         service.create('board-123', createDto, 'owner-123'),
       ).rejects.toThrow(NotFoundException);
     });
 
     it('should throw ForbiddenException when user is not owner or admin', async () => {
-      // Arrange
       boardRepository.findOne.mockResolvedValue(mockBoard as any);
       boardMemberRepository.findOne.mockResolvedValue(null);
 
-      // Act & Assert
       await expect(
         service.create('board-123', createDto, 'other-user'),
       ).rejects.toThrow(ForbiddenException);
     });
 
     it('should throw NotFoundException when user to add not found', async () => {
-      // Arrange
       boardRepository.findOne.mockResolvedValue(mockBoard as any);
       usersService.findByEmail.mockResolvedValue(null);
 
-      // Act & Assert
       await expect(
         service.create('board-123', createDto, 'owner-123'),
       ).rejects.toThrow(NotFoundException);
     });
 
     it('should throw ConflictException when user is already a member', async () => {
-      // Arrange
       boardRepository.findOne.mockResolvedValue(mockBoard as any);
       usersService.findByEmail.mockResolvedValue(mockUser as any);
       boardMemberRepository.findOne.mockResolvedValue(mockBoardMember as any);
 
-      // Act & Assert
       await expect(
         service.create('board-123', createDto, 'owner-123'),
       ).rejects.toThrow(ConflictException);
     });
 
     it('should throw BadRequestException when trying to add owner as member', async () => {
-      // Arrange
       const ownerUser = { ...mockUser, id: 'owner-123' };
       boardRepository.findOne.mockResolvedValue(mockBoard as any);
       usersService.findByEmail.mockResolvedValue(ownerUser as any);
       boardMemberRepository.findOne.mockResolvedValue(null);
 
-      // Act & Assert
       await expect(
         service.create('board-123', createDto, 'owner-123'),
       ).rejects.toThrow(BadRequestException);
@@ -201,38 +183,30 @@ describe('BoardMembersService', () => {
 
   describe('findBoardMembers', () => {
     it('should return board members for owner', async () => {
-      // Arrange
       boardRepository.findOne.mockResolvedValue(mockBoard as any);
       boardMemberRepository.find.mockResolvedValue([mockBoardMember] as any);
 
-      // Act
       const result = await service.findBoardMembers('board-123', 'owner-123');
 
-      // Assert
       expect(result).toHaveLength(1);
       expect(result[0].id).toBe('member-123');
     });
 
     it('should return board members for valid member', async () => {
-      // Arrange
       boardRepository.findOne.mockResolvedValue(mockBoard as any);
       boardMemberRepository.findOne.mockResolvedValue(mockBoardMember as any);
       boardMemberRepository.find.mockResolvedValue([mockBoardMember] as any);
 
-      // Act
       const result = await service.findBoardMembers('board-123', 'user-123');
 
-      // Assert
       expect(result).toHaveLength(1);
       expect(result[0].id).toBe('member-123');
     });
 
     it('should throw ForbiddenException for non-member', async () => {
-      // Arrange
       boardRepository.findOne.mockResolvedValue(mockBoard as any);
       boardMemberRepository.findOne.mockResolvedValue(null);
 
-      // Act & Assert
       await expect(
         service.findBoardMembers('board-123', 'other-user'),
       ).rejects.toThrow(ForbiddenException);
@@ -245,11 +219,9 @@ describe('BoardMembersService', () => {
       const userId = 'user-2';
       const updateDto = { permissionLevel: BoardMemberPermission.ADMIN };
 
-      // Mock board avec propriétaire
       const mockBoard = { id: boardId, ownerId: 'user-1' } as Board;
       boardRepository.findOne.mockResolvedValueOnce(mockBoard);
 
-      // Mock member trouvé par userId
       const mockMember = {
         id: 'member-1',
         userId,
@@ -273,7 +245,7 @@ describe('BoardMembersService', () => {
       );
 
       expect(boardMemberRepository.findOne).toHaveBeenCalledWith({
-        where: { userId, boardId, deletedAt: expect.any(Object) },
+        where: { userId, boardId },
         relations: ['user', 'status'],
       });
       expect(result.permissionLevel).toBe(BoardMemberPermission.ADMIN);
@@ -282,39 +254,29 @@ describe('BoardMembersService', () => {
 
   describe('removeByUserId', () => {
     it('should remove user from board successfully', async () => {
-      // Arrange
       boardRepository.findOne.mockResolvedValue(mockBoard as any);
       boardMemberRepository.findOne.mockResolvedValue(mockBoardMember as any);
-      mockedSoftDeleteHelper.softDeleteWithUser.mockResolvedValue();
+      boardMemberRepository.delete.mockResolvedValue({
+        affected: 1,
+        raw: {},
+      } as any);
 
-      // Act
       await service.removeByUserId('board-123', 'user-123', 'owner-123');
 
-      // Assert
       expect(boardMemberRepository.findOne).toHaveBeenCalledWith({
         where: {
           userId: 'user-123',
           boardId: 'board-123',
-          deletedAt: expect.any(Object),
         },
         relations: ['user', 'status'],
       });
-      expect(mockedSoftDeleteHelper.softDeleteWithUser).toHaveBeenCalledWith(
-        boardMemberRepository,
-        statusRepository,
-        'member-123', // L'ID du membre trouvé
-        'owner-123',
-        'board-member',
-        'inactive',
-      );
+      expect(boardMemberRepository.delete).toHaveBeenCalledWith('member-123');
     });
 
     it('should throw NotFoundException when user not member', async () => {
-      // Arrange
       boardRepository.findOne.mockResolvedValue(mockBoard as any);
       boardMemberRepository.findOne.mockResolvedValue(null);
 
-      // Act & Assert
       await expect(
         service.removeByUserId('board-123', 'user-456', 'owner-123'),
       ).rejects.toThrow(NotFoundException);
@@ -323,33 +285,24 @@ describe('BoardMembersService', () => {
 
   describe('remove', () => {
     it('should remove board member successfully', async () => {
-      // Arrange
       boardRepository.findOne.mockResolvedValue(mockBoard as any);
       boardMemberRepository.findOne.mockResolvedValue(mockBoardMember as any);
-      mockedSoftDeleteHelper.softDeleteWithUser.mockResolvedValue();
+      boardMemberRepository.delete.mockResolvedValue({
+        affected: 1,
+        raw: {},
+      } as any);
 
-      // Act
-      await service.remove('board-123', 'member-123', 'owner-123');
+      await service.removeByUserId('board-123', 'member-123', 'owner-123');
 
-      // Assert
-      expect(mockedSoftDeleteHelper.softDeleteWithUser).toHaveBeenCalledWith(
-        boardMemberRepository,
-        statusRepository,
-        'member-123',
-        'owner-123',
-        'board-member',
-        'inactive',
-      );
+      expect(boardMemberRepository.delete).toHaveBeenCalledWith('member-123');
     });
 
     it('should throw NotFoundException when member not found', async () => {
-      // Arrange
       boardRepository.findOne.mockResolvedValue(mockBoard as any);
       boardMemberRepository.findOne.mockResolvedValue(null);
 
-      // Act & Assert
       await expect(
-        service.remove('board-123', 'member-123', 'owner-123'),
+        service.removeByUserId('board-123', 'member-123', 'owner-123'),
       ).rejects.toThrow(NotFoundException);
     });
   });
