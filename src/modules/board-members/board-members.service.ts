@@ -41,11 +41,9 @@ export class BoardMembersService {
       `Ajout d'un membre au board ${boardId} par l'utilisateur ${currentUserId}`,
     );
 
-    // Vérifier que le board existe et que l'utilisateur a les permissions
     const board = await this.findBoardEntity(boardId);
     await this.validatePermission(board, currentUserId);
 
-    // Trouver l'utilisateur à ajouter
     const userToAdd = await this.usersService.findByEmail(
       createBoardMemberDto.email,
     );
@@ -53,7 +51,6 @@ export class BoardMembersService {
       throw new NotFoundException('Utilisateur non trouvé avec cet email');
     }
 
-    // Vérifier que l'utilisateur n'est pas déjà membre
     const existingMember = await this.boardMemberRepository.findOne({
       where: {
         boardId,
@@ -65,14 +62,12 @@ export class BoardMembersService {
       throw new ConflictException('Cet utilisateur est déjà membre du board');
     }
 
-    // Vérifier que l'utilisateur n'est pas le propriétaire
     if (userToAdd.id === board.ownerId) {
       throw new BadRequestException(
         'Le propriétaire du board ne peut pas être ajouté comme membre',
       );
     }
 
-    // Récupérer le statut par défaut
     const defaultStatus = await this.statusRepository.findOne({
       where: {
         category: 'board-member',
@@ -85,7 +80,6 @@ export class BoardMembersService {
       throw new ConflictException('Statut par défaut non disponible');
     }
 
-    // Créer le membre
     const boardMember = this.boardMemberRepository.create({
       boardId,
       userId: userToAdd.id,
@@ -95,7 +89,6 @@ export class BoardMembersService {
       updatedBy: currentUserId,
     });
 
-    // Sauvegarder
     const savedMember = await this.boardMemberRepository.save(boardMember);
 
     this.logger.log(`Membre ajouté avec succès: ${savedMember.id}`);
@@ -110,11 +103,9 @@ export class BoardMembersService {
       `Récupération des membres du board ${boardId} par l'utilisateur ${currentUserId}`,
     );
 
-    // Vérifier l'accès au board
     const board = await this.findBoardEntity(boardId);
     await this.validateAccessToBoard(board, currentUserId);
 
-    // Récupérer les membres
     const members = await this.boardMemberRepository.find({
       where: {
         boardId,
@@ -172,7 +163,6 @@ export class BoardMembersService {
 
     const member = await this.findBoardMemberByUserId(userId, boardId);
 
-    // Suppression permanente
     await this.boardMemberRepository.delete(member.id);
 
     this.logger.log(`Utilisateur supprimé avec succès: ${userId}`);
@@ -207,7 +197,6 @@ export class BoardMembersService {
     return member;
   }
 
-  // Méthode réutilisant le code existant pour rechercher par userId
   private async findBoardMemberByUserId(
     userId: string,
     boardId: string,
@@ -228,12 +217,10 @@ export class BoardMembersService {
     board: Board,
     currentUserId: string,
   ): Promise<void> {
-    // Le propriétaire a tous les droits
     if (board.ownerId === currentUserId) {
       return;
     }
 
-    // Vérifier si l'utilisateur est admin du board
     const memberPermission = await this.boardMemberRepository.findOne({
       where: {
         boardId: board.id,
@@ -256,12 +243,10 @@ export class BoardMembersService {
     board: Board,
     currentUserId: string,
   ): Promise<void> {
-    // Le propriétaire a tous les droits
     if (board.ownerId === currentUserId) {
       return;
     }
 
-    // Vérifier si l'utilisateur est membre
     const memberAccess = await this.boardMemberRepository.findOne({
       where: {
         boardId: board.id,
@@ -303,5 +288,44 @@ export class BoardMembersService {
       createdAt: member.createdAt,
       updatedAt: member.updatedAt,
     };
+  }
+
+  async checkUserPermission(
+    boardId: string,
+    userId: string,
+    requiredPermission: BoardMemberPermission,
+  ): Promise<boolean> {
+    const board = await this.boardRepository.findOne({
+      where: { id: boardId },
+    });
+
+    if (!board) {
+      return false;
+    }
+
+    // Le propriétaire a toujours accès
+    if (board.ownerId === userId) {
+      return true;
+    }
+
+    const member = await this.boardMemberRepository.findOne({
+      where: { boardId, userId },
+    });
+
+    if (!member) {
+      return false;
+    }
+
+    // Vérification des permissions hiérarchiques
+    const permissionLevels = {
+      [BoardMemberPermission.VIEW]: 1,
+      [BoardMemberPermission.EDIT]: 2,
+      [BoardMemberPermission.ADMIN]: 3,
+    };
+
+    const userLevel = permissionLevels[member.permissionLevel];
+    const requiredLevel = permissionLevels[requiredPermission];
+
+    return userLevel >= requiredLevel;
   }
 }
