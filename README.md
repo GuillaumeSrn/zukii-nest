@@ -135,9 +135,10 @@ board.statusId = BoardStatus.ARCHIVED;
 
 ```bash
 # Tests
-npm run test              # Tests unitaires
+npm run test              # Tous les tests unitaires (118 tests)
 npm run test:watch        # Tests en mode watch
 npm run test:cov          # Tests avec couverture
+npm run test -- --testNamePattern="CRITICAL"  # Seulement tests critiques
 
 # Code quality
 npm run lint              # ESLint
@@ -180,12 +181,13 @@ npm run format                    # Formatage automatique
 
 ## 📊 État du projet
 
-### ✅ Modules opérationnels (92/92 tests ✅)
+### ✅ Modules opérationnels (118/118 tests ✅)
 - **Users** : CRUD avec authentification bcrypt et gestion des statuts
 - **Status** : États centralisés par catégorie avec auto-seeding
 - **Auth** : JWT, Guards, protection des routes sensibles
 - **Boards** : CRUD complet, validation ownership, suppression permanente
 - **BoardMembers** : Collaboration opérationnelle avec permissions granulaires (view, edit, admin)
+- **Blocks** : Système de contenu positionné avec types (TEXT, FILE, ANALYSIS)
 
 ### 🏗️ Architecture consolidée
 - **Interfaces centralisées** : JwtUser, test mocks typés
@@ -199,10 +201,15 @@ Suppressions définitives avec validation des permissions et logging.
 **Détails** : [`docs/architecture-technique.md`](docs/architecture-technique.md#suppression-des-données)
 
 ### 📋 Roadmap (modules à implémenter)
-- **Blocks** : Contenu interactif (text, file, analysis) avec positionnement
-- **Block Relations** : Liens entre blocks (generated_from, references, etc.)
 - **Content Types** : TextContent, FileContent, AnalysisContent spécialisés
+- **Block Relations** : Liens entre blocks (generated_from, references, etc.)
 - **Invitations** : Système d'invitation avec tokens temporaires
+
+### 🧪 Stratégie de tests MVP
+- **Focus business-critical** : Tests prioritaires sur fonctionnalités essentielles
+- **TDD pragmatique** : Red-Green-Refactor sur les flux critiques uniquement
+- **Sécurité 100%** : Authentification, permissions, validation obligatoirement testées
+- **Détails** : [`.cursor/rules/test-strategy-mvp.mdc`](.cursor/rules/test-strategy-mvp.mdc)
 
 ### 🎯 Fonctionnalités de collaboration actuelles
 - **Gestion des membres** : Ajout/suppression de membres aux boards

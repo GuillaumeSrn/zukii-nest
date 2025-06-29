@@ -80,7 +80,8 @@ export class BoardsController {
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
     summary: 'Lister mes boards',
-    description: 'Récupère tous les boards dont je suis propriétaire',
+    description:
+      'Récupère tous les boards accessibles (propriétaire ou membre)',
   })
   @ApiResponse({
     status: 200,

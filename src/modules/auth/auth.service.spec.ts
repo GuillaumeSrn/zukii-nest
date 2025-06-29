@@ -62,7 +62,7 @@ describe('AuthService', () => {
     expect(service).toBeDefined();
   });
 
-  describe('validateUser', () => {
+  describe('CRITICAL - Security Authentication', () => {
     it('should return user when credentials are valid', async () => {
       usersService.findByEmail.mockResolvedValue(mockUser);
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
@@ -74,7 +74,7 @@ describe('AuthService', () => {
       expect(bcrypt.compare).toHaveBeenCalledWith('password', 'hashedPassword');
     });
 
-    it('should throw UnauthorizedException when user not found', async () => {
+    it('CRITICAL - should reject invalid credentials (user not found)', async () => {
       usersService.findByEmail.mockResolvedValue(null);
 
       await expect(
@@ -82,7 +82,7 @@ describe('AuthService', () => {
       ).rejects.toThrow(UnauthorizedException);
     });
 
-    it('should throw UnauthorizedException when password is invalid', async () => {
+    it('CRITICAL - should reject invalid credentials (wrong password)', async () => {
       usersService.findByEmail.mockResolvedValue(mockUser);
       (bcrypt.compare as jest.Mock).mockResolvedValue(false);
 
@@ -92,7 +92,7 @@ describe('AuthService', () => {
     });
   });
 
-  describe('login', () => {
+  describe('CRITICAL - JWT Token Generation', () => {
     it('should return auth response when login is successful', async () => {
       usersService.findByEmail.mockResolvedValue(mockUser);
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
@@ -188,33 +188,33 @@ describe('AuthService', () => {
     });
   });
 
-  // describe('refreshTokenFromUserId', () => {
-  //   it('should return new tokens when user exists', async () => {
-  //     usersService.findByIdEntity.mockResolvedValue(mockUser);
-  //     jwtService.sign
-  //       .mockReturnValueOnce('new-access-token')
-  //       .mockReturnValueOnce('new-refresh-token');
-  //     configService.get.mockReturnValueOnce('15m').mockReturnValueOnce('7d');
+  describe('refreshTokenFromUserId', () => {
+    it('should return new tokens when user exists', async () => {
+      usersService.findByIdEntity.mockResolvedValue(mockUser);
+      jwtService.sign
+        .mockReturnValueOnce('new-access-token')
+        .mockReturnValueOnce('new-refresh-token');
+      configService.get.mockReturnValueOnce('15m').mockReturnValueOnce('7d');
 
-  //     const result = await service.refreshTokenFromUserId('test-user-id');
+      const result = await service.refreshTokenFromUserId('test-user-id');
 
-  //     expect(result).toEqual({
-  //       access_token: 'new-access-token',
-  //       refresh_token: 'new-refresh-token',
-  //       user: {
-  //         id: mockUser.id,
-  //         email: mockUser.email,
-  //         displayName: mockUser.displayName,
-  //       },
-  //     });
-  //   });
+      expect(result).toEqual({
+        access_token: 'new-access-token',
+        refresh_token: 'new-refresh-token',
+        user: {
+          id: mockUser.id,
+          email: mockUser.email,
+          displayName: mockUser.displayName,
+        },
+      });
+    });
 
-  //   it('should throw UnauthorizedException when user not found', async () => {
-  //     usersService.findByIdEntity.mockResolvedValue(null);
+    it('should throw UnauthorizedException when user not found', async () => {
+      usersService.findByIdEntity.mockResolvedValue(null);
 
-  //     await expect(
-  //       service.refreshTokenFromUserId('nonexistent-user-id'),
-  //     ).rejects.toThrow(UnauthorizedException);
-  //   });
-  // });
+      await expect(
+        service.refreshTokenFromUserId('nonexistent-user-id'),
+      ).rejects.toThrow(UnauthorizedException);
+    });
+  });
 });
