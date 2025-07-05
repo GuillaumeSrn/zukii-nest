@@ -1,0 +1,278 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Stratégie de Tests MVP Zukii
+
+## ⚠️ AVERTISSEMENT POUR ASSISTANTS IA
+
+**ATTENTION** : Ce fichier peut contenir des **informations obsolètes** ou **aspirationnelles** qui ne reflètent pas l'état exact du code.
+
+### 📊 État RÉEL actuel (vérifiable) :
+- **Tests CRITICAL implémentés** : 9 tests (AuthService: 6, BoardsService: 3)
+- **Modules avec tests CRITICAL** : Auth ✅, Boards ✅, Blocks ❌ 
+- **Performance réelle** : 9 tests CRITICAL en 4.4 secondes
+- **Commande de vérification** : `npm run test -- --testNamePattern="CRITICAL" --verbose`
+
+### 🎯 Utilisation recommandée :
+1. **Toujours vérifier** l'état réel avec les commandes de test
+2. **Ne pas faire confiance** aux exemples de code sans validation
+3. **Prioriser** les observations directes du codebase
+4. **Mettre à jour** ce fichier quand des changements sont apportés
+
+---
+
+## 🎯 Philosophie : "Test What Matters"
+
+Au lieu de viser 100% de couverture, nous priorisons les **fonctionnalités business-critical** pour un retour rapide et une validation efficace du MVP.
+
+## 🔥 Fonctionnalités OBLIGATOIREMENT testées
+
+### 1. 🔐 SÉCURITÉ (CRITIQUE - 0 tolérance) ✅ IMPLÉMENTÉ
+#### Tests obligatoires :
+- **Authentification** : Login/register avec credentials valides/invalides
+- **JWT Guards** : Protection routes sensibles + routes publiques autorisées
+- **Permissions Board** : VIEW/EDIT/ADMIN avec validation ownership
+- **Validation DTOs** : Injection SQL, XSS, données malformées
+- **Bcrypt** : Hachage mots de passe + vérification
+
+#### Exemples concrets implémentés :
+```typescript
+describe('CRITICAL - Security Authentication', () => {
+  it('CRITICAL - should reject invalid credentials (user not found)', async () => {
+    await expect(authService.validateUser('wrong@email.com', 'wrong')).rejects.toThrow();
+  });
+});
+```
+
+### 2. 🏢 COLLABORATION CORE (CRITIQUE) ✅ IMPLÉMENTÉ
+#### Tests obligatoires :
+- **CRUD Boards** : Création/modification/suppression par owner uniquement
+- **Board Members** : Ajout/suppression avec validation permissions
+- **Permissions granulaires** : VIEW (lecture), EDIT (modification), ADMIN (gestion)
+- **Ownership validation** : Seul propriétaire + admin peuvent gérer membres
+
+#### Exemples concrets implémentés :
+```typescript
+describe('CRITICAL - Access Control & Permissions', () => {
+  it('CRITICAL - should reject unauthorized access (ownership validation)', async () => {
+    // User non-owner ne peut pas accéder au board
+  });
+});
+```
+
+### 3. 🧩 SYSTÈME BLOCK (MVP CRITIQUE) ⚠️ PARTIELLEMENT IMPLÉMENTÉ
+#### Tests obligatoires :
+- **CRUD Blocks** : Création/modification/suppression avec permissions
+- **Relations Board-Block** : Intégrité référentielle
+- **Validation positions** : Coordonnées, dimensions, zIndex
+- **Block Types** : TEXT/FILE/ANALYSIS avec content_id
+
+#### ⚠️ STATUT RÉEL : Module implémenté mais tests pas encore marqués CRITICAL
+```typescript
+// RÉALITÉ ACTUELLE : Tests existent mais sans marquage CRITICAL
+describe('BlocksService', () => {
+  it('should create a block successfully when user has edit permission', async () => {
+    // Tests complets mais pas optimisés pour développement rapide
+  });
+});
+
+// À FAIRE : Marquer les tests critiques
+describe('BlocksService', () => {
+  describe('CRITICAL - Block Permissions', () => {
+    it('CRITICAL - should require EDIT permission to create block', async () => {
+      // User avec permission VIEW seulement ne peut pas créer
+    });
+  });
+});
+```
+
+### 4. 📊 UPLOAD & CONTENU (VALEUR MÉTIER) ❌ À IMPLÉMENTER
+#### Tests obligatoires FUTURS (quand modules créés) :
+- **Upload CSV** : Validation format, taille, headers
+- **File validation** : Types MIME autorisés, limites sécurité
+- **Error handling** : Gestion échecs upload, messages utilisateur
+- **Content extraction** : Métadonnées automatiques
+
+#### À implémenter quand FileContentModule développé :
+```typescript
+describe('FileContentService - CRITICAL', () => {
+  it('CRITICAL - should validate CSV format and size', async () => {
+    // Rejet fichiers > 50MB ou format invalide
+  });
+  
+  it('CRITICAL - should handle upload failures gracefully', async () => {
+    // Messages d'erreur utilisateur appropriés
+  });
+});
+```
+
+### 5. 🤖 INTÉGRATION IA (VALEUR AJOUTÉE) ❌ À IMPLÉMENTER
+#### Tests obligatoires FUTURS :
+- **Microservice calls** : Timeout, retry, error handling
+- **Analysis pipeline** : Input validation, output parsing
+- **Template system** : Validation configurations IA
+
+## ❌ Ce qu'on NE teste PAS (MVP)
+
+### Fonctionnalités reportées :
+- **Tests E2E complets** : Trop lents pour itération rapide
+- **Performance/Load testing** : Pas critique pour MVP
+- **Tests UI détaillés** : Focus backend d'abord
+- **Edge cases complexes** : Seulement si impact business
+- **Mocks exhaustifs** : Seulement sur dépendances externes
+
+### Modules secondaires :
+- **EmailService** : Pas critique pour démo
+- **StatusService** : Logique simple, peu de risques
+- **Logging/Monitoring** : Pas de logique métier critique
+
+## 🧹 Gestion des tests existants
+
+### ✅ GARDER les tests actuels car :
+1. **Déjà écrits et maintenus** : Coût de suppression > bénéfice
+2. **Couverture de sécurité** : Validation edge cases utiles
+3. **Documentation vivante** : Spécification du comportement
+4. **Régression protection** : Évite les bugs lors de refactoring
+5. **Temps d'exécution acceptable** : 118 tests en < 4 secondes
+
+### 🎯 STRATÉGIE HYBRIDE adoptée :
+- **Tests CRITICAL** : Focus développement et debugging
+- **Tests complets** : Validation finale avant commit
+- **Nouveaux modules** : Appliquer stratégie CRITICAL dès le début
+
+### 📋 Commandes pratiques :
+```bash
+# Développement rapide - seulement critiques
+npm run test -- --testNamePattern="CRITICAL"
+
+# Validation complète - tous les tests
+npm run test
+
+# CI/CD - tous les tests obligatoires
+npm run test && npm run lint && npm run format
+```
+
+## 🧪 Approche TDD Pragmatique
+
+### 1. **Red-Green-Refactor** sur critiques uniquement
+```typescript
+// 1. RED : Test qui échoue
+it('CRITICAL - should reject unauthorized board access', async () => {
+  await expect(boardService.findById(boardId, unauthorizedUserId))
+    .rejects.toThrow(ForbiddenException);
+});
+
+// 2. GREEN : Code minimal qui passe
+async findById(id: string, userId: string) {
+  if (!await this.hasPermission(id, userId)) {
+    throw new ForbiddenException();
+  }
+  // ...
+}
+
+// 3. REFACTOR : Amélioration sans casser les tests
+```
+
+### 2. **Mocks intelligents** pour isolation
+```typescript
+// Mock seulement les dépendances externes complexes
+const mockBoardMembersService = {
+  checkUserPermission: jest.fn().mockResolvedValue(true),
+};
+
+// Garder les entités simples réelles pour validation
+```
+
+### 3. **Tests d'intégration** sur flux complets
+```typescript
+describe('User Journey - Board Collaboration', () => {
+  it('CRITICAL - should complete full collaboration workflow', async () => {
+    // 1. User crée board
+    // 2. User invite membre avec permission EDIT
+    // 3. Membre crée block
+    // 4. Owner modifie permissions à VIEW
+    // 5. Membre ne peut plus créer block
+  });
+});
+```
+
+## 📊 Métriques de succès MVP
+
+### Objectifs quantitatifs :
+- **Sécurité** : 100% des endpoints protégés testés avec CRITICAL
+- **Business Logic** : 100% des CRUD critiques testés avec CRITICAL
+- **Error Handling** : 100% des exceptions métier testées
+- **Performance** : Tests CRITICAL < 5 secondes (actuellement 4.4s), tous tests < 10 secondes
+
+### Objectifs qualitatifs :
+- **Confiance déploiement** : Zéro régression sur fonctionnalités critiques
+- **Debugging efficace** : Tests CRITICAL pointent précisément les problèmes
+- **Documentation vivante** : Tests servent de spécification
+
+## 🚀 Règles d'implémentation
+
+### Chaque nouveau module DOIT avoir :
+1. **Tests service CRITICAL** : Logique métier + gestion erreurs
+2. **Tests controller CRITICAL** : Validation DTOs + codes HTTP
+3. **Tests permissions CRITICAL** : Sécurité et autorisations
+4. **Tests edge cases** : Seulement si impact business critique
+
+### Structure obligatoire des tests :
+```typescript
+describe('ModuleService', () => {
+  // Setup avec mocks appropriés
+  beforeEach(async () => {
+    const module = await Test.createTestingModule({
+      providers: [
+        ModuleService,
+        { provide: getRepositoryToken(Entity), useValue: mockRepository },
+        { provide: DependencyService, useValue: mockDependency },
+      ],
+    }).compile();
+  });
+
+  describe('CRITICAL - Security', () => {
+    it('CRITICAL - should validate permissions', async () => {
+      // Tests sécurité obligatoires
+    });
+  });
+
+  describe('CRITICAL - Business Logic', () => {
+    it('CRITICAL - should handle core functionality', async () => {
+      // Tests logique métier critique
+    });
+  });
+
+  describe('Error Handling', () => {
+    it('should handle edge cases gracefully', async () => {
+      // Tests gestion d'erreurs (non-critiques mais utiles)
+    });
+  });
+});
+```
+
+## ⚡ Commandes de validation
+
+### Développement rapide :
+```bash
+npm run test:watch -- --testNamePattern="CRITICAL"  # Watch mode critiques seulement
+npm run test -- --testNamePattern="CRITICAL"        # Exécution rapide critiques
+```
+
+### Validation complète avant commit :
+```bash
+npm run test                    # Tous les tests (critiques + edge cases)
+npm run test:cov               # Couverture sur modules critiques
+npm run lint && npm run format # Qualité code
+```
+
+### CI/CD pipeline :
+```bash
+npm run test && npm run lint && npm run format  # Validation complète obligatoire
+```
+
+---
+
+**Résultat attendu** : MVP robuste avec tests focalisés sur la valeur business, permettant itération rapide tout en gardant la sécurité des tests existants.

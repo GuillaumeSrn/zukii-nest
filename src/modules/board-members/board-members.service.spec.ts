@@ -181,37 +181,37 @@ describe('BoardMembersService', () => {
     });
   });
 
-  // describe('findBoardMembers', () => {
-  //   it('should return board members for owner', async () => {
-  //     boardRepository.findOne.mockResolvedValue(mockBoard as any);
-  //     boardMemberRepository.find.mockResolvedValue([mockBoardMember] as any);
+  describe('findBoardMembers', () => {
+    it('should return board members for owner', async () => {
+      boardRepository.findOne.mockResolvedValue(mockBoard as any);
+      boardMemberRepository.find.mockResolvedValue([mockBoardMember] as any);
 
-  //     const result = await service.findBoardMembers('board-123', 'owner-123');
+      const result = await service.findBoardMembers('board-123', 'owner-123');
 
-  //     expect(result).toHaveLength(1);
-  //     expect(result[0].id).toBe('member-123');
-  //   });
+      expect(result).toHaveLength(1);
+      expect(result[0].id).toBe('member-123');
+    });
 
-  //   it('should return board members for valid member', async () => {
-  //     boardRepository.findOne.mockResolvedValue(mockBoard as any);
-  //     boardMemberRepository.findOne.mockResolvedValue(mockBoardMember as any);
-  //     boardMemberRepository.find.mockResolvedValue([mockBoardMember] as any);
+    it('should return board members for valid member', async () => {
+      boardRepository.findOne.mockResolvedValue(mockBoard as any);
+      boardMemberRepository.findOne.mockResolvedValue(mockBoardMember as any);
+      boardMemberRepository.find.mockResolvedValue([mockBoardMember] as any);
 
-  //     const result = await service.findBoardMembers('board-123', 'user-123');
+      const result = await service.findBoardMembers('board-123', 'user-123');
 
-  //     expect(result).toHaveLength(1);
-  //     expect(result[0].id).toBe('member-123');
-  //   });
+      expect(result).toHaveLength(1);
+      expect(result[0].id).toBe('member-123');
+    });
 
-  //   it('should throw ForbiddenException for non-member', async () => {
-  //     boardRepository.findOne.mockResolvedValue(mockBoard as any);
-  //     boardMemberRepository.findOne.mockResolvedValue(null);
+    it('should throw ForbiddenException for non-member', async () => {
+      boardRepository.findOne.mockResolvedValue(mockBoard as any);
+      boardMemberRepository.findOne.mockResolvedValue(null);
 
-  //     await expect(
-  //       service.findBoardMembers('board-123', 'other-user'),
-  //     ).rejects.toThrow(ForbiddenException);
-  //   });
-  // });
+      await expect(
+        service.findBoardMembers('board-123', 'other-user'),
+      ).rejects.toThrow(ForbiddenException);
+    });
+  });
 
   describe('updateUserPermission', () => {
     it('devrait mettre à jour les permissions par userId', async () => {

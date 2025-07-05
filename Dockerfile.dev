@@ -1,25 +1,25 @@
-# Étape de développement
-FROM node:20-alpine AS development
+# Dockerfile pour le DÉVELOPPEMENT uniquement
+FROM node:20-alpine
 
 WORKDIR /app
 
-# Installation des outils globaux
-RUN npm install -g @nestjs/cli
+# Installation des outils globaux pour le développement
+RUN npm install -g @nestjs/cli nodemon
 
 # Copie des fichiers de dépendances
 COPY package*.json ./
 COPY tsconfig*.json ./
 
-# Installation des dépendances (y compris devDependencies)
+# Installation de TOUTES les dépendances (dev + prod)
 RUN npm ci
 
 # Copie du code source
 COPY . .
 
-# Exposition du port
+# Port d'exposition
 EXPOSE 3000
 
-# Démarrage en mode développement avec hot reload
+# Mode développement avec hot reload
 CMD ["npm", "run", "start:dev"]
 
 # Étape de build pour production

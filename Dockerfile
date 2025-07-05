@@ -1,4 +1,3 @@
-# Étape de build
 FROM node:20-alpine AS builder
 
 WORKDIR /app
@@ -23,6 +22,6 @@ COPY package*.json ./
 ENV NODE_ENV=production
 ENV PORT=3000
 
-EXPOSE ${PORT}
+EXPOSE 3000
 
 CMD ["npm", "run", "start:prod"] 
