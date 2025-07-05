@@ -5,44 +5,32 @@ API REST Zukii : Application collaborative d'analyse de données CSV.
 ## 🚀 Démarrage rapide
 
 ### Prérequis
-- Docker et Docker Compose installés
-- Node.js 20+ (optionnel, pour développement local)
-
-### Installation
-
-1. **Cloner et configurer**
-   ```bash
-   git clone <repository-url>
-   cd zukii-nest
-   cp .env.example .env
-   # Éditer .env avec vos valeurs
-   ```
-
-2. **Démarrer l'environnement**
-   ```bash
-   docker compose up --build
-   ```
-
-3. **Vérifier le fonctionnement**
-   - API : http://localhost:3000
-   - Base de données : localhost:5432
-   
-## 🚀 Installation et configuration
-
-### Prérequis
 - Node.js 20+
-- Docker et Docker Compose
-- PostgreSQL (via Docker)
+- PostgreSQL (via conteneurisation gérée par infra/)
 
-### Installation
-```bash
-# Installation des dépendances
-npm install
+### Installation et développement local
 
-# Configuration de l'environnement
-cp .env.example .env
-# Modifier les variables selon vos besoins
-```
+1. **Installation des dépendances**
+   ```bash
+   cd zukii-nest
+   npm install
+   ```
+
+2. **Configuration locale**
+   ```bash
+   cp .env.example .env
+   # Éditer .env pour développement local
+   ```
+
+3. **Démarrage en mode développement**
+   ```bash
+   npm run start:dev
+   ```
+
+**Note** : La conteneurisation complète est gérée dans le dossier `infra/`.
+Voir la [documentation infra](../infra/README.md) pour Docker Compose.
+   
+## ⚙️ Configuration
 
 #### Variables d'environnement requises
 ```env
@@ -73,41 +61,32 @@ TEST_USER_PASSWORD=MotDePasse123!
 
 ### Base de données
 
-#### Démarrage de PostgreSQL
-```bash
-# Démarrer PostgreSQL et Adminer
-docker compose up -d db
-docker compose --profile tools up -d adminer
-```
+**Auto-seeding automatique** : Les statuts de référence sont initialisés automatiquement au démarrage si la table est vide.
 
-#### Initialisation des données de référence
-```bash
-# ✅ Auto-seeding 
-# Les statuts de référence sont automatiquement initialisés au démarrage
-# si la table statuses est vide
+**Conteneurisation** : La base de données est gérée par la conteneurisation dans `infra/`. 
+Voir [documentation Docker](../infra/docs/docker-setup.md) pour le démarrage complet.
 
-# Aucune action manuelle requise - tout est automatique
-```
-
-#### Accès aux outils
-- **Adminer** : http://localhost:8080
-  - Serveur : `db`
-  - Utilisateur : `zukii_user`
-  - Mot de passe : `zukii_password`
-  - Base : `zukii_db`
-
-### Démarrage de l'application
+### Scripts de développement
 
 ```bash
 # Développement avec hot-reload
 npm run start:dev
 
-# Production
+# Build de production
 npm run build
 npm run start:prod
+
+# Tests
+npm run test              # Tests unitaires (118 tests)
+npm run test:watch        # Tests en mode watch
+npm run test:cov          # Tests avec couverture
+
+# Qualité du code
+npm run lint              # ESLint
+npm run format            # Prettier
 ```
 
-#### Accès aux services
+#### URLs de développement
 - **API** : http://localhost:3000
 - **Documentation Swagger** : http://localhost:3000/api
 
@@ -131,57 +110,19 @@ board.statusId = BoardStatus.ARCHIVED;
 - **Blocks** : `block-draft`, `block-active`, `block-archived` *Future*
 - **Invitations** : `invitation-pending`, `invitation-accepted`, `invitation-declined`, `invitation-expired` *Future*
 
-### Scripts disponibles
-
-```bash
-# Tests
-npm run test              # Tous les tests unitaires (118 tests)
-npm run test:watch        # Tests en mode watch
-npm run test:cov          # Tests avec couverture
-npm run test -- --testNamePattern="CRITICAL"  # Seulement tests critiques
-
-# Code quality
-npm run lint              # ESLint
-npm run format            # Prettier
-npm run lint:check        # Vérification sans correction
-npm run format:check      # Vérification formatage
-
-# Base de données (Auto-seeding)
-# Aucune commande manuelle requise - seeding automatique au démarrage
-
-# Docker
-npm run docker:build     # Build de l'image Docker
-```
-
 ## 🛠️ Développement
 
-### Commandes essentielles
-```bash
-# Services
-docker compose up -d              # Démarrer
-docker compose logs -f api        # Logs en temps réel
-docker compose restart api        # Redémarrer après modifs
-docker compose down               # Arrêter
-
-# Base de données
-docker compose down -v            # Reset complet avec données
-docker compose exec api sh        # Accès conteneur
-
-# Adminer 
-docker compose --profile tools up -d adminer # Accès à la base de données, 8080 par défaut
-```
-
-### Scripts NPM
-```bash
-npm run build                     # Compilation
-npm run start:dev                 # Développement local (sans Docker)
-npm run lint                      # Vérification code
-npm run format                    # Formatage automatique
-```
+### Workflow de développement
+1. **Démarrer l'environnement complet** : Voir [infra/README.md](../infra/README.md)
+2. **Développement backend seul** : `npm run start:dev` dans ce dossier
+3. **Tests** : `npm run test` ou `npm run test:watch`
+4. **Linting** : `npm run lint && npm run format`
 
 ## 📊 État du projet
 
-### ✅ Modules opérationnels (118/118 tests ✅)
+**✅ 118/118 tests unitaires passants**
+
+### ✅ Modules opérationnels
 - **Users** : CRUD avec authentification bcrypt et gestion des statuts
 - **Status** : États centralisés par catégorie avec auto-seeding
 - **Auth** : JWT, Guards, protection des routes sensibles
@@ -189,16 +130,41 @@ npm run format                    # Formatage automatique
 - **BoardMembers** : Collaboration opérationnelle avec permissions granulaires (view, edit, admin)
 - **Blocks** : Système de contenu positionné avec types (TEXT, FILE, ANALYSIS)
 
-### 🏗️ Architecture consolidée
+### 🔒 Sécurité
+- **Hachage bcrypt** : Mots de passe avec 12 rounds de sel
+- **JWT Strategy** : Tokens sécurisés pour authentification
+- **JWT Guard Global** : Protection automatique de TOUTES les routes
+- **DTOs class-validator** : Validation stricte de toutes les entrées
+- **SecurityInterceptor global** : Protection XSS, limites payload
+- **Conformité OWASP Top 10** : Protection contre les 10 vulnérabilités critiques
+
+### 🔄 Système de statuts centralisé
+
+Le backend utilise un système de statuts centralisé pour gérer les états des différentes entités :
+
+```typescript
+// Exemples d'utilisation
+import { UserStatus, BoardStatus } from './modules/status/enums/status.enum';
+
+// Dans le code
+user.statusId = UserStatus.ACTIVE;
+board.statusId = BoardStatus.ARCHIVED;
+```
+
+**Statuts disponibles :**
+- **Users** : `user-active`, `user-inactive`
+- **Boards** : `board-active`, `board-archived`
+- **BoardMembers** : `board-member-active`, `board-member-inactive` ✅ *Implémenté*
+- **Blocks** : `block-draft`, `block-active`, `block-archived` *Future*
+- **Invitations** : `invitation-pending`, `invitation-accepted`, `invitation-declined`, `invitation-expired` *Future*
+
+### 🏗️ Architecture
+- **Suppression permanente** avec cascade automatique
+- **Base Entity** : Héritage cohérent avec timestamps
 - **Interfaces centralisées** : JwtUser, test mocks typés
-- **ESLint strict** : Configuration spécialisée pour tests
-- **BaseEntity** : Héritage cohérent avec timestamps
 - **Séparation permissions/statuts** : Architecture claire et maintenable
 
-### 🔗 Suppression permanente avec sécurité
-
-Suppressions définitives avec validation des permissions et logging.
-**Détails** : [`docs/architecture-technique.md`](docs/architecture-technique.md#suppression-des-données)
+**Détails complets** : [`docs/architecture-technique.md`](docs/architecture-technique.md)
 
 ### 📋 Roadmap (modules à implémenter)
 - **Content Types** : TextContent, FileContent, AnalysisContent spécialisés

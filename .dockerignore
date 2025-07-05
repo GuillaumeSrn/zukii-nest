@@ -1,0 +1,12 @@
+node_modules
+dist
+.git
+.gitignore
+README.md
+.vscode
+.cursor
+*.md
+src/**/*.spec.ts
+test
+.env*
+docker-compose* 
