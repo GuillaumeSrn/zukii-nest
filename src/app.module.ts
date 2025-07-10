@@ -7,6 +7,8 @@ import { Status } from './modules/status/entities/status.entity';
 import { Board } from './modules/boards/entities/board.entity';
 import { BoardMember } from './modules/board-members/entities/board-member.entity';
 import { Block } from './modules/blocks/entities/block.entity';
+import { TextContent } from './modules/text-content/entities/text-content.entity';
+import { FileContent } from './modules/file-content/entities/file-content.entity';
 import { StatusModule } from './modules/status/status.module';
 import { UsersModule } from './modules/users/users.module';
 import { BoardsModule } from './modules/boards/boards.module';
@@ -17,6 +19,8 @@ import { APP_GUARD } from '@nestjs/core';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { EmailModule } from './modules/email/email.module';
 import { BlocksModule } from './modules/blocks/blocks.module';
+import { TextContentModule } from './modules/text-content/text-content.module';
+import { FileContentModule } from './modules/file-content/file-content.module';
 
 @Module({
   imports: [
@@ -47,7 +51,7 @@ import { BlocksModule } from './modules/blocks/blocks.module';
         username: configService.get<string>('DB_USERNAME', 'postgres'),
         password: configService.get<string>('DB_PASSWORD', 'password'),
         database: configService.get<string>('DB_NAME', 'zukii_db'),
-        entities: [User, Status, Board, BoardMember, Block],
+        entities: [User, Status, Board, BoardMember, Block, TextContent, FileContent],
         synchronize: configService.get<string>('NODE_ENV') !== 'production',
         logging: configService.get<string>('NODE_ENV') === 'development',
       }),
@@ -60,6 +64,8 @@ import { BlocksModule } from './modules/blocks/blocks.module';
     AuthModule,
     EmailModule,
     BlocksModule,
+    TextContentModule,
+    FileContentModule,
   ],
   controllers: [AppController],
   providers: [

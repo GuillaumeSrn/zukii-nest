@@ -24,6 +24,8 @@ export class AppController {
         users: '/users',
         boards: '/boards',
         statuses: '/statuses',
+        'text-content': '/text-content',
+        blocks: '/boards/:boardId/blocks',
       },
     },
   })
@@ -38,6 +40,8 @@ export class AppController {
         users: '/users',
         boards: '/boards',
         statuses: '/statuses',
+        'text-content': '/text-content',
+        blocks: '/boards/:boardId/blocks',
       },
     };
   }

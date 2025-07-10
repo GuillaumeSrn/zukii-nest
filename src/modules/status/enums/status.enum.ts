@@ -19,6 +19,11 @@ export enum BlockStatus {
   ARCHIVED = 'block-archived',
 }
 
+export enum TextContentStatus {
+  ACTIVE = 'text-content-active',
+  INACTIVE = 'text-content-inactive',
+}
+
 export enum InvitationStatus {
   PENDING = 'invitation-pending',
   ACCEPTED = 'invitation-accepted',
@@ -32,6 +37,7 @@ export const ALL_STATUSES = [
   ...Object.values(BoardStatus),
   ...Object.values(BoardMemberStatus),
   ...Object.values(BlockStatus),
+  ...Object.values(TextContentStatus),
   ...Object.values(InvitationStatus),
 ] as const;
 
@@ -41,5 +47,6 @@ export const STATUS_BY_CATEGORY = {
   board: BoardStatus,
   'board-member': BoardMemberStatus,
   block: BlockStatus,
+  'text-content': TextContentStatus,
   invitation: InvitationStatus,
 } as const;
