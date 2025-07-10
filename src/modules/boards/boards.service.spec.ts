@@ -311,7 +311,11 @@ describe('BoardsService', () => {
       boardMemberRepository.findOne.mockResolvedValue(mockMembership);
       boardRepository.save.mockResolvedValue(otherUserBoard);
 
-      const result = await service.update(mockBoard.id, updateBoardDto, mockUser.id);
+      const result = await service.update(
+        mockBoard.id,
+        updateBoardDto,
+        mockUser.id,
+      );
 
       expect(result.title).toBe('Updated Board');
       expect(boardMemberRepository.findOne).toHaveBeenCalledWith({
