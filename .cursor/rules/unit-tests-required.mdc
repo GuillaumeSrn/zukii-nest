@@ -1,6 +1,0 @@
----
-description: 
-globs: 
-alwaysApply: true
----
-Chaque service et controller doit avoir au moins un test unitaire associé. Faire un ficheir spec pour chaque type. par exemple pour l'user, faire un test unitaire avec des donnéees mocked si possible, et vérifier les API, les code d'erreur, et les spécifications des différents endpoints s'il y en a.
