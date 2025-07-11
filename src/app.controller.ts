@@ -25,6 +25,7 @@ export class AppController {
         boards: '/boards',
         statuses: '/statuses',
         'text-content': '/text-content',
+        'file-content': '/files',
         blocks: '/boards/:boardId/blocks',
       },
     },
@@ -41,6 +42,7 @@ export class AppController {
         boards: '/boards',
         statuses: '/statuses',
         'text-content': '/text-content',
+        'file-content': '/files',
         blocks: '/boards/:boardId/blocks',
       },
     };

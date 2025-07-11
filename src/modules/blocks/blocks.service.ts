@@ -12,9 +12,12 @@ import { Block } from './entities/block.entity';
 import { Board } from '../boards/entities/board.entity';
 import { Status } from '../status/entities/status.entity';
 import { BoardMembersService } from '../board-members/board-members.service';
+import { TextContentService } from '../text-content/text-content.service';
+import { FileContentService } from '../file-content/file-content.service';
 import { CreateBlockDto } from './dto/create-block.dto';
 import { UpdateBlockDto, UpdateBlockPositionDto } from './dto/update-block.dto';
 import { BoardMemberPermission } from '../board-members/enums/board-member.enum';
+import { BlockType } from './enums/block.enum';
 
 @Injectable()
 export class BlocksService {
@@ -28,6 +31,8 @@ export class BlocksService {
     @InjectRepository(Status)
     private readonly statusRepository: Repository<Status>,
     private readonly boardMembersService: BoardMembersService,
+    private readonly textContentService: TextContentService,
+    private readonly fileContentService: FileContentService,
   ) {}
 
   async create(
@@ -40,6 +45,10 @@ export class BlocksService {
     );
 
     this.validatePositionAndDimensions(createBlockDto);
+    await this.validateContentExists(
+      createBlockDto.contentId,
+      createBlockDto.blockType,
+    );
 
     await this.findBoardEntity(boardId);
     await this.validateUserPermission(
@@ -138,7 +147,6 @@ export class BlocksService {
 
     Object.assign(block, updateBlockDto);
     block.lastModifiedBy = currentUserId;
-    block.updatedAt = new Date();
 
     const updatedBlock = await this.blockRepository.save(block);
     this.logger.log(`Block mis à jour avec succès: ${blockId}`);
@@ -164,7 +172,6 @@ export class BlocksService {
 
     Object.assign(block, positionDto);
     block.lastModifiedBy = currentUserId;
-    block.updatedAt = new Date();
 
     return this.blockRepository.save(block);
   }
@@ -188,6 +195,40 @@ export class BlocksService {
     }
 
     this.logger.log(`Block supprimé avec succès: ${blockId}`);
+  }
+
+  private async validateContentExists(
+    contentId: string,
+    blockType: BlockType,
+  ): Promise<void> {
+    this.logger.log(
+      `Validation du contenu ${contentId} pour le type ${blockType}`,
+    );
+
+    try {
+      switch (blockType) {
+        case BlockType.TEXT:
+          await this.textContentService.findOne(contentId);
+          break;
+        case BlockType.FILE:
+          await this.fileContentService.findOne(contentId);
+          break;
+        case BlockType.ANALYSIS:
+          // TODO: Implémenter la validation pour AnalysisContent quand le module sera créé
+          throw new BadRequestException(
+            "Le type ANALYSIS n'est pas encore supporté",
+          );
+        default:
+          throw new BadRequestException(`Type de block invalide: ${blockType}`);
+      }
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw new BadRequestException(
+          `Le contenu ${contentId} de type ${blockType} n'existe pas`,
+        );
+      }
+      throw error;
+    }
   }
 
   private async findBoardEntity(id: string): Promise<Board> {
