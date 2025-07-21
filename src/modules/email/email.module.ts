@@ -7,21 +7,20 @@ import { MailerModule } from '@nestjs-modules/mailer';
   imports: [
     MailerModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => {
-        console.log('🔍 SMTP_HOST:', configService.get('SMTP_HOST'));
-        console.log('🔍 SMTP_PORT:', configService.get('SMTP_PORT'));
-        return {
-          transport: {
-            host: configService.get<string>('SMTP_HOST'),
-            port: configService.get<number>('SMTP_PORT'),
-            secure: false,
-            auth: {
-              user: configService.get<string>('SMTP_USER'),
-              pass: configService.get<string>('SMTP_PASS'),
-            },
+      useFactory: (configService: ConfigService) => ({
+        transport: {
+          host: configService.get<string>('SMTP_HOST', 'smtp-relay.brevo.com'),
+          port: configService.get<number>('SMTP_PORT', 587),
+          secure: false, // TLS sur port 587
+          auth: {
+            user: configService.get<string>('SMTP_USER'),
+            pass: configService.get<string>('SMTP_PASS'),
           },
-        };
-      },
+        },
+        defaults: {
+          from: configService.get<string>('SMTP_FROM', 'noreply@zukii.com'),
+        },
+      }),
       inject: [ConfigService],
     }),
   ],
