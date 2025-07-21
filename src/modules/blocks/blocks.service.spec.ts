@@ -12,6 +12,8 @@ import { Block } from './entities/block.entity';
 import { Board } from '../boards/entities/board.entity';
 import { Status } from '../status/entities/status.entity';
 import { BoardMembersService } from '../board-members/board-members.service';
+import { TextContentService } from '../text-content/text-content.service';
+import { FileContentService } from '../file-content/file-content.service';
 import { CreateBlockDto } from './dto/create-block.dto';
 import { UpdateBlockDto } from './dto/update-block.dto';
 import { BlockType } from './enums/block.enum';
@@ -23,6 +25,8 @@ describe('BlocksService', () => {
   let boardRepository: jest.Mocked<Repository<Board>>;
   let statusRepository: jest.Mocked<Repository<Status>>;
   let boardMembersService: jest.Mocked<BoardMembersService>;
+  let textContentService: jest.Mocked<TextContentService>;
+  let fileContentService: jest.Mocked<FileContentService>;
 
   const mockStatus = {
     id: 'block-active',
@@ -83,6 +87,14 @@ describe('BlocksService', () => {
     findByBoardAndUser: jest.fn(),
   };
 
+  const mockTextContentService = {
+    findOne: jest.fn(),
+  };
+
+  const mockFileContentService = {
+    findOne: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -103,6 +115,14 @@ describe('BlocksService', () => {
           provide: BoardMembersService,
           useValue: mockBoardMembersService,
         },
+        {
+          provide: TextContentService,
+          useValue: mockTextContentService,
+        },
+        {
+          provide: FileContentService,
+          useValue: mockFileContentService,
+        },
       ],
     }).compile();
 
@@ -111,6 +131,8 @@ describe('BlocksService', () => {
     boardRepository = module.get(getRepositoryToken(Board));
     statusRepository = module.get(getRepositoryToken(Status));
     boardMembersService = module.get(BoardMembersService);
+    textContentService = module.get(TextContentService);
+    fileContentService = module.get(FileContentService);
   });
 
   afterEach(() => {
@@ -129,6 +151,7 @@ describe('BlocksService', () => {
     };
 
     it('should create a block successfully when user has edit permission', async () => {
+      textContentService.findOne.mockResolvedValue({ id: 'content-123' } as any);
       boardRepository.findOne.mockResolvedValue(mockBoard as any);
       mockBoardMembersService.checkUserPermission.mockResolvedValue(true);
       statusRepository.findOne.mockResolvedValue(mockStatus as any);
@@ -142,6 +165,7 @@ describe('BlocksService', () => {
         'user-123',
       );
 
+      expect(textContentService.findOne).toHaveBeenCalledWith('content-123');
       expect(boardRepository.findOne).toHaveBeenCalledWith({
         where: { id: 'board-123' },
       });
@@ -167,6 +191,7 @@ describe('BlocksService', () => {
     });
 
     it('should throw NotFoundException when board does not exist', async () => {
+      textContentService.findOne.mockResolvedValue({ id: 'content-123' } as any);
       boardRepository.findOne.mockResolvedValue(null);
 
       await expect(
@@ -175,6 +200,7 @@ describe('BlocksService', () => {
     });
 
     it('should throw ForbiddenException when user lacks edit permission', async () => {
+      textContentService.findOne.mockResolvedValue({ id: 'content-123' } as any);
       boardRepository.findOne.mockResolvedValue(mockBoard as any);
       mockBoardMembersService.checkUserPermission.mockResolvedValue(false);
 
@@ -184,6 +210,7 @@ describe('BlocksService', () => {
     });
 
     it('should throw ConflictException when active status not found', async () => {
+      textContentService.findOne.mockResolvedValue({ id: 'content-123' } as any);
       boardRepository.findOne.mockResolvedValue(mockBoard as any);
       mockBoardMembersService.checkUserPermission.mockResolvedValue(true);
       statusRepository.findOne.mockResolvedValue(null);
@@ -214,6 +241,106 @@ describe('BlocksService', () => {
 
       await expect(
         service.create('board-123', invalidDimensionsDto, 'user-123'),
+      ).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('CRITICAL - Block Content Validation', () => {
+    const createTextBlockDto: CreateBlockDto = {
+      blockType: BlockType.TEXT,
+      title: 'Test Text Block',
+      positionX: 100,
+      positionY: 200,
+      width: 300,
+      height: 400,
+      contentId: 'text-content-123',
+    };
+
+    const createFileBlockDto: CreateBlockDto = {
+      blockType: BlockType.FILE,
+      title: 'Test File Block',
+      positionX: 100,
+      positionY: 200,
+      width: 300,
+      height: 400,
+      contentId: 'file-content-123',
+    };
+
+    it('CRITICAL - should validate TEXT content exists before creating block', async () => {
+      textContentService.findOne.mockResolvedValue({ id: 'text-content-123' } as any);
+      boardRepository.findOne.mockResolvedValue(mockBoard as any);
+      mockBoardMembersService.checkUserPermission.mockResolvedValue(true);
+      statusRepository.findOne.mockResolvedValue(mockStatus as any);
+      blockRepository.create.mockReturnValue(mockBlock as any);
+      blockRepository.save.mockResolvedValue(mockBlock as any);
+      blockRepository.findOne.mockResolvedValue(mockBlock as any);
+
+      await service.create('board-123', createTextBlockDto, 'user-123');
+
+      expect(textContentService.findOne).toHaveBeenCalledWith('text-content-123');
+      expect(fileContentService.findOne).not.toHaveBeenCalled();
+    });
+
+    it('CRITICAL - should validate FILE content exists before creating block', async () => {
+      fileContentService.findOne.mockResolvedValue({ id: 'file-content-123' } as any);
+      boardRepository.findOne.mockResolvedValue(mockBoard as any);
+      mockBoardMembersService.checkUserPermission.mockResolvedValue(true);
+      statusRepository.findOne.mockResolvedValue(mockStatus as any);
+      blockRepository.create.mockReturnValue(mockBlock as any);
+      blockRepository.save.mockResolvedValue(mockBlock as any);
+      blockRepository.findOne.mockResolvedValue(mockBlock as any);
+
+      await service.create('board-123', createFileBlockDto, 'user-123');
+
+      expect(fileContentService.findOne).toHaveBeenCalledWith('file-content-123');
+      expect(textContentService.findOne).not.toHaveBeenCalled();
+    });
+
+    it('CRITICAL - should reject blocks with invalid TEXT content references', async () => {
+      textContentService.findOne.mockRejectedValue(new NotFoundException('Contenu textuel non trouvé'));
+
+      await expect(
+        service.create('board-123', createTextBlockDto, 'user-123'),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('CRITICAL - should reject blocks with invalid FILE content references', async () => {
+      fileContentService.findOne.mockRejectedValue(new NotFoundException('Fichier non trouvé'));
+
+      await expect(
+        service.create('board-123', createFileBlockDto, 'user-123'),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('CRITICAL - should reject ANALYSIS blocks as not yet supported', async () => {
+      const createAnalysisBlockDto: CreateBlockDto = {
+        blockType: BlockType.ANALYSIS,
+        title: 'Test Analysis Block',
+        positionX: 100,
+        positionY: 200,
+        width: 300,
+        height: 400,
+        contentId: 'analysis-content-123',
+      };
+
+      await expect(
+        service.create('board-123', createAnalysisBlockDto, 'user-123'),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('CRITICAL - should reject blocks with invalid block type', async () => {
+      const createInvalidBlockDto = {
+        blockType: 'INVALID_TYPE' as BlockType,
+        title: 'Test Invalid Block',
+        positionX: 100,
+        positionY: 200,
+        width: 300,
+        height: 400,
+        contentId: 'content-123',
+      };
+
+      await expect(
+        service.create('board-123', createInvalidBlockDto, 'user-123'),
       ).rejects.toThrow(BadRequestException);
     });
   });
@@ -301,7 +428,6 @@ describe('BlocksService', () => {
         ...mockBlock,
         ...updateBlockDto,
         lastModifiedBy: 'user-123',
-        updatedAt: expect.any(Date),
       });
       expect(result).toEqual(updatedBlock);
     });
@@ -370,7 +496,6 @@ describe('BlocksService', () => {
         ...mockBlock,
         ...positionDto,
         lastModifiedBy: 'user-123',
-        updatedAt: expect.any(Date),
       });
       expect(result).toEqual(updatedBlock);
     });

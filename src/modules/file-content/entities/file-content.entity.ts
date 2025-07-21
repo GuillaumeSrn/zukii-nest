@@ -1,5 +1,12 @@
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
 import { BaseEntity } from '../../../common/entities/base.entity';
+import { User } from '../../users/entities/user.entity';
 
 @Entity('file_contents')
 export class FileContent extends BaseEntity {
@@ -23,4 +30,12 @@ export class FileContent extends BaseEntity {
 
   @Column({ type: 'varchar', length: 50, default: 'csv' })
   fileType: string;
+
+  @Column({ name: 'uploaded_by', type: 'uuid' })
+  uploadedBy: string;
+
+  // Relations
+  @ManyToOne(() => User, { eager: false })
+  @JoinColumn({ name: 'uploaded_by' })
+  uploader: User;
 }

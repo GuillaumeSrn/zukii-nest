@@ -24,6 +24,11 @@ export enum TextContentStatus {
   INACTIVE = 'text-content-inactive',
 }
 
+export enum FileContentStatus {
+  ACTIVE = 'file-content-active',
+  INACTIVE = 'file-content-inactive',
+}
+
 export enum InvitationStatus {
   PENDING = 'invitation-pending',
   ACCEPTED = 'invitation-accepted',
@@ -38,6 +43,7 @@ export const ALL_STATUSES = [
   ...Object.values(BoardMemberStatus),
   ...Object.values(BlockStatus),
   ...Object.values(TextContentStatus),
+  ...Object.values(FileContentStatus),
   ...Object.values(InvitationStatus),
 ] as const;
 
@@ -48,5 +54,6 @@ export const STATUS_BY_CATEGORY = {
   'board-member': BoardMemberStatus,
   block: BlockStatus,
   'text-content': TextContentStatus,
+  'file-content': FileContentStatus,
   invitation: InvitationStatus,
 } as const;
