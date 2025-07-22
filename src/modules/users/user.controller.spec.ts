@@ -77,9 +77,8 @@ describe('UsersController', () => {
     });
   });
 
-  describe('update', () => {
-    it('should update user successfully', async () => {
-      const userId = 'mock-id';
+  describe('updateMe', () => {
+    it('should update user profile successfully', async () => {
       const updateUserDto = { displayName: 'Updated Name' };
       const updatedUserResponse = {
         ...mockUserResponse,
@@ -88,24 +87,23 @@ describe('UsersController', () => {
 
       service.update.mockResolvedValue(updatedUserResponse);
 
-      const result = await controller.update(
-        userId,
-        updateUserDto,
-        mockAuthRequest,
-      );
+      const result = await controller.updateMe(updateUserDto, mockAuthRequest);
 
       expect(result).toBe(updatedUserResponse);
+      expect(service.update).toHaveBeenCalledWith(
+        mockAuthRequest.user.id,
+        updateUserDto,
+      );
     });
 
     it('should propagate NotFoundException when updating non-existent user', async () => {
-      const userId = 'mock-id';
       const updateUserDto = { displayName: 'Updated Name' };
       const notFoundError = new NotFoundException('Utilisateur non trouvé');
 
       service.update.mockRejectedValue(notFoundError);
 
       await expect(
-        controller.update(userId, updateUserDto, mockAuthRequest),
+        controller.updateMe(updateUserDto, mockAuthRequest),
       ).rejects.toThrow(NotFoundException);
     });
   });

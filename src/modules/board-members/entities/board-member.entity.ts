@@ -37,7 +37,7 @@ export class BoardMember extends BaseEntity {
   updatedBy?: string;
 
   // Relations
-  @ManyToOne(() => Board, { eager: false })
+  @ManyToOne(() => Board, { eager: false, onDelete: 'CASCADE' })
   @JoinColumn({ name: 'boardId' })
   board: Board;
 

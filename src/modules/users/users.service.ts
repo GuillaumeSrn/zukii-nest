@@ -5,7 +5,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull } from 'typeorm';
+import { Repository } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
 import { User } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -30,7 +30,7 @@ export class UsersService {
     this.logger.log(`Création d'un nouvel utilisateur: ${createUserDto.email}`);
 
     const existingUser = await this.userRepository.findOne({
-      where: { email: createUserDto.email, deletedAt: IsNull() },
+      where: { email: createUserDto.email },
     });
 
     if (existingUser) {
@@ -70,7 +70,7 @@ export class UsersService {
 
   async findById(id: string): Promise<UserResponseDto> {
     const user = await this.userRepository.findOne({
-      where: { id, deletedAt: IsNull() },
+      where: { id },
       relations: ['status'],
     });
 
@@ -83,14 +83,14 @@ export class UsersService {
 
   async findByEmail(email: string): Promise<User | null> {
     return this.userRepository.findOne({
-      where: { email, deletedAt: IsNull() },
+      where: { email },
       relations: ['status'],
     });
   }
 
   async findByIdEntity(id: string): Promise<User | null> {
     return this.userRepository.findOne({
-      where: { id, deletedAt: IsNull() },
+      where: { id },
       relations: ['status'],
     });
   }
@@ -100,7 +100,7 @@ export class UsersService {
     updateUserDto: UpdateUserDto,
   ): Promise<UserResponseDto> {
     const user = await this.userRepository.findOne({
-      where: { id, deletedAt: IsNull() },
+      where: { id },
     });
 
     if (!user) {

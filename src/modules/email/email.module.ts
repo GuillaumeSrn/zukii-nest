@@ -9,16 +9,16 @@ import { MailerModule } from '@nestjs-modules/mailer';
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({
         transport: {
-          host: configService.get<string>('SMTP_HOST'),
-          port: configService.get<number>('SMTP_PORT'),
-          secure: false,
+          host: configService.get<string>('SMTP_HOST', 'smtp-relay.brevo.com'),
+          port: configService.get<number>('SMTP_PORT', 587),
+          secure: false, // TLS sur port 587
           auth: {
             user: configService.get<string>('SMTP_USER'),
             pass: configService.get<string>('SMTP_PASS'),
           },
         },
         defaults: {
-          from: configService.get<string>('SMTP_FROM'),
+          from: configService.get<string>('SMTP_FROM', 'noreply@zukii.com'),
         },
       }),
       inject: [ConfigService],

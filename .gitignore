@@ -3,9 +3,6 @@
 .env.*
 !.env.example
 
-# cursor files
-.cursorrules
-.cursor/
 
 # Node
 node_modules/

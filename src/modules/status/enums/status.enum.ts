@@ -19,6 +19,26 @@ export enum BlockStatus {
   ARCHIVED = 'block-archived',
 }
 
+export enum SuperBlockStatus {
+  ACTIVE = 'super-block-active',
+  ARCHIVED = 'super-block-archived',
+}
+
+export enum BlockRelationStatus {
+  ACTIVE = 'block-relation-active',
+  INACTIVE = 'block-relation-inactive',
+}
+
+export enum TextContentStatus {
+  ACTIVE = 'text-content-active',
+  INACTIVE = 'text-content-inactive',
+}
+
+export enum FileContentStatus {
+  ACTIVE = 'file-content-active',
+  INACTIVE = 'file-content-inactive',
+}
+
 export enum InvitationStatus {
   PENDING = 'invitation-pending',
   ACCEPTED = 'invitation-accepted',
@@ -32,6 +52,10 @@ export const ALL_STATUSES = [
   ...Object.values(BoardStatus),
   ...Object.values(BoardMemberStatus),
   ...Object.values(BlockStatus),
+  ...Object.values(SuperBlockStatus),
+  ...Object.values(BlockRelationStatus),
+  ...Object.values(TextContentStatus),
+  ...Object.values(FileContentStatus),
   ...Object.values(InvitationStatus),
 ] as const;
 
@@ -41,5 +65,9 @@ export const STATUS_BY_CATEGORY = {
   board: BoardStatus,
   'board-member': BoardMemberStatus,
   block: BlockStatus,
+  'super-block': SuperBlockStatus,
+  'block-relation': BlockRelationStatus,
+  'text-content': TextContentStatus,
+  'file-content': FileContentStatus,
   invitation: InvitationStatus,
 } as const;

@@ -3,7 +3,7 @@
 ## Modèle de données
 
 L'architecture repose sur deux diagrammes UML :
-- **État actuel** : `database-schema-current.puml` (User, Status, Board implémentés)
+- **État actuel** : `database-schema-current.puml` (User, Status, Board, Block implémentés)
 - **Vision complète** : `database-schema.puml` (roadmap avec toutes les fonctionnalités)
 
 ### État d'implémentation
@@ -11,14 +11,17 @@ L'architecture repose sur deux diagrammes UML :
 #### ✅ **Modules implémentés et fonctionnels**
 - **User** : CRUD complet, authentification JWT, profils publics/privés
 - **Status** : Système centralisé par catégorie, données de référence auto-seeding
-- **Board** : CRUD complet, validation ownership, soft delete, tests 71/71
+- **Board** : CRUD complet, validation ownership, suppression permanente, tests 71/71
+- **BoardMember** : Collaboration opérationnelle avec permissions granulaires, tests 21/21
+- **Block** : Système de contenu avec zones et positionnement optionnel
+- **FileContent** : Upload et gestion fichiers CSV avec métadonnées complètes
+- **TextContent** : Notes et commentaires intégrés
 
 #### 🚧 **Modules en roadmap (non implémentés)**
-- **BoardMember** : Collaboration avec permissions granulaires
+- **SuperBlock** : Regroupements logiques de blocks avec interface collapse/expand
+- **BlockRelation** : Relations tracées entre contenus (generated_from, comment_on, references, derived_from)
+- **AnalysisContent** : Résultats d'analyses IA avec données Plotly et traçabilité
 - **Invitation** : Système d'invitations temporaires
-- **Block** : Contenu positionné avec types (text, file, analysis)
-- **Content Types** : TextContent, FileContent, AnalysisContent
-- **BlockRelation** : Relations entre blocks
 - **AnalysisTemplate** : Templates IA préconfigurés
 
 ### Entités principales (Vision complète)
@@ -32,28 +35,40 @@ L'architecture repose sur deux diagrammes UML :
 - **BoardMember** : Membres d'un board avec permissions granulaires (view, edit, admin)
 - **Invitation** : Système d'invitation temporaire
 
-#### Système de Blocks (Refactorisé)
-- **Block** : Positionnement, métadonnées et référence générique vers le contenu
+#### Système de Blocks (Implémenté + Évolutions)
+- **Block** : Positionnement optionnel, métadonnées et référence générique vers le contenu
+- **SuperBlock** : Regroupements visuels et logiques de blocks liés
+- **BlockRelation** : Relations tracées entre blocks (generated_from, references, comment_on, derived_from)
 - **TextContent** : Contenu textuel avec support Markdown/HTML
-- **FileContent** : Métadonnées fichiers, statut upload et référence S3
+- **FileContent** : Métadonnées fichiers avec stockage base64 et validation
 - **AnalysisContent** : Résultats d'analyses IA avec données Plotly et traçabilité
 
-#### Templates d'Analyse IA
+#### 🎨 Interface Architecture
+- **Layout Zones** : Organisation automatique par type de contenu (Data, Analysis, Notes, Comments)
+- **Super-Blocks** : Regroupements visuels avec collapse/expand et code couleur
+- **Relations Visuelles** : Connexions tracées entre éléments liés
+- **Responsive Design** : Interface adaptative sans canvas complexe
+
+#### Templates d'Analyse IA (Future)
 - **AnalysisTemplate** : Templates préconfigurés pour microservice Python
   - Prompts OpenAI optimisés par type d'analyse
   - Configuration des paramètres d'entrée
   - Menu déroulant pour interface utilisateur
 
-#### Relations entre Blocks
-- **BlockRelation** : Relations inter-blocks (generated_from, references, comment_on, derived_from)
+### Relations (Actuelles et Futures)
 
-### Relations
-- User 1..N Board (propriétaire)
-- User 1..N BoardMember N..1 Board (permissions granulaires)
-- Board 1..N Block
-- Block 1..1 TextContent|FileContent|AnalysisContent (via content_id)
-- Block N..N Block (via BlockRelation)
-- Status 1..N User/Board/Block
+#### ✅ **Relations implémentées**
+- User 1..N Board (propriétaire) - `board.ownerId`
+- User 1..N BoardMember N..1 Board (permissions granulaires) - `board_member.userId` / `board_member.boardId`
+- Status 1..N User/Board/BoardMember - `*.statusId`
+- Board 1..N Block - `block.boardId`
+- Block 1..1 TextContent|FileContent (via content_id) - `block.contentId`
+
+#### 🚧 **Relations futures (roadmap)**
+- SuperBlock 1..N Block - `block.superBlockId`
+- Block N..N Block (via BlockRelation) - `block_relation.sourceBlockId` / `targetBlockId`
+- Status 1..N Block - `block.statusId`
+- AnalysisContent 1..N FileContent (sources) - via relations
 
 ### Permissions simplifiées
 Les permissions sont gérées **uniquement au niveau des boards** via la table `BoardMember` :
@@ -67,7 +82,7 @@ Les permissions sont gérées **uniquement au niveau des boards** via la table `
 ```
 src/
 ├── common/
-│   └── entities/base.entity.ts    # Entité abstraite avec soft delete
+  │   └── entities/base.entity.ts    # Entité abstraite avec timestamps
 ├── modules/
 │   ├── [entity]/
 │   │   ├── entities/              # Modèles de données
@@ -114,8 +129,9 @@ L'application implémente une sécurité robuste sur plusieurs niveaux :
 #### Authentification & Autorisation
 - **Hachage bcrypt** : Mots de passe avec 12 rounds de sel
 - **JWT Strategy** : Tokens sécurisés pour authentification
-- **Guards NestJS** : Protection automatique des routes sensibles
-- **Permissions granulaires** : Contrôle au niveau des boards uniquement
+- **JWT Guard Global** : Protection automatique de TOUTES les routes via `APP_GUARD`
+- **LocalAuthGuard** : Authentification spécifique pour login/register
+- **Permissions granulaires** : Contrôle au niveau des boards uniquement (view/edit/admin)
 
 #### Validation & Protection
 - **DTOs class-validator** : Validation stricte de toutes les entrées
@@ -134,6 +150,44 @@ L'application couvre les 10 vulnérabilités critiques avec protections automati
 
 > **Référence complète** : Voir [`docs/security-guide.md`](security-guide.md) pour détails d'implémentation et checklist par endpoint.
 
+## Suppression des données
+
+### Suppression permanente avec cascade automatique
+
+**Suppression définitive des enregistrements** :
+
+```typescript
+// ✅ Suppression permanente avec TypeORM
+await this.repository.delete(id);
+
+// ✅ Suppression avec vérification du résultat
+const result = await this.repository.delete(id);
+if (result.affected === 0) {
+  throw new NotFoundException('Entité non trouvée');
+}
+```
+
+**Cascade automatique au niveau base de données** :
+```typescript
+// Configuration dans l'entité enfant
+@ManyToOne(() => ParentEntity, { onDelete: 'CASCADE' })
+@JoinColumn({ name: 'parentId' })
+parent: ParentEntity;
+```
+
+**Sécurité et validation** :
+- Toujours valider les permissions avant suppression
+- Logger les suppressions importantes pour audit
+- La cascade est gérée automatiquement par la base de données
+- Pas besoin de transactions manuelles pour les suppressions cascades
+
+> **Pourquoi cascade DB vs TypeORM ?**
+> 
+> - `onDelete: 'CASCADE'` : Gérée par PostgreSQL, fonctionne avec `delete()`
+> - `cascade: ['remove']` : Gérée par TypeORM, nécessite `remove()` et chargement des entités
+> - **Performance** : La cascade DB est plus rapide (pas de requêtes SELECT/DELETE multiples)
+> - **Fiabilité** : Garantie au niveau base de données, même en cas d'accès direct SQL
+
 ## Conventions API
 
 ### Endpoints REST
@@ -143,7 +197,7 @@ L'application couvre les 10 vulnérabilités critiques avec protections automati
 POST   /[entity]           # Création
 GET    /[entity]/:id       # Lecture
 PUT    /[entity]/:id       # Mise à jour
-DELETE /[entity]/:id       # Suppression (logique)
+DELETE /[entity]/:id       # Suppression permanente
 ```
 
 #### Ressources imbriquées
@@ -215,7 +269,7 @@ this.logger.error('Operation failed', error.stack);
 ### Base de données
 - PostgreSQL avec TypeORM
 - UUID pour toutes les clés primaires
-- Soft delete via BaseEntity
+- Timestamps via BaseEntity
 - Relations chargées explicitement
 - Index optimisés pour performance spatiale et JSONB
 

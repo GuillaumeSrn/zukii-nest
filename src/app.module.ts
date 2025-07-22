@@ -6,6 +6,11 @@ import { User } from './modules/users/entities/user.entity';
 import { Status } from './modules/status/entities/status.entity';
 import { Board } from './modules/boards/entities/board.entity';
 import { BoardMember } from './modules/board-members/entities/board-member.entity';
+import { Block } from './modules/blocks/entities/block.entity';
+import { SuperBlock } from './modules/super-blocks/entities/super-block.entity';
+import { BlockRelation } from './modules/block-relations/entities/block-relation.entity';
+import { TextContent } from './modules/text-content/entities/text-content.entity';
+import { FileContent } from './modules/file-content/entities/file-content.entity';
 import { StatusModule } from './modules/status/status.module';
 import { UsersModule } from './modules/users/users.module';
 import { BoardsModule } from './modules/boards/boards.module';
@@ -14,6 +19,12 @@ import { AuthModule } from './modules/auth/auth.module';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 import { APP_GUARD } from '@nestjs/core';
 import { MailerModule } from '@nestjs-modules/mailer';
+import { EmailModule } from './modules/email/email.module';
+import { BlocksModule } from './modules/blocks/blocks.module';
+import { SuperBlocksModule } from './modules/super-blocks/super-blocks.module';
+import { BlockRelationsModule } from './modules/block-relations/block-relations.module';
+import { TextContentModule } from './modules/text-content/text-content.module';
+import { FileContentModule } from './modules/file-content/file-content.module';
 
 @Module({
   imports: [
@@ -44,7 +55,17 @@ import { MailerModule } from '@nestjs-modules/mailer';
         username: configService.get<string>('DB_USERNAME', 'postgres'),
         password: configService.get<string>('DB_PASSWORD', 'password'),
         database: configService.get<string>('DB_NAME', 'zukii_db'),
-        entities: [User, Status, Board, BoardMember],
+        entities: [
+          User,
+          Status,
+          Board,
+          BoardMember,
+          Block,
+          SuperBlock,
+          BlockRelation,
+          TextContent,
+          FileContent,
+        ],
         synchronize: configService.get<string>('NODE_ENV') !== 'production',
         logging: configService.get<string>('NODE_ENV') === 'development',
       }),
@@ -55,6 +76,12 @@ import { MailerModule } from '@nestjs-modules/mailer';
     BoardsModule,
     BoardMembersModule,
     AuthModule,
+    EmailModule,
+    BlocksModule,
+    SuperBlocksModule,
+    BlockRelationsModule,
+    TextContentModule,
+    FileContentModule,
   ],
   controllers: [AppController],
   providers: [

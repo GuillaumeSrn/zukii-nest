@@ -1,0 +1,8 @@
+---
+alwaysApply: true
+---
+Gestion d'erreurs centralisée avec Exception Filter global et Pipes de validation.
+Les contrôleurs ne doivent pas contenir de try/catch - les exceptions sont propagées automatiquement.
+Utiliser UuidValidationPipe pour tous les paramètres UUID.
+Logger NestJS uniquement dans les services, pas dans les contrôleurs.
+Ne pas réinventer la roue, utiliser les exceptions de NestJs et les custom si déjà existants.

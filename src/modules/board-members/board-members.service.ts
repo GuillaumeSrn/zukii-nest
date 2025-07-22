@@ -7,10 +7,10 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull } from 'typeorm';
+import { Repository } from 'typeorm';
 import { BoardMember } from './entities/board-member.entity';
 import { CreateBoardMemberDto } from './dto/create-board-member.dto';
-import { UpdateBoardMemberDto } from './dto/update-board-member.dto';
+import { UpdateBoardMemberPermissionDto } from './dto/update-board-member.dto';
 import { BoardMemberResponseDto } from './dto/board-member-response.dto';
 import { UsersService } from '../users/users.service';
 import { User } from '../users/entities/user.entity';
@@ -41,11 +41,9 @@ export class BoardMembersService {
       `Ajout d'un membre au board ${boardId} par l'utilisateur ${currentUserId}`,
     );
 
-    // Vérifier que le board existe et que l'utilisateur a les permissions
     const board = await this.findBoardEntity(boardId);
     await this.validatePermission(board, currentUserId);
 
-    // Trouver l'utilisateur à ajouter
     const userToAdd = await this.usersService.findByEmail(
       createBoardMemberDto.email,
     );
@@ -53,12 +51,10 @@ export class BoardMembersService {
       throw new NotFoundException('Utilisateur non trouvé avec cet email');
     }
 
-    // Vérifier que l'utilisateur n'est pas déjà membre
     const existingMember = await this.boardMemberRepository.findOne({
       where: {
         boardId,
         userId: userToAdd.id,
-        deletedAt: IsNull(),
       },
     });
 
@@ -66,17 +62,15 @@ export class BoardMembersService {
       throw new ConflictException('Cet utilisateur est déjà membre du board');
     }
 
-    // Vérifier que l'utilisateur n'est pas le propriétaire
     if (userToAdd.id === board.ownerId) {
       throw new BadRequestException(
         'Le propriétaire du board ne peut pas être ajouté comme membre',
       );
     }
 
-    // Récupérer le statut par défaut
     const defaultStatus = await this.statusRepository.findOne({
       where: {
-        category: 'board-member-active',
+        category: 'board-member',
         name: 'active',
         isActive: true,
       },
@@ -86,7 +80,6 @@ export class BoardMembersService {
       throw new ConflictException('Statut par défaut non disponible');
     }
 
-    // Créer le membre
     const boardMember = this.boardMemberRepository.create({
       boardId,
       userId: userToAdd.id,
@@ -96,7 +89,6 @@ export class BoardMembersService {
       updatedBy: currentUserId,
     });
 
-    // Sauvegarder
     const savedMember = await this.boardMemberRepository.save(boardMember);
 
     this.logger.log(`Membre ajouté avec succès: ${savedMember.id}`);
@@ -111,15 +103,12 @@ export class BoardMembersService {
       `Récupération des membres du board ${boardId} par l'utilisateur ${currentUserId}`,
     );
 
-    // Vérifier l'accès au board
     const board = await this.findBoardEntity(boardId);
     await this.validateAccessToBoard(board, currentUserId);
 
-    // Récupérer les membres
     const members = await this.boardMemberRepository.find({
       where: {
         boardId,
-        deletedAt: IsNull(),
       },
       relations: ['user', 'status'],
       order: { createdAt: 'ASC' },
@@ -130,30 +119,29 @@ export class BoardMembersService {
     );
   }
 
-  async update(
+  async updateUserPermission(
     boardId: string,
-    memberId: string,
-    updateBoardMemberDto: UpdateBoardMemberDto,
+    userId: string,
+    updatePermissionDto: UpdateBoardMemberPermissionDto,
     currentUserId: string,
   ): Promise<BoardMemberResponseDto> {
     this.logger.log(
-      `Mise à jour du membre ${memberId} du board ${boardId} par l'utilisateur ${currentUserId}`,
+      `Mise à jour des permissions de l'utilisateur ${userId} du board ${boardId} par ${currentUserId}`,
     );
 
-    // Vérifier l'accès au board
     const board = await this.findBoardEntity(boardId);
     await this.validatePermission(board, currentUserId);
 
-    // Trouver le membre
-    const member = await this.findBoardMemberEntity(memberId, boardId);
+    const member = await this.findBoardMemberByUserId(userId, boardId);
 
-    // Mettre à jour
-    Object.assign(member, updateBoardMemberDto);
+    Object.assign(member, updatePermissionDto);
     member.updatedBy = currentUserId;
 
     const updatedMember = await this.boardMemberRepository.save(member);
 
-    this.logger.log(`Membre mis à jour avec succès: ${updatedMember.id}`);
+    this.logger.log(
+      `Permissions mises à jour avec succès pour l'utilisateur ${userId}`,
+    );
     return this.toBoardMemberResponseDto(
       updatedMember,
       member.user,
@@ -161,32 +149,28 @@ export class BoardMembersService {
     );
   }
 
-  async remove(
+  async removeByUserId(
     boardId: string,
-    memberId: string,
+    userId: string,
     currentUserId: string,
   ): Promise<void> {
     this.logger.log(
-      `Suppression du membre ${memberId} du board ${boardId} par l'utilisateur ${currentUserId}`,
+      `Suppression de l'utilisateur ${userId} du board ${boardId} par l'utilisateur ${currentUserId}`,
     );
 
-    // Vérifier l'accès au board
     const board = await this.findBoardEntity(boardId);
     await this.validatePermission(board, currentUserId);
 
-    // Trouver le membre
-    const member = await this.findBoardMemberEntity(memberId, boardId);
+    const member = await this.findBoardMemberByUserId(userId, boardId);
 
-    // Soft delete
-    member.deletedBy = currentUserId;
-    await this.boardMemberRepository.softDelete(memberId);
+    await this.boardMemberRepository.delete(member.id);
 
-    this.logger.log(`Membre supprimé avec succès: ${memberId}`);
+    this.logger.log(`Utilisateur supprimé avec succès: ${userId}`);
   }
 
   private async findBoardEntity(id: string): Promise<Board> {
     const board = await this.boardRepository.findOne({
-      where: { id, deletedAt: IsNull() },
+      where: { id },
       relations: ['owner'],
     });
 
@@ -202,7 +186,7 @@ export class BoardMembersService {
     boardId: string,
   ): Promise<BoardMember> {
     const member = await this.boardMemberRepository.findOne({
-      where: { id: memberId, boardId, deletedAt: IsNull() },
+      where: { id: memberId, boardId },
       relations: ['user', 'status'],
     });
 
@@ -213,22 +197,35 @@ export class BoardMembersService {
     return member;
   }
 
+  private async findBoardMemberByUserId(
+    userId: string,
+    boardId: string,
+  ): Promise<BoardMember> {
+    const member = await this.boardMemberRepository.findOne({
+      where: { userId, boardId },
+      relations: ['user', 'status'],
+    });
+
+    if (!member) {
+      throw new NotFoundException('Utilisateur non trouvé');
+    }
+
+    return member;
+  }
+
   private async validatePermission(
     board: Board,
     currentUserId: string,
   ): Promise<void> {
-    // Le propriétaire a tous les droits
     if (board.ownerId === currentUserId) {
       return;
     }
 
-    // Vérifier si l'utilisateur est admin du board
     const memberPermission = await this.boardMemberRepository.findOne({
       where: {
         boardId: board.id,
         userId: currentUserId,
         permissionLevel: BoardMemberPermission.ADMIN,
-        deletedAt: IsNull(),
       },
     });
 
@@ -246,17 +243,14 @@ export class BoardMembersService {
     board: Board,
     currentUserId: string,
   ): Promise<void> {
-    // Le propriétaire a tous les droits
     if (board.ownerId === currentUserId) {
       return;
     }
 
-    // Vérifier si l'utilisateur est membre
     const memberAccess = await this.boardMemberRepository.findOne({
       where: {
         boardId: board.id,
         userId: currentUserId,
-        deletedAt: IsNull(),
       },
     });
 
@@ -294,5 +288,44 @@ export class BoardMembersService {
       createdAt: member.createdAt,
       updatedAt: member.updatedAt,
     };
+  }
+
+  async checkUserPermission(
+    boardId: string,
+    userId: string,
+    requiredPermission: BoardMemberPermission,
+  ): Promise<boolean> {
+    const board = await this.boardRepository.findOne({
+      where: { id: boardId },
+    });
+
+    if (!board) {
+      return false;
+    }
+
+    // Le propriétaire a toujours accès
+    if (board.ownerId === userId) {
+      return true;
+    }
+
+    const member = await this.boardMemberRepository.findOne({
+      where: { boardId, userId },
+    });
+
+    if (!member) {
+      return false;
+    }
+
+    // Vérification des permissions hiérarchiques
+    const permissionLevels = {
+      [BoardMemberPermission.VIEW]: 1,
+      [BoardMemberPermission.EDIT]: 2,
+      [BoardMemberPermission.ADMIN]: 3,
+    };
+
+    const userLevel = permissionLevels[member.permissionLevel];
+    const requiredLevel = permissionLevels[requiredPermission];
+
+    return userLevel >= requiredLevel;
   }
 }

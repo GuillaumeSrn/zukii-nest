@@ -49,11 +49,15 @@ export class CreateBoardDto {
     example: '#F5F5F5',
     pattern: '^#[0-9A-Fa-f]{6}$',
     default: '#FFFFFF',
+    maxLength: 7,
   })
   @IsOptional()
   @IsHexColor({
     message:
       'La couleur de fond doit être un code hexadécimal valide (ex: #FF5733)',
+  })
+  @MaxLength(7, {
+    message: 'La couleur de fond ne peut pas dépasser 7 caractères',
   })
   backgroundColor?: string;
 }

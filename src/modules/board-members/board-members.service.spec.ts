@@ -26,7 +26,8 @@ describe('BoardMembersService', () => {
     save: jest.fn(),
     find: jest.fn(),
     findOne: jest.fn(),
-    softDelete: jest.fn(),
+    delete: jest.fn(),
+    update: jest.fn(),
   };
 
   const mockBoardRepository = {
@@ -117,7 +118,6 @@ describe('BoardMembersService', () => {
     };
 
     it('should create a board member successfully', async () => {
-      // Arrange
       boardRepository.findOne.mockResolvedValue(mockBoard as any);
       usersService.findByEmail.mockResolvedValue(mockUser as any);
       boardMemberRepository.findOne.mockResolvedValue(null);
@@ -125,10 +125,8 @@ describe('BoardMembersService', () => {
       boardMemberRepository.create.mockReturnValue(mockBoardMember as any);
       boardMemberRepository.save.mockResolvedValue(mockBoardMember as any);
 
-      // Act
       const result = await service.create('board-123', createDto, 'owner-123');
 
-      // Assert
       expect(result).toBeDefined();
       expect(result.id).toBe('member-123');
       expect(result.permissionLevel).toBe(BoardMemberPermission.VIEW);
@@ -136,57 +134,47 @@ describe('BoardMembersService', () => {
     });
 
     it('should throw NotFoundException when board not found', async () => {
-      // Arrange
       boardRepository.findOne.mockResolvedValue(null);
 
-      // Act & Assert
       await expect(
         service.create('board-123', createDto, 'owner-123'),
       ).rejects.toThrow(NotFoundException);
     });
 
     it('should throw ForbiddenException when user is not owner or admin', async () => {
-      // Arrange
       boardRepository.findOne.mockResolvedValue(mockBoard as any);
       boardMemberRepository.findOne.mockResolvedValue(null);
 
-      // Act & Assert
       await expect(
         service.create('board-123', createDto, 'other-user'),
       ).rejects.toThrow(ForbiddenException);
     });
 
     it('should throw NotFoundException when user to add not found', async () => {
-      // Arrange
       boardRepository.findOne.mockResolvedValue(mockBoard as any);
       usersService.findByEmail.mockResolvedValue(null);
 
-      // Act & Assert
       await expect(
         service.create('board-123', createDto, 'owner-123'),
       ).rejects.toThrow(NotFoundException);
     });
 
     it('should throw ConflictException when user is already a member', async () => {
-      // Arrange
       boardRepository.findOne.mockResolvedValue(mockBoard as any);
       usersService.findByEmail.mockResolvedValue(mockUser as any);
       boardMemberRepository.findOne.mockResolvedValue(mockBoardMember as any);
 
-      // Act & Assert
       await expect(
         service.create('board-123', createDto, 'owner-123'),
       ).rejects.toThrow(ConflictException);
     });
 
     it('should throw BadRequestException when trying to add owner as member', async () => {
-      // Arrange
       const ownerUser = { ...mockUser, id: 'owner-123' };
       boardRepository.findOne.mockResolvedValue(mockBoard as any);
       usersService.findByEmail.mockResolvedValue(ownerUser as any);
       boardMemberRepository.findOne.mockResolvedValue(null);
 
-      // Act & Assert
       await expect(
         service.create('board-123', createDto, 'owner-123'),
       ).rejects.toThrow(BadRequestException);
@@ -195,115 +183,102 @@ describe('BoardMembersService', () => {
 
   describe('findBoardMembers', () => {
     it('should return board members for owner', async () => {
-      // Arrange
       boardRepository.findOne.mockResolvedValue(mockBoard as any);
       boardMemberRepository.find.mockResolvedValue([mockBoardMember] as any);
 
-      // Act
       const result = await service.findBoardMembers('board-123', 'owner-123');
 
-      // Assert
       expect(result).toHaveLength(1);
       expect(result[0].id).toBe('member-123');
     });
 
     it('should return board members for valid member', async () => {
-      // Arrange
       boardRepository.findOne.mockResolvedValue(mockBoard as any);
       boardMemberRepository.findOne.mockResolvedValue(mockBoardMember as any);
       boardMemberRepository.find.mockResolvedValue([mockBoardMember] as any);
 
-      // Act
       const result = await service.findBoardMembers('board-123', 'user-123');
 
-      // Assert
       expect(result).toHaveLength(1);
       expect(result[0].id).toBe('member-123');
     });
 
     it('should throw ForbiddenException for non-member', async () => {
-      // Arrange
       boardRepository.findOne.mockResolvedValue(mockBoard as any);
       boardMemberRepository.findOne.mockResolvedValue(null);
 
-      // Act & Assert
       await expect(
         service.findBoardMembers('board-123', 'other-user'),
       ).rejects.toThrow(ForbiddenException);
     });
   });
 
-  describe('update', () => {
-    const updateDto = {
-      permissionLevel: BoardMemberPermission.EDIT,
-    };
+  describe('updateUserPermission', () => {
+    it('devrait mettre à jour les permissions par userId', async () => {
+      const boardId = 'board-1';
+      const userId = 'user-2';
+      const updateDto = { permissionLevel: BoardMemberPermission.ADMIN };
 
-    it('should update board member successfully', async () => {
-      // Arrange
-      boardRepository.findOne.mockResolvedValue(mockBoard as any);
-      boardMemberRepository.findOne.mockResolvedValue({
-        ...mockBoardMember,
-        save: jest.fn(),
-      } as any);
-      boardMemberRepository.save.mockResolvedValue({
-        ...mockBoardMember,
-        permissionLevel: BoardMemberPermission.EDIT,
-      } as any);
+      const mockBoard = { id: boardId, ownerId: 'user-1' } as Board;
+      boardRepository.findOne.mockResolvedValueOnce(mockBoard);
 
-      // Act
-      const result = await service.update(
-        'board-123',
-        'member-123',
+      const mockMember = {
+        id: 'member-1',
+        userId,
+        boardId,
+        permissionLevel: BoardMemberPermission.VIEW,
+        user: mockUser,
+        status: mockStatus,
+      } as BoardMember;
+      boardMemberRepository.findOne.mockResolvedValueOnce(mockMember);
+      boardMemberRepository.save.mockResolvedValueOnce({
+        ...mockMember,
+        ...updateDto,
+        updatedBy: 'user-1',
+      });
+
+      const result = await service.updateUserPermission(
+        boardId,
+        userId,
         updateDto,
-        'owner-123',
+        'user-1',
       );
 
-      // Assert
-      expect(result).toBeDefined();
-      expect(boardMemberRepository.save).toHaveBeenCalled();
-    });
-
-    it('should throw NotFoundException when member not found', async () => {
-      // Arrange
-      boardRepository.findOne.mockResolvedValue(mockBoard as any);
-      boardMemberRepository.findOne.mockResolvedValue(null);
-
-      // Act & Assert
-      await expect(
-        service.update('board-123', 'member-123', updateDto, 'owner-123'),
-      ).rejects.toThrow(NotFoundException);
+      expect(boardMemberRepository.findOne).toHaveBeenCalledWith({
+        where: { userId, boardId },
+        relations: ['user', 'status'],
+      });
+      expect(result.permissionLevel).toBe(BoardMemberPermission.ADMIN);
     });
   });
 
-  describe('remove', () => {
-    it('should remove board member successfully', async () => {
-      // Arrange
-      const mockUpdateResult: UpdateResult = {
-        affected: 1,
-        raw: {},
-        generatedMaps: [],
-      };
+  describe('removeByUserId', () => {
+    it('should remove user from board successfully', async () => {
       boardRepository.findOne.mockResolvedValue(mockBoard as any);
       boardMemberRepository.findOne.mockResolvedValue(mockBoardMember as any);
-      boardMemberRepository.softDelete.mockResolvedValue(mockUpdateResult);
+      boardMemberRepository.delete.mockResolvedValue({
+        affected: 1,
+        raw: {},
+      } as any);
 
-      // Act
-      await service.remove('board-123', 'member-123', 'owner-123');
+      await service.removeByUserId('board-123', 'user-123', 'owner-123');
 
-      // Assert
-      expect(boardMemberRepository.softDelete).toHaveBeenCalledWith(
-        'member-123',
-      );
+      expect(boardMemberRepository.findOne).toHaveBeenCalledWith({
+        where: {
+          userId: 'user-123',
+          boardId: 'board-123',
+        },
+        relations: ['user', 'status'],
+      });
+      expect(boardMemberRepository.delete).toHaveBeenCalledWith('member-123');
     });
 
-    it('should throw NotFoundException when member not found', async () => {
-      // Arrange
+    it('should throw NotFoundException when user not member', async () => {
       boardRepository.findOne.mockResolvedValue(mockBoard as any);
       boardMemberRepository.findOne.mockResolvedValue(null);
 
-      // Act & Assert
       await expect(
-        service.remove('board-123', 'member-123', 'owner-123'),
+        service.removeByUserId('board-123', 'user-456', 'owner-123'),
       ).rejects.toThrow(NotFoundException);
     });
   });

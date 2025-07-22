@@ -1,0 +1,6 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+Ne pas utiliser de "any" dans le code dans la mesure du possible.

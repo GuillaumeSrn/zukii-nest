@@ -3,13 +3,34 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import helmet from 'helmet';
+import * as express from 'express';
 import { AppModule } from './app.module';
 import { SecurityInterceptor } from './common/interceptors/security.interceptor';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
+import { StatusSeeder } from './database/seeds/status.seed';
+import { DataSource } from 'typeorm';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService);
+
+  // Configuration pour gros payloads (uploads de fichiers)
+  app.use(express.json({ limit: '50mb' }));
+  app.use(express.urlencoded({ limit: '50mb', extended: true }));
+
+  // Auto-seeding des données de référence
+  try {
+    const dataSource = app.get(DataSource);
+    const seedResult = await StatusSeeder.run(dataSource);
+
+    if (!seedResult.canContinue) {
+      console.error("🚨 Arrêt de l'application : données critiques manquantes");
+      process.exit(1);
+    }
+  } catch (error) {
+    console.error('❌ Erreur critique lors du seeding des statuts:', error);
+    process.exit(1);
+  }
 
   app.use(
     helmet({

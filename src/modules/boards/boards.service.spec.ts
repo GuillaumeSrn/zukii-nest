@@ -11,11 +11,13 @@ import { Board } from './entities/board.entity';
 import { User } from '../users/entities/user.entity';
 import { Status } from '../status/entities/status.entity';
 import { UsersService } from '../users/users.service';
+import { BoardMember } from '../board-members/entities/board-member.entity';
 
 describe('BoardsService', () => {
   let service: BoardsService;
   let boardRepository: jest.Mocked<Repository<Board>>;
   let statusRepository: jest.Mocked<Repository<Status>>;
+  let boardMemberRepository: jest.Mocked<Repository<BoardMember>>;
   let usersService: jest.Mocked<UsersService>;
 
   const mockStatus = {
@@ -43,7 +45,6 @@ describe('BoardsService', () => {
     status: mockStatus,
     createdAt: new Date(),
     updatedAt: new Date(),
-    deletedAt: undefined,
   } as Board;
 
   beforeEach(async () => {
@@ -57,11 +58,28 @@ describe('BoardsService', () => {
             findOne: jest.fn(),
             create: jest.fn(),
             save: jest.fn(),
-            softDelete: jest.fn(),
+            delete: jest.fn(),
+            remove: jest.fn(),
+            createQueryBuilder: jest.fn().mockReturnValue({
+              leftJoinAndSelect: jest.fn().mockReturnThis(),
+              leftJoin: jest.fn().mockReturnThis(),
+              innerJoin: jest.fn().mockReturnThis(),
+              where: jest.fn().mockReturnThis(),
+              orWhere: jest.fn().mockReturnThis(),
+              andWhere: jest.fn().mockReturnThis(),
+              orderBy: jest.fn().mockReturnThis(),
+              getMany: jest.fn(),
+            }),
           },
         },
         {
           provide: getRepositoryToken(Status),
+          useValue: {
+            findOne: jest.fn(),
+          },
+        },
+        {
+          provide: getRepositoryToken(BoardMember),
           useValue: {
             findOne: jest.fn(),
           },
@@ -78,6 +96,7 @@ describe('BoardsService', () => {
     service = module.get<BoardsService>(BoardsService);
     boardRepository = module.get(getRepositoryToken(Board));
     statusRepository = module.get(getRepositoryToken(Status));
+    boardMemberRepository = module.get(getRepositoryToken(BoardMember));
     usersService = module.get(UsersService);
   });
 
@@ -134,24 +153,41 @@ describe('BoardsService', () => {
   describe('findMyBoards', () => {
     it('should return user boards successfully', async () => {
       const mockBoards = [mockBoard];
-      boardRepository.find.mockResolvedValue(mockBoards);
+
+      // Configuration du mock QueryBuilder
+      const mockQueryBuilder = {
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+        leftJoin: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        orWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue(mockBoards),
+      };
+
+      boardRepository.createQueryBuilder = jest
+        .fn()
+        .mockReturnValue(mockQueryBuilder);
 
       const result = await service.findMyBoards(mockUser.id);
 
-      expect(boardRepository.find).toHaveBeenCalledWith({
-        where: {
-          ownerId: mockUser.id,
-          deletedAt: expect.anything(),
-        },
-        relations: ['owner', 'status'],
-        order: { updatedAt: 'DESC' },
-      });
       expect(result).toHaveLength(1);
       expect(result[0].title).toBe(mockBoard.title);
     });
 
     it('should return empty array when user has no boards', async () => {
-      boardRepository.find.mockResolvedValue([]);
+      // Configuration du mock QueryBuilder
+      const mockQueryBuilder = {
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+        leftJoin: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        orWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([]),
+      };
+
+      boardRepository.createQueryBuilder = jest
+        .fn()
+        .mockReturnValue(mockQueryBuilder);
 
       const result = await service.findMyBoards(mockUser.id);
 
@@ -159,14 +195,14 @@ describe('BoardsService', () => {
     });
   });
 
-  describe('findById', () => {
+  describe('CRITICAL - Access Control & Permissions', () => {
     it('should return board successfully when user is owner', async () => {
       boardRepository.findOne.mockResolvedValue(mockBoard);
 
       const result = await service.findById(mockBoard.id, mockUser.id);
 
       expect(boardRepository.findOne).toHaveBeenCalledWith({
-        where: { id: mockBoard.id, deletedAt: expect.anything() },
+        where: { id: mockBoard.id },
         relations: ['owner', 'status'],
       });
       expect(result.id).toBe(mockBoard.id);
@@ -180,16 +216,42 @@ describe('BoardsService', () => {
       ).rejects.toThrow(NotFoundException);
     });
 
-    it('should throw ForbiddenException when user is not owner', async () => {
+    it('CRITICAL - should reject unauthorized access (ownership validation)', async () => {
       const otherUserBoard = {
         ...mockBoard,
         ownerId: 'other-user-id',
       } as Board;
       boardRepository.findOne.mockResolvedValue(otherUserBoard);
+      boardMemberRepository.findOne.mockResolvedValue(null); // Pas membre
 
       await expect(service.findById(mockBoard.id, mockUser.id)).rejects.toThrow(
         ForbiddenException,
       );
+    });
+
+    it('should allow access when user is board member', async () => {
+      const otherUserBoard = {
+        ...mockBoard,
+        ownerId: 'other-user-id',
+      } as Board;
+      const mockMembership = {
+        id: 'membership-id',
+        boardId: mockBoard.id,
+        userId: mockUser.id,
+      } as BoardMember;
+
+      boardRepository.findOne.mockResolvedValue(otherUserBoard);
+      boardMemberRepository.findOne.mockResolvedValue(mockMembership);
+
+      const result = await service.findById(mockBoard.id, mockUser.id);
+
+      expect(result.id).toBe(mockBoard.id);
+      expect(boardMemberRepository.findOne).toHaveBeenCalledWith({
+        where: {
+          boardId: mockBoard.id,
+          userId: mockUser.id,
+        },
+      });
     });
   });
 
@@ -226,6 +288,59 @@ describe('BoardsService', () => {
         ownerId: 'other-user-id',
       } as Board;
       boardRepository.findOne.mockResolvedValue(otherUserBoard);
+      boardMemberRepository.findOne.mockResolvedValue(null); // Pas membre
+
+      await expect(
+        service.update(mockBoard.id, updateBoardDto, mockUser.id),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('should allow update when user has EDIT permission', async () => {
+      const otherUserBoard = {
+        ...mockBoard,
+        ownerId: 'other-user-id',
+        title: 'Updated Board',
+      } as Board;
+      const mockMembership = {
+        id: 'membership-id',
+        boardId: mockBoard.id,
+        userId: mockUser.id,
+        permissionLevel: 'edit', // Permission EDIT
+      } as BoardMember;
+
+      boardRepository.findOne.mockResolvedValue(otherUserBoard);
+      boardMemberRepository.findOne.mockResolvedValue(mockMembership);
+      boardRepository.save.mockResolvedValue(otherUserBoard);
+
+      const result = await service.update(
+        mockBoard.id,
+        updateBoardDto,
+        mockUser.id,
+      );
+
+      expect(result.title).toBe('Updated Board');
+      expect(boardMemberRepository.findOne).toHaveBeenCalledWith({
+        where: {
+          boardId: mockBoard.id,
+          userId: mockUser.id,
+        },
+      });
+    });
+
+    it('should reject update when user has only VIEW permission', async () => {
+      const otherUserBoard = {
+        ...mockBoard,
+        ownerId: 'other-user-id',
+      } as Board;
+      const mockMembership = {
+        id: 'membership-id',
+        boardId: mockBoard.id,
+        userId: mockUser.id,
+        permissionLevel: 'view', // Permission VIEW insuffisante
+      } as BoardMember;
+
+      boardRepository.findOne.mockResolvedValue(otherUserBoard);
+      boardMemberRepository.findOne.mockResolvedValue(mockMembership);
 
       await expect(
         service.update(mockBoard.id, updateBoardDto, mockUser.id),
@@ -236,15 +351,27 @@ describe('BoardsService', () => {
   describe('remove', () => {
     it('should remove board successfully when user is owner', async () => {
       boardRepository.findOne.mockResolvedValue(mockBoard);
-      boardRepository.softDelete.mockResolvedValue({
-        affected: 1,
-        raw: [],
-        generatedMaps: [],
-      });
+      boardRepository.remove.mockResolvedValue(mockBoard as any);
 
       await service.remove(mockBoard.id, mockUser.id);
 
-      expect(boardRepository.softDelete).toHaveBeenCalledWith(mockBoard.id);
+      expect(boardRepository.remove).toHaveBeenCalledWith(mockBoard);
+    });
+
+    it('should remove board with cascade delete of members', async () => {
+      const boardWithMembers = {
+        ...mockBoard,
+        members: [
+          { id: 'member-1', userId: 'user-1' },
+          { id: 'member-2', userId: 'user-2' },
+        ],
+      };
+      boardRepository.findOne.mockResolvedValue(boardWithMembers as any);
+      boardRepository.remove.mockResolvedValue(boardWithMembers as any);
+
+      await service.remove(mockBoard.id, mockUser.id);
+
+      expect(boardRepository.remove).toHaveBeenCalledWith(boardWithMembers);
     });
 
     it('should throw NotFoundException when board not found', async () => {
@@ -264,6 +391,25 @@ describe('BoardsService', () => {
 
       await expect(service.remove(mockBoard.id, mockUser.id)).rejects.toThrow(
         ForbiddenException,
+      );
+    });
+
+    it('should verify cascade configuration is properly set up', async () => {
+      const boardWithMembersEntity = {
+        ...mockBoard,
+        members: [
+          { id: 'member-1', boardId: mockBoard.id, userId: 'user-1' },
+          { id: 'member-2', boardId: mockBoard.id, userId: 'user-2' },
+        ],
+      };
+
+      boardRepository.findOne.mockResolvedValue(boardWithMembersEntity as any);
+      boardRepository.remove.mockResolvedValue(boardWithMembersEntity as any);
+
+      await service.remove(mockBoard.id, mockUser.id);
+
+      expect(boardRepository.remove).toHaveBeenCalledWith(
+        boardWithMembersEntity,
       );
     });
   });

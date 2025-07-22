@@ -62,7 +62,7 @@ describe('AuthService', () => {
     expect(service).toBeDefined();
   });
 
-  describe('validateUser', () => {
+  describe('CRITICAL - Security Authentication', () => {
     it('should return user when credentials are valid', async () => {
       usersService.findByEmail.mockResolvedValue(mockUser);
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
@@ -74,7 +74,7 @@ describe('AuthService', () => {
       expect(bcrypt.compare).toHaveBeenCalledWith('password', 'hashedPassword');
     });
 
-    it('should throw UnauthorizedException when user not found', async () => {
+    it('CRITICAL - should reject invalid credentials (user not found)', async () => {
       usersService.findByEmail.mockResolvedValue(null);
 
       await expect(
@@ -82,7 +82,7 @@ describe('AuthService', () => {
       ).rejects.toThrow(UnauthorizedException);
     });
 
-    it('should throw UnauthorizedException when password is invalid', async () => {
+    it('CRITICAL - should reject invalid credentials (wrong password)', async () => {
       usersService.findByEmail.mockResolvedValue(mockUser);
       (bcrypt.compare as jest.Mock).mockResolvedValue(false);
 
@@ -92,7 +92,7 @@ describe('AuthService', () => {
     });
   });
 
-  describe('login', () => {
+  describe('CRITICAL - JWT Token Generation', () => {
     it('should return auth response when login is successful', async () => {
       usersService.findByEmail.mockResolvedValue(mockUser);
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
@@ -115,6 +115,23 @@ describe('AuthService', () => {
           displayName: mockUser.displayName,
         },
       });
+    });
+
+    it('should throw UnauthorizedException when user not found', async () => {
+      usersService.findByEmail.mockResolvedValue(null);
+
+      await expect(
+        service.login({ email: 'test@example.com', password: 'password' }),
+      ).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('should throw UnauthorizedException when password is invalid', async () => {
+      usersService.findByEmail.mockResolvedValue(mockUser);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(false);
+
+      await expect(
+        service.login({ email: 'test@example.com', password: 'wrongpassword' }),
+      ).rejects.toThrow(UnauthorizedException);
     });
   });
 

@@ -23,7 +23,7 @@ import {
 } from '@nestjs/swagger';
 import { BoardMembersService } from './board-members.service';
 import { CreateBoardMemberDto } from './dto/create-board-member.dto';
-import { UpdateBoardMemberDto } from './dto/update-board-member.dto';
+import { UpdateBoardMemberPermissionDto } from './dto/update-board-member.dto';
 import { BoardMemberResponseDto } from './dto/board-member-response.dto';
 import { UuidValidationPipe } from '../../common/pipes/uuid-validation.pipe';
 import { JwtUser } from '../../common/interfaces/jwt-user.interface';
@@ -140,12 +140,12 @@ export class BoardMembersController {
     return members;
   }
 
-  @Patch(':id')
+  @Patch(':userId/permissions')
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
-    summary: "Modifier les permissions d'un membre",
+    summary: "Modifier les permissions d'un utilisateur",
     description:
-      "Met à jour les permissions d'un membre (propriétaire et admin uniquement)",
+      "Met à jour uniquement les permissions d'un utilisateur membre",
   })
   @ApiParam({
     name: 'boardId',
@@ -153,19 +153,19 @@ export class BoardMembersController {
     example: '123e4567-e89b-12d3-a456-426614174000',
   })
   @ApiParam({
-    name: 'id',
-    description: 'Identifiant UUID du membre',
+    name: 'userId',
+    description: "Identifiant UUID de l'utilisateur",
     example: '123e4567-e89b-12d3-a456-426614174001',
   })
-  @ApiBody({ type: UpdateBoardMemberDto })
+  @ApiBody({ type: UpdateBoardMemberPermissionDto })
   @ApiResponse({
     status: 200,
-    description: 'Permissions du membre mises à jour avec succès',
+    description: "Permissions de l'utilisateur mises à jour avec succès",
     type: BoardMemberResponseDto,
   })
   @ApiResponse({
     status: 400,
-    description: 'Données de mise à jour invalides',
+    description: 'Permission invalide',
   })
   @ApiResponse({
     status: 401,
@@ -178,34 +178,36 @@ export class BoardMembersController {
   })
   @ApiResponse({
     status: 404,
-    description: 'Board ou membre non trouvé',
+    description: 'Board ou utilisateur non trouvé comme membre',
   })
-  async update(
+  async updateUserPermission(
     @Param('boardId', UuidValidationPipe) boardId: string,
-    @Param('id', UuidValidationPipe) id: string,
-    @Body() updateBoardMemberDto: UpdateBoardMemberDto,
+    @Param('userId', UuidValidationPipe) userId: string,
+    @Body() updatePermissionDto: UpdateBoardMemberPermissionDto,
     @Request() req: { user: JwtUser },
   ): Promise<BoardMemberResponseDto> {
     this.logger.log(
-      `Mise à jour du membre ${id} du board ${boardId} par l'utilisateur ${req.user.id}`,
+      `Mise à jour des permissions de l'utilisateur ${userId} du board ${boardId} par ${req.user.id}`,
     );
-    const member = await this.boardMembersService.update(
+    const member = await this.boardMembersService.updateUserPermission(
       boardId,
-      id,
-      updateBoardMemberDto,
+      userId,
+      updatePermissionDto,
       req.user.id,
     );
-    this.logger.log(`Membre ${id} mis à jour avec succès`);
+    this.logger.log(
+      `Permissions de l'utilisateur ${userId} mises à jour avec succès`,
+    );
     return member;
   }
 
-  @Delete(':id')
+  @Delete(':userId')
   @ApiBearerAuth('JWT-auth')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({
-    summary: 'Retirer un membre du board',
+    summary: 'Retirer un utilisateur du board',
     description:
-      'Supprime un membre du board (propriétaire et admin uniquement)',
+      'Supprime un utilisateur du board (propriétaire et admin uniquement)',
   })
   @ApiParam({
     name: 'boardId',
@@ -213,8 +215,8 @@ export class BoardMembersController {
     example: '123e4567-e89b-12d3-a456-426614174000',
   })
   @ApiParam({
-    name: 'id',
-    description: 'Identifiant UUID du membre',
+    name: 'userId',
+    description: "Identifiant UUID de l'utilisateur",
     example: '123e4567-e89b-12d3-a456-426614174001',
   })
   @ApiResponse({
@@ -232,17 +234,19 @@ export class BoardMembersController {
   })
   @ApiResponse({
     status: 404,
-    description: 'Board ou membre non trouvé',
+    description: 'Board ou utilisateur non trouvé',
   })
   async remove(
     @Param('boardId', UuidValidationPipe) boardId: string,
-    @Param('id', UuidValidationPipe) id: string,
+    @Param('userId', UuidValidationPipe) userId: string,
     @Request() req: { user: JwtUser },
   ): Promise<void> {
     this.logger.log(
-      `Suppression du membre ${id} du board ${boardId} par l'utilisateur ${req.user.id}`,
+      `Suppression de l'utilisateur ${userId} du board ${boardId} par l'utilisateur ${req.user.id}`,
     );
-    await this.boardMembersService.remove(boardId, id, req.user.id);
-    this.logger.log(`Membre ${id} supprimé avec succès du board ${boardId}`);
+    await this.boardMembersService.removeByUserId(boardId, userId, req.user.id);
+    this.logger.log(
+      `Utilisateur ${userId} supprimé avec succès du board ${boardId}`,
+    );
   }
 }
