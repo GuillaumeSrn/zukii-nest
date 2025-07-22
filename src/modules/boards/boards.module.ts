@@ -5,11 +5,12 @@ import { BoardsService } from './boards.service';
 import { Board } from './entities/board.entity';
 import { Status } from '../status/entities/status.entity';
 import { BoardMember } from '../board-members/entities/board-member.entity';
+import { SuperBlock } from '../super-blocks/entities/super-block.entity';
 import { UsersModule } from '../users/users.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Board, Status, BoardMember]),
+    TypeOrmModule.forFeature([Board, Status, BoardMember, SuperBlock]),
     UsersModule,
   ],
   controllers: [BoardsController],

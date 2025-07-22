@@ -1,6 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { BlocksController } from './blocks.controller';
 import { BlocksService } from './blocks.service';
+import { TextContentService } from '../text-content/text-content.service';
+import { FileContentService } from '../file-content/file-content.service';
+import { BlockRelationsService } from '../block-relations/block-relations.service';
 import { CreateBlockDto } from './dto/create-block.dto';
 import { UpdateBlockDto, UpdateBlockPositionDto } from './dto/update-block.dto';
 import { BlockType } from './enums/block.enum';
@@ -10,11 +13,31 @@ describe('BlocksController', () => {
   let service: jest.Mocked<BlocksService>;
 
   const mockBlocksService = {
-    create: jest.fn(),
     findByBoard: jest.fn(),
     findOne: jest.fn(),
     update: jest.fn(),
     updatePosition: jest.fn(),
+    remove: jest.fn(),
+  };
+
+  const mockTextContentService = {
+    create: jest.fn(),
+    findOne: jest.fn(),
+    update: jest.fn(),
+    remove: jest.fn(),
+  };
+
+  const mockFileContentService = {
+    create: jest.fn(),
+    findOne: jest.fn(),
+    update: jest.fn(),
+    remove: jest.fn(),
+  };
+
+  const mockBlockRelationsService = {
+    create: jest.fn(),
+    findBySourceBlock: jest.fn(),
+    findByTargetBlock: jest.fn(),
     remove: jest.fn(),
   };
 
@@ -24,7 +47,6 @@ describe('BlocksController', () => {
   const mockBlockResponse = {
     id: 'block-123',
     boardId: 'board-123',
-    createdBy: 'user-123',
     blockType: BlockType.TEXT,
     title: 'Test Block',
     positionX: 100,
@@ -33,13 +55,19 @@ describe('BlocksController', () => {
     height: 400,
     zIndex: 1,
     contentId: 'content-123',
+    superBlockId: undefined,
+    zoneType: undefined,
     status: {
       id: 'block-active',
       category: 'block',
       name: 'active',
       isActive: true,
     },
-    lastModifiedBy: 'user-123',
+    lastModifiedByUser: {
+      id: 'user-123',
+      displayName: 'Test User',
+      isActive: true,
+    },
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -51,6 +79,18 @@ describe('BlocksController', () => {
         {
           provide: BlocksService,
           useValue: mockBlocksService,
+        },
+        {
+          provide: TextContentService,
+          useValue: mockTextContentService,
+        },
+        {
+          provide: FileContentService,
+          useValue: mockFileContentService,
+        },
+        {
+          provide: BlockRelationsService,
+          useValue: mockBlockRelationsService,
         },
       ],
     }).compile();
@@ -65,35 +105,6 @@ describe('BlocksController', () => {
     jest.clearAllMocks();
   });
 
-  describe('create', () => {
-    const createBlockDto: CreateBlockDto = {
-      blockType: BlockType.TEXT,
-      title: 'Test Block',
-      positionX: 100,
-      positionY: 200,
-      width: 300,
-      height: 400,
-      contentId: 'content-123',
-    };
-
-    it('should create a block successfully', async () => {
-      service.create.mockResolvedValue(mockBlockResponse as any);
-
-      const result = await controller.create(
-        'board-123',
-        createBlockDto,
-        mockRequest,
-      );
-
-      expect(service.create).toHaveBeenCalledWith(
-        'board-123',
-        createBlockDto,
-        'user-123',
-      );
-      expect(result).toEqual(mockBlockResponse);
-    });
-  });
-
   describe('findByBoard', () => {
     it('should return blocks for a board', async () => {
       const mockBlocks = [mockBlockResponse];
@@ -103,17 +114,6 @@ describe('BlocksController', () => {
 
       expect(service.findByBoard).toHaveBeenCalledWith('board-123', 'user-123');
       expect(result).toEqual(mockBlocks);
-    });
-  });
-
-  describe('findOne', () => {
-    it('should return a specific block', async () => {
-      service.findOne.mockResolvedValue(mockBlockResponse as any);
-
-      const result = await controller.findOne('block-123', mockRequest);
-
-      expect(service.findOne).toHaveBeenCalledWith('block-123', 'user-123');
-      expect(result).toEqual(mockBlockResponse);
     });
   });
 

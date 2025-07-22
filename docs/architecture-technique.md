@@ -3,7 +3,7 @@
 ## Modèle de données
 
 L'architecture repose sur deux diagrammes UML :
-- **État actuel** : `database-schema-current.puml` (User, Status, Board implémentés)
+- **État actuel** : `database-schema-current.puml` (User, Status, Board, Block implémentés)
 - **Vision complète** : `database-schema.puml` (roadmap avec toutes les fonctionnalités)
 
 ### État d'implémentation
@@ -13,12 +13,15 @@ L'architecture repose sur deux diagrammes UML :
 - **Status** : Système centralisé par catégorie, données de référence auto-seeding
 - **Board** : CRUD complet, validation ownership, suppression permanente, tests 71/71
 - **BoardMember** : Collaboration opérationnelle avec permissions granulaires, tests 21/21
+- **Block** : Système de contenu avec zones et positionnement optionnel
+- **FileContent** : Upload et gestion fichiers CSV avec métadonnées complètes
+- **TextContent** : Notes et commentaires intégrés
 
 #### 🚧 **Modules en roadmap (non implémentés)**
+- **SuperBlock** : Regroupements logiques de blocks avec interface collapse/expand
+- **BlockRelation** : Relations tracées entre contenus (generated_from, comment_on, references, derived_from)
+- **AnalysisContent** : Résultats d'analyses IA avec données Plotly et traçabilité
 - **Invitation** : Système d'invitations temporaires
-- **Block** : Contenu positionné avec types (text, file, analysis)
-- **Content Types** : TextContent, FileContent, AnalysisContent
-- **BlockRelation** : Relations entre blocks
 - **AnalysisTemplate** : Templates IA préconfigurés
 
 ### Entités principales (Vision complète)
@@ -32,20 +35,25 @@ L'architecture repose sur deux diagrammes UML :
 - **BoardMember** : Membres d'un board avec permissions granulaires (view, edit, admin)
 - **Invitation** : Système d'invitation temporaire
 
-#### Système de Blocks (Refactorisé)
-- **Block** : Positionnement, métadonnées et référence générique vers le contenu
+#### Système de Blocks (Implémenté + Évolutions)
+- **Block** : Positionnement optionnel, métadonnées et référence générique vers le contenu
+- **SuperBlock** : Regroupements visuels et logiques de blocks liés
+- **BlockRelation** : Relations tracées entre blocks (generated_from, references, comment_on, derived_from)
 - **TextContent** : Contenu textuel avec support Markdown/HTML
-- **FileContent** : Métadonnées fichiers, statut upload et référence S3
+- **FileContent** : Métadonnées fichiers avec stockage base64 et validation
 - **AnalysisContent** : Résultats d'analyses IA avec données Plotly et traçabilité
 
-#### Templates d'Analyse IA
+#### 🎨 Interface Architecture
+- **Layout Zones** : Organisation automatique par type de contenu (Data, Analysis, Notes, Comments)
+- **Super-Blocks** : Regroupements visuels avec collapse/expand et code couleur
+- **Relations Visuelles** : Connexions tracées entre éléments liés
+- **Responsive Design** : Interface adaptative sans canvas complexe
+
+#### Templates d'Analyse IA (Future)
 - **AnalysisTemplate** : Templates préconfigurés pour microservice Python
   - Prompts OpenAI optimisés par type d'analyse
   - Configuration des paramètres d'entrée
   - Menu déroulant pour interface utilisateur
-
-#### Relations entre Blocks
-- **BlockRelation** : Relations inter-blocks (generated_from, references, comment_on, derived_from)
 
 ### Relations (Actuelles et Futures)
 
@@ -53,12 +61,14 @@ L'architecture repose sur deux diagrammes UML :
 - User 1..N Board (propriétaire) - `board.ownerId`
 - User 1..N BoardMember N..1 Board (permissions granulaires) - `board_member.userId` / `board_member.boardId`
 - Status 1..N User/Board/BoardMember - `*.statusId`
+- Board 1..N Block - `block.boardId`
+- Block 1..1 TextContent|FileContent (via content_id) - `block.contentId`
 
 #### 🚧 **Relations futures (roadmap)**
-- Board 1..N Block
-- Block 1..1 TextContent|FileContent|AnalysisContent (via content_id)
-- Block N..N Block (via BlockRelation)
-- Status 1..N Block
+- SuperBlock 1..N Block - `block.superBlockId`
+- Block N..N Block (via BlockRelation) - `block_relation.sourceBlockId` / `targetBlockId`
+- Status 1..N Block - `block.statusId`
+- AnalysisContent 1..N FileContent (sources) - via relations
 
 ### Permissions simplifiées
 Les permissions sont gérées **uniquement au niveau des boards** via la table `BoardMember` :

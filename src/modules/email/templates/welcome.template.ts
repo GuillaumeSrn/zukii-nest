@@ -187,4 +187,4 @@ export const getWelcomeEmailTemplate = (username: string): string => {
     </body>
     </html>
   `;
-}; 
+};
