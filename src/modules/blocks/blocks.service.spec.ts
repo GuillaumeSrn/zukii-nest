@@ -2,20 +2,21 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import {
+  ConflictException,
   NotFoundException,
   ForbiddenException,
-  ConflictException,
   BadRequestException,
 } from '@nestjs/common';
 import { BlocksService } from './blocks.service';
 import { Block } from './entities/block.entity';
 import { Board } from '../boards/entities/board.entity';
 import { Status } from '../status/entities/status.entity';
+import { User } from '../users/entities/user.entity';
 import { BoardMembersService } from '../board-members/board-members.service';
 import { TextContentService } from '../text-content/text-content.service';
 import { FileContentService } from '../file-content/file-content.service';
 import { CreateBlockDto } from './dto/create-block.dto';
-import { UpdateBlockDto } from './dto/update-block.dto';
+import { UpdateBlockDto, UpdateBlockPositionDto } from './dto/update-block.dto';
 import { BlockType } from './enums/block.enum';
 import { BoardMemberPermission } from '../board-members/enums/board-member.enum';
 
@@ -24,9 +25,16 @@ describe('BlocksService', () => {
   let blockRepository: jest.Mocked<Repository<Block>>;
   let boardRepository: jest.Mocked<Repository<Board>>;
   let statusRepository: jest.Mocked<Repository<Status>>;
-  let boardMembersService: jest.Mocked<BoardMembersService>;
+  let userRepository: jest.Mocked<Repository<User>>;
+  let mockBoardMembersService: jest.Mocked<BoardMembersService>;
   let textContentService: jest.Mocked<TextContentService>;
   let fileContentService: jest.Mocked<FileContentService>;
+
+  const mockBoard = {
+    id: 'board-123',
+    title: 'Test Board',
+    ownerId: 'owner-123',
+  };
 
   const mockStatus = {
     id: 'block-active',
@@ -35,19 +43,14 @@ describe('BlocksService', () => {
     isActive: true,
   };
 
-  const mockBoard = {
-    id: 'board-123',
-    title: 'Test Board',
-    ownerId: 'owner-123',
-  };
-
   const mockUser = {
     id: 'user-123',
-    email: 'test@example.com',
     displayName: 'Test User',
+    email: 'test@example.com',
   };
 
-  const mockBlock = {
+  // Mock de l'entité Block (structure base de données)
+  const mockBlockEntity = {
     id: 'block-123',
     boardId: 'board-123',
     createdBy: 'user-123',
@@ -61,38 +64,41 @@ describe('BlocksService', () => {
     contentId: 'content-123',
     statusId: 'block-active',
     lastModifiedBy: 'user-123',
+    superBlockId: undefined,
+    zoneType: undefined,
+    status: mockStatus,
+    lastModifier: mockUser,
     createdAt: new Date(),
     updatedAt: new Date(),
   };
 
-  const mockBoardMemberRepository = {
-    create: jest.fn(),
-    save: jest.fn(),
-    find: jest.fn(),
-    findOne: jest.fn(),
-    delete: jest.fn(),
-    update: jest.fn(),
-  };
-
-  const mockBoardRepository = {
-    findOne: jest.fn(),
-  };
-
-  const mockStatusRepository = {
-    findOne: jest.fn(),
-  };
-
-  const mockBoardMembersService = {
-    checkUserPermission: jest.fn(),
-    findByBoardAndUser: jest.fn(),
-  };
-
-  const mockTextContentService = {
-    findOne: jest.fn(),
-  };
-
-  const mockFileContentService = {
-    findOne: jest.fn(),
+  // Mock de la réponse DTO (ce que le service retourne)
+  const mockBlockResponseDto = {
+    id: 'block-123',
+    boardId: 'board-123',
+    blockType: BlockType.TEXT,
+    title: 'Test Block',
+    positionX: 100,
+    positionY: 200,
+    width: 300,
+    height: 400,
+    zIndex: 1,
+    contentId: 'content-123',
+    superBlockId: undefined,
+    zoneType: undefined,
+    status: {
+      id: 'block-active',
+      category: 'block',
+      name: 'active',
+      isActive: true,
+    },
+    lastModifiedByUser: {
+      id: 'user-123',
+      displayName: 'Test User',
+      isActive: true,
+    },
+    createdAt: mockBlockEntity.createdAt,
+    updatedAt: mockBlockEntity.updatedAt,
   };
 
   beforeEach(async () => {
@@ -101,27 +107,51 @@ describe('BlocksService', () => {
         BlocksService,
         {
           provide: getRepositoryToken(Block),
-          useValue: mockBoardMemberRepository,
+          useValue: {
+            find: jest.fn(),
+            findOne: jest.fn(),
+            create: jest.fn(),
+            save: jest.fn(),
+            delete: jest.fn(),
+            count: jest.fn(),
+            update: jest.fn(),
+          },
         },
         {
           provide: getRepositoryToken(Board),
-          useValue: mockBoardRepository,
+          useValue: {
+            findOne: jest.fn(),
+          },
         },
         {
           provide: getRepositoryToken(Status),
-          useValue: mockStatusRepository,
+          useValue: {
+            findOne: jest.fn(),
+          },
+        },
+        {
+          provide: getRepositoryToken(User),
+          useValue: {
+            findOne: jest.fn(),
+          },
         },
         {
           provide: BoardMembersService,
-          useValue: mockBoardMembersService,
+          useValue: {
+            checkUserPermission: jest.fn(),
+          },
         },
         {
           provide: TextContentService,
-          useValue: mockTextContentService,
+          useValue: {
+            findOne: jest.fn(),
+          },
         },
         {
           provide: FileContentService,
-          useValue: mockFileContentService,
+          useValue: {
+            findOne: jest.fn(),
+          },
         },
       ],
     }).compile();
@@ -130,9 +160,12 @@ describe('BlocksService', () => {
     blockRepository = module.get(getRepositoryToken(Block));
     boardRepository = module.get(getRepositoryToken(Board));
     statusRepository = module.get(getRepositoryToken(Status));
-    boardMembersService = module.get(BoardMembersService);
+    userRepository = module.get(getRepositoryToken(User));
+    mockBoardMembersService = module.get(BoardMembersService);
     textContentService = module.get(TextContentService);
     fileContentService = module.get(FileContentService);
+
+    jest.clearAllMocks();
   });
 
   afterEach(() => {
@@ -151,13 +184,15 @@ describe('BlocksService', () => {
     };
 
     it('should create a block successfully when user has edit permission', async () => {
-      textContentService.findOne.mockResolvedValue({ id: 'content-123' } as any);
+      textContentService.findOne.mockResolvedValue({
+        id: 'content-123',
+      } as any);
       boardRepository.findOne.mockResolvedValue(mockBoard as any);
       mockBoardMembersService.checkUserPermission.mockResolvedValue(true);
       statusRepository.findOne.mockResolvedValue(mockStatus as any);
-      blockRepository.create.mockReturnValue(mockBlock as any);
-      blockRepository.save.mockResolvedValue(mockBlock as any);
-      blockRepository.findOne.mockResolvedValue(mockBlock as any);
+      blockRepository.create.mockReturnValue(mockBlockEntity as any);
+      blockRepository.save.mockResolvedValue(mockBlockEntity as any);
+      blockRepository.findOne.mockResolvedValue(mockBlockEntity as any);
 
       const result = await service.create(
         'board-123',
@@ -187,11 +222,13 @@ describe('BlocksService', () => {
         height: 400,
         zIndex: 0,
       });
-      expect(result).toEqual(mockBlock);
+      expect(result).toEqual(mockBlockResponseDto);
     });
 
     it('should throw NotFoundException when board does not exist', async () => {
-      textContentService.findOne.mockResolvedValue({ id: 'content-123' } as any);
+      textContentService.findOne.mockResolvedValue({
+        id: 'content-123',
+      } as any);
       boardRepository.findOne.mockResolvedValue(null);
 
       await expect(
@@ -200,7 +237,9 @@ describe('BlocksService', () => {
     });
 
     it('should throw ForbiddenException when user lacks edit permission', async () => {
-      textContentService.findOne.mockResolvedValue({ id: 'content-123' } as any);
+      textContentService.findOne.mockResolvedValue({
+        id: 'content-123',
+      } as any);
       boardRepository.findOne.mockResolvedValue(mockBoard as any);
       mockBoardMembersService.checkUserPermission.mockResolvedValue(false);
 
@@ -210,7 +249,9 @@ describe('BlocksService', () => {
     });
 
     it('should throw ConflictException when active status not found', async () => {
-      textContentService.findOne.mockResolvedValue({ id: 'content-123' } as any);
+      textContentService.findOne.mockResolvedValue({
+        id: 'content-123',
+      } as any);
       boardRepository.findOne.mockResolvedValue(mockBoard as any);
       mockBoardMembersService.checkUserPermission.mockResolvedValue(true);
       statusRepository.findOne.mockResolvedValue(null);
@@ -267,37 +308,47 @@ describe('BlocksService', () => {
     };
 
     it('CRITICAL - should validate TEXT content exists before creating block', async () => {
-      textContentService.findOne.mockResolvedValue({ id: 'text-content-123' } as any);
+      textContentService.findOne.mockResolvedValue({
+        id: 'text-content-123',
+      } as any);
       boardRepository.findOne.mockResolvedValue(mockBoard as any);
       mockBoardMembersService.checkUserPermission.mockResolvedValue(true);
       statusRepository.findOne.mockResolvedValue(mockStatus as any);
-      blockRepository.create.mockReturnValue(mockBlock as any);
-      blockRepository.save.mockResolvedValue(mockBlock as any);
-      blockRepository.findOne.mockResolvedValue(mockBlock as any);
+      blockRepository.create.mockReturnValue(mockBlockEntity as any);
+      blockRepository.save.mockResolvedValue(mockBlockEntity as any);
+      blockRepository.findOne.mockResolvedValue(mockBlockEntity as any);
 
       await service.create('board-123', createTextBlockDto, 'user-123');
 
-      expect(textContentService.findOne).toHaveBeenCalledWith('text-content-123');
+      expect(textContentService.findOne).toHaveBeenCalledWith(
+        'text-content-123',
+      );
       expect(fileContentService.findOne).not.toHaveBeenCalled();
     });
 
     it('CRITICAL - should validate FILE content exists before creating block', async () => {
-      fileContentService.findOne.mockResolvedValue({ id: 'file-content-123' } as any);
+      fileContentService.findOne.mockResolvedValue({
+        id: 'file-content-123',
+      } as any);
       boardRepository.findOne.mockResolvedValue(mockBoard as any);
       mockBoardMembersService.checkUserPermission.mockResolvedValue(true);
       statusRepository.findOne.mockResolvedValue(mockStatus as any);
-      blockRepository.create.mockReturnValue(mockBlock as any);
-      blockRepository.save.mockResolvedValue(mockBlock as any);
-      blockRepository.findOne.mockResolvedValue(mockBlock as any);
+      blockRepository.create.mockReturnValue(mockBlockEntity as any);
+      blockRepository.save.mockResolvedValue(mockBlockEntity as any);
+      blockRepository.findOne.mockResolvedValue(mockBlockEntity as any);
 
       await service.create('board-123', createFileBlockDto, 'user-123');
 
-      expect(fileContentService.findOne).toHaveBeenCalledWith('file-content-123');
+      expect(fileContentService.findOne).toHaveBeenCalledWith(
+        'file-content-123',
+      );
       expect(textContentService.findOne).not.toHaveBeenCalled();
     });
 
     it('CRITICAL - should reject blocks with invalid TEXT content references', async () => {
-      textContentService.findOne.mockRejectedValue(new NotFoundException('Contenu textuel non trouvé'));
+      textContentService.findOne.mockRejectedValue(
+        new NotFoundException('Contenu textuel non trouvé'),
+      );
 
       await expect(
         service.create('board-123', createTextBlockDto, 'user-123'),
@@ -305,7 +356,9 @@ describe('BlocksService', () => {
     });
 
     it('CRITICAL - should reject blocks with invalid FILE content references', async () => {
-      fileContentService.findOne.mockRejectedValue(new NotFoundException('Fichier non trouvé'));
+      fileContentService.findOne.mockRejectedValue(
+        new NotFoundException('Fichier non trouvé'),
+      );
 
       await expect(
         service.create('board-123', createFileBlockDto, 'user-123'),
@@ -347,7 +400,7 @@ describe('BlocksService', () => {
 
   describe('findByBoard', () => {
     it('should return blocks when user has view permission', async () => {
-      const mockBlocks = [mockBlock];
+      const mockBlocks = [mockBlockEntity];
       boardRepository.findOne.mockResolvedValue(mockBoard as any);
       mockBoardMembersService.checkUserPermission.mockResolvedValue(true);
       blockRepository.find.mockResolvedValue(mockBlocks as any);
@@ -361,10 +414,10 @@ describe('BlocksService', () => {
       );
       expect(blockRepository.find).toHaveBeenCalledWith({
         where: { boardId: 'board-123', status: { isActive: true } },
-        relations: ['status'],
+        relations: ['status', 'lastModifier'],
         order: { zIndex: 'ASC', createdAt: 'ASC' },
       });
-      expect(result).toEqual(mockBlocks);
+      expect(result).toEqual([mockBlockResponseDto]);
     });
 
     it('should throw ForbiddenException when user lacks view permission', async () => {
@@ -379,21 +432,21 @@ describe('BlocksService', () => {
 
   describe('findOne', () => {
     it('should return block when user has view permission', async () => {
-      blockRepository.findOne.mockResolvedValue(mockBlock as any);
+      blockRepository.findOne.mockResolvedValue(mockBlockEntity as any);
       mockBoardMembersService.checkUserPermission.mockResolvedValue(true);
 
       const result = await service.findOne('block-123', 'user-123');
 
       expect(blockRepository.findOne).toHaveBeenCalledWith({
         where: { id: 'block-123' },
-        relations: ['status'],
+        relations: ['status', 'lastModifier'],
       });
       expect(mockBoardMembersService.checkUserPermission).toHaveBeenCalledWith(
         'board-123',
         'user-123',
         BoardMemberPermission.VIEW,
       );
-      expect(result).toEqual(mockBlock);
+      expect(result).toEqual(mockBlockResponseDto);
     });
 
     it('should throw NotFoundException when block does not exist', async () => {
@@ -413,10 +466,18 @@ describe('BlocksService', () => {
     };
 
     it('should update block when user has edit permission', async () => {
-      blockRepository.findOne.mockResolvedValue(mockBlock as any);
+      blockRepository.findOne.mockResolvedValue(mockBlockEntity as any);
       mockBoardMembersService.checkUserPermission.mockResolvedValue(true);
-      const updatedBlock = { ...mockBlock, ...updateBlockDto };
+      const updatedBlock = { ...mockBlockEntity, ...updateBlockDto };
       blockRepository.save.mockResolvedValue(updatedBlock as any);
+
+      // Créer le DTO de réponse attendu avec les nouvelles valeurs
+      const expectedResponseDto = {
+        ...mockBlockResponseDto,
+        title: 'Updated Block',
+        positionX: 150,
+        positionY: 250,
+      };
 
       const result = await service.update(
         'block-123',
@@ -425,15 +486,15 @@ describe('BlocksService', () => {
       );
 
       expect(blockRepository.save).toHaveBeenCalledWith({
-        ...mockBlock,
+        ...mockBlockEntity,
         ...updateBlockDto,
         lastModifiedBy: 'user-123',
       });
-      expect(result).toEqual(updatedBlock);
+      expect(result).toEqual(expectedResponseDto);
     });
 
     it('should throw ForbiddenException when user lacks edit permission', async () => {
-      blockRepository.findOne.mockResolvedValue(mockBlock as any);
+      blockRepository.findOne.mockResolvedValue(mockBlockEntity as any);
       mockBoardMembersService.checkUserPermission.mockResolvedValue(false);
 
       await expect(
@@ -444,7 +505,7 @@ describe('BlocksService', () => {
 
   describe('remove', () => {
     it('should remove block when user has edit permission', async () => {
-      blockRepository.findOne.mockResolvedValue(mockBlock as any);
+      blockRepository.findOne.mockResolvedValue(mockBlockEntity as any);
       mockBoardMembersService.checkUserPermission.mockResolvedValue(true);
       blockRepository.delete.mockResolvedValue({ affected: 1, raw: {} } as any);
 
@@ -454,7 +515,7 @@ describe('BlocksService', () => {
     });
 
     it('should throw ForbiddenException when user lacks edit permission', async () => {
-      blockRepository.findOne.mockResolvedValue(mockBlock as any);
+      blockRepository.findOne.mockResolvedValue(mockBlockEntity as any);
       mockBoardMembersService.checkUserPermission.mockResolvedValue(false);
 
       await expect(service.remove('block-123', 'user-123')).rejects.toThrow(
@@ -463,13 +524,113 @@ describe('BlocksService', () => {
     });
 
     it('should throw NotFoundException when block deletion fails', async () => {
-      blockRepository.findOne.mockResolvedValue(mockBlock as any);
+      blockRepository.findOne.mockResolvedValue(mockBlockEntity as any);
       mockBoardMembersService.checkUserPermission.mockResolvedValue(true);
       blockRepository.delete.mockResolvedValue({ affected: 0, raw: {} } as any);
 
       await expect(service.remove('block-123', 'user-123')).rejects.toThrow(
         NotFoundException,
       );
+    });
+
+    it('should automatically cleanup empty super-blocks after block removal', async () => {
+      const blockWithSuperBlock = {
+        ...mockBlockEntity,
+        superBlockId: 'super-block-456',
+      };
+
+      blockRepository.findOne.mockResolvedValue(blockWithSuperBlock as any);
+      mockBoardMembersService.checkUserPermission.mockResolvedValue(true);
+      blockRepository.delete.mockResolvedValue({ affected: 1, raw: {} } as any);
+
+      // Mock que le super-block est devenu vide (0 blocks restants)
+      blockRepository.count.mockResolvedValue(0);
+
+      // Mock pour la suppression du super-block
+      const mockManagerQuery = jest.fn().mockResolvedValue(undefined);
+      Object.defineProperty(blockRepository, 'manager', {
+        value: { query: mockManagerQuery },
+        writable: true,
+      });
+
+      await service.remove('block-123', 'user-123');
+
+      // Vérifier que le nettoyage a été déclenché
+      expect(blockRepository.count).toHaveBeenCalledWith({
+        where: {
+          superBlockId: 'super-block-456',
+          status: { isActive: true },
+        },
+      });
+
+      // Vérifier que le super-block vide a été supprimé
+      expect(mockManagerQuery).toHaveBeenCalledWith(
+        'DELETE FROM super_blocks WHERE id = $1',
+        ['super-block-456'],
+      );
+    });
+
+    it('should detach remaining block and cleanup super-block when only one block remains', async () => {
+      const blockWithSuperBlock = {
+        ...mockBlockEntity,
+        superBlockId: 'super-block-456',
+      };
+
+      blockRepository.findOne.mockResolvedValue(blockWithSuperBlock as any);
+      mockBoardMembersService.checkUserPermission.mockResolvedValue(true);
+      blockRepository.delete.mockResolvedValue({ affected: 1, raw: {} } as any);
+
+      // Mock qu'il reste 1 block dans le super-block
+      blockRepository.count.mockResolvedValue(1);
+      blockRepository.update.mockResolvedValue({ affected: 1 } as any);
+
+      // Mock pour la suppression du super-block
+      const mockManagerQuery = jest.fn().mockResolvedValue(undefined);
+      Object.defineProperty(blockRepository, 'manager', {
+        value: { query: mockManagerQuery },
+        writable: true,
+      });
+
+      await service.remove('block-123', 'user-123');
+
+      // Vérifier que le block restant a été détaché
+      expect(blockRepository.update).toHaveBeenCalledWith(
+        { superBlockId: 'super-block-456' },
+        { superBlockId: undefined },
+      );
+
+      // Vérifier que le super-block avec un seul block a été supprimé
+      expect(mockManagerQuery).toHaveBeenCalledWith(
+        'DELETE FROM super_blocks WHERE id = $1',
+        ['super-block-456'],
+      );
+    });
+
+    it('should not cleanup super-block when multiple blocks remain', async () => {
+      const blockWithSuperBlock = {
+        ...mockBlockEntity,
+        superBlockId: 'super-block-456',
+      };
+
+      blockRepository.findOne.mockResolvedValue(blockWithSuperBlock as any);
+      mockBoardMembersService.checkUserPermission.mockResolvedValue(true);
+      blockRepository.delete.mockResolvedValue({ affected: 1, raw: {} } as any);
+
+      // Mock qu'il reste 2+ blocks dans le super-block
+      blockRepository.count.mockResolvedValue(2);
+
+      // Mock pour la suppression du super-block
+      const mockManagerQuery = jest.fn();
+      Object.defineProperty(blockRepository, 'manager', {
+        value: { query: mockManagerQuery },
+        writable: true,
+      });
+
+      await service.remove('block-123', 'user-123');
+
+      // Vérifier que le super-block n'a PAS été supprimé
+      expect(mockManagerQuery).not.toHaveBeenCalled();
+      expect(blockRepository.update).not.toHaveBeenCalled();
     });
   });
 
@@ -481,10 +642,25 @@ describe('BlocksService', () => {
     };
 
     it('should update block position when user has edit permission', async () => {
-      blockRepository.findOne.mockResolvedValue(mockBlock as any);
+      // Créer un mock fresh pour éviter la pollution du test update
+      const freshMockBlockEntity = {
+        ...mockBlockEntity,
+        title: 'Test Block', // Assurer le titre original
+      };
+
+      blockRepository.findOne.mockResolvedValue(freshMockBlockEntity as any);
       mockBoardMembersService.checkUserPermission.mockResolvedValue(true);
-      const updatedBlock = { ...mockBlock, ...positionDto };
+      const updatedBlock = { ...freshMockBlockEntity, ...positionDto };
       blockRepository.save.mockResolvedValue(updatedBlock as any);
+
+      // Créer le DTO de réponse attendu avec les nouvelles positions
+      const expectedResponseDto = {
+        ...mockBlockResponseDto,
+        positionX: 200,
+        positionY: 300,
+        zIndex: 5,
+        title: 'Test Block', // Garder le titre original
+      };
 
       const result = await service.updatePosition(
         'block-123',
@@ -493,11 +669,11 @@ describe('BlocksService', () => {
       );
 
       expect(blockRepository.save).toHaveBeenCalledWith({
-        ...mockBlock,
+        ...freshMockBlockEntity,
         ...positionDto,
         lastModifiedBy: 'user-123',
       });
-      expect(result).toEqual(updatedBlock);
+      expect(result).toEqual(expectedResponseDto);
     });
 
     it('should validate position constraints on update', async () => {

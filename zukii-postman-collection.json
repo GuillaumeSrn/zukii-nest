@@ -1,0 +1,556 @@
+{
+  "info": {
+    "name": "Zukii API - Tests Complets",
+    "description": "Collection pour tester tous les endpoints Boards, Blocks, Super-Blocks et Contents",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "authToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "boardId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "blockId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "superBlockId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "contentId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{authToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "🔐 Authentication",
+      "item": [
+        {
+          "name": "1. Register User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"test@zukii.com\",\n  \"password\": \"TestPassword123!\",\n  \"displayName\": \"Test User\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users",
+              "host": ["{{baseUrl}}"],
+              "path": ["users"]
+            }
+          }
+        },
+        {
+          "name": "2. Login User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('authToken', response.accessToken);",
+                  "    console.log('Token saved:', response.accessToken);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"test@zukii.com\",\n  \"password\": \"TestPassword123!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "📋 Boards",
+      "item": [
+        {
+          "name": "1. Create Board",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('boardId', response.id);",
+                  "    console.log('Board ID saved:', response.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Board de Test Complet\",\n  \"description\": \"Board pour tester tous les endpoints\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/boards",
+              "host": ["{{baseUrl}}"],
+              "path": ["boards"]
+            }
+          }
+        },
+        {
+          "name": "2. Get All Boards",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/boards",
+              "host": ["{{baseUrl}}"],
+              "path": ["boards"]
+            }
+          }
+        },
+        {
+          "name": "3. Get Board by ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/boards/{{boardId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["boards", "{{boardId}}"]
+            }
+          }
+        },
+        {
+          "name": "4. Update Board",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Board de Test Modifié\",\n  \"description\": \"Description mise à jour\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/boards/{{boardId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["boards", "{{boardId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "🔷 Super-Blocks",
+      "item": [
+        {
+          "name": "1. Create Super-Block",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('superBlockId', response.id);",
+                  "    console.log('Super-Block ID saved:', response.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Analyse Données\",\n  \"color\": \"#6366f1\",\n  \"collapsed\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/boards/{{boardId}}/super-blocks",
+              "host": ["{{baseUrl}}"],
+              "path": ["boards", "{{boardId}}", "super-blocks"]
+            }
+          }
+        },
+        {
+          "name": "2. Get All Super-Blocks",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/boards/{{boardId}}/super-blocks",
+              "host": ["{{baseUrl}}"],
+              "path": ["boards", "{{boardId}}", "super-blocks"]
+            }
+          }
+        },
+        {
+          "name": "3. Get Super-Block by ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/boards/{{boardId}}/super-blocks/{{superBlockId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["boards", "{{boardId}}", "super-blocks", "{{superBlockId}}"]
+            }
+          }
+        },
+        {
+          "name": "4. Update Super-Block",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Analyse Données Modifiée\",\n  \"color\": \"#ef4444\",\n  \"collapsed\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/boards/{{boardId}}/super-blocks/{{superBlockId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["boards", "{{boardId}}", "super-blocks", "{{superBlockId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "📦 Blocks",
+      "item": [
+        {
+          "name": "1. Create Text Block",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('blockId', response.id);",
+                  "    pm.collectionVariables.set('contentId', response.contentId);",
+                  "    console.log('Block ID saved:', response.id);",
+                  "    console.log('Content ID saved:', response.contentId);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Ma note de test\",\n  \"content\": \"Voici le contenu de ma note de test pour vérifier que tout fonctionne correctement.\",\n  \"formatType\": \"plain\",\n  \"positionX\": 100,\n  \"positionY\": 200,\n  \"width\": 400,\n  \"height\": 300,\n  \"zoneType\": \"notes\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/boards/{{boardId}}/blocks/content/text",
+              "host": ["{{baseUrl}}"],
+              "path": ["boards", "{{boardId}}", "blocks", "content", "text"]
+            }
+          }
+        },
+        {
+          "name": "2. Create File Block",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": [],
+                  "description": "Sélectionnez un fichier CSV de test"
+                },
+                {
+                  "key": "title",
+                  "value": "Données de test",
+                  "type": "text"
+                },
+                {
+                  "key": "positionX",
+                  "value": "500",
+                  "type": "text"
+                },
+                {
+                  "key": "positionY",
+                  "value": "200",
+                  "type": "text"
+                },
+                {
+                  "key": "zoneType",
+                  "value": "data",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/boards/{{boardId}}/blocks/content/file",
+              "host": ["{{baseUrl}}"],
+              "path": ["boards", "{{boardId}}", "blocks", "content", "file"]
+            }
+          }
+        },
+        {
+          "name": "3. Create Block in Super-Block",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Block dans Super-Block\",\n  \"content\": \"Ce block appartient au super-block.\",\n  \"formatType\": \"plain\",\n  \"positionX\": 300,\n  \"positionY\": 400,\n  \"superBlockId\": \"{{superBlockId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/boards/{{boardId}}/blocks/content/text",
+              "host": ["{{baseUrl}}"],
+              "path": ["boards", "{{boardId}}", "blocks", "content", "text"]
+            }
+          }
+        },
+        {
+          "name": "4. Get All Blocks",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/boards/{{boardId}}/blocks",
+              "host": ["{{baseUrl}}"],
+              "path": ["boards", "{{boardId}}", "blocks"]
+            }
+          }
+        },
+        {
+          "name": "5. Get Block by ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/boards/{{boardId}}/blocks/{{blockId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["boards", "{{boardId}}", "blocks", "{{blockId}}"]
+            }
+          }
+        },
+        {
+          "name": "6. Get Block Content",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/boards/{{boardId}}/blocks/{{blockId}}/content",
+              "host": ["{{baseUrl}}"],
+              "path": ["boards", "{{boardId}}", "blocks", "{{blockId}}", "content"]
+            }
+          }
+        },
+        {
+          "name": "7. Update Block Metadata",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Titre modifié\",\n  \"width\": 500,\n  \"height\": 350\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/boards/{{boardId}}/blocks/{{blockId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["boards", "{{boardId}}", "blocks", "{{blockId}}"]
+            }
+          }
+        },
+        {
+          "name": "8. Update Block Position",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"positionX\": 150,\n  \"positionY\": 250,\n  \"zIndex\": 5\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/boards/{{boardId}}/blocks/{{blockId}}/position",
+              "host": ["{{baseUrl}}"],
+              "path": ["boards", "{{boardId}}", "blocks", "{{blockId}}", "position"]
+            }
+          }
+        },
+        {
+          "name": "9. Update Block Content",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Contenu modifié avec succès !\",\n  \"formatType\": \"plain\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/boards/{{boardId}}/blocks/{{blockId}}/content",
+              "host": ["{{baseUrl}}"],
+              "path": ["boards", "{{boardId}}", "blocks", "{{blockId}}", "content"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "🔗 Block Relations",
+      "item": [
+        {
+          "name": "1. Create Block Relation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"targetBlockId\": \"{{blockId}}\",\n  \"relationType\": \"generated_from\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/boards/{{boardId}}/blocks/{{blockId}}/relations",
+              "host": ["{{baseUrl}}"],
+              "path": ["boards", "{{boardId}}", "blocks", "{{blockId}}", "relations"]
+            },
+            "description": "Note: Cette requête va échouer si source = target, c'est normal"
+          }
+        },
+        {
+          "name": "2. Get Block Relations",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/boards/{{boardId}}/blocks/{{blockId}}/relations",
+              "host": ["{{baseUrl}}"],
+              "path": ["boards", "{{boardId}}", "blocks", "{{blockId}}", "relations"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "🗑️ Deletion Tests",
+      "item": [
+        {
+          "name": "1. Delete Block",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/boards/{{boardId}}/blocks/{{blockId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["boards", "{{boardId}}", "blocks", "{{blockId}}"]
+            }
+          }
+        },
+        {
+          "name": "2. Delete Super-Block",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/boards/{{boardId}}/super-blocks/{{superBlockId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["boards", "{{boardId}}", "super-blocks", "{{superBlockId}}"]
+            }
+          }
+        },
+        {
+          "name": "3. Delete Board",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/boards/{{boardId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["boards", "{{boardId}}"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+} 

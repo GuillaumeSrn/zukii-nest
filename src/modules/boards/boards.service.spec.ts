@@ -59,6 +59,7 @@ describe('BoardsService', () => {
             create: jest.fn(),
             save: jest.fn(),
             delete: jest.fn(),
+            remove: jest.fn(),
             createQueryBuilder: jest.fn().mockReturnValue({
               leftJoinAndSelect: jest.fn().mockReturnThis(),
               leftJoin: jest.fn().mockReturnThis(),
@@ -350,14 +351,11 @@ describe('BoardsService', () => {
   describe('remove', () => {
     it('should remove board successfully when user is owner', async () => {
       boardRepository.findOne.mockResolvedValue(mockBoard);
-      boardRepository.delete.mockResolvedValue({
-        affected: 1,
-        raw: {},
-      } as any);
+      boardRepository.remove.mockResolvedValue(mockBoard as any);
 
       await service.remove(mockBoard.id, mockUser.id);
 
-      expect(boardRepository.delete).toHaveBeenCalledWith(mockBoard.id);
+      expect(boardRepository.remove).toHaveBeenCalledWith(mockBoard);
     });
 
     it('should remove board with cascade delete of members', async () => {
@@ -369,14 +367,11 @@ describe('BoardsService', () => {
         ],
       };
       boardRepository.findOne.mockResolvedValue(boardWithMembers as any);
-      boardRepository.delete.mockResolvedValue({
-        affected: 1,
-        raw: {},
-      } as any);
+      boardRepository.remove.mockResolvedValue(boardWithMembers as any);
 
       await service.remove(mockBoard.id, mockUser.id);
 
-      expect(boardRepository.delete).toHaveBeenCalledWith(mockBoard.id);
+      expect(boardRepository.remove).toHaveBeenCalledWith(boardWithMembers);
     });
 
     it('should throw NotFoundException when board not found', async () => {
@@ -409,14 +404,13 @@ describe('BoardsService', () => {
       };
 
       boardRepository.findOne.mockResolvedValue(boardWithMembersEntity as any);
-      boardRepository.delete.mockResolvedValue({
-        affected: 1,
-        raw: {},
-      } as any);
+      boardRepository.remove.mockResolvedValue(boardWithMembersEntity as any);
 
       await service.remove(mockBoard.id, mockUser.id);
 
-      expect(boardRepository.delete).toHaveBeenCalledWith(mockBoard.id);
+      expect(boardRepository.remove).toHaveBeenCalledWith(
+        boardWithMembersEntity,
+      );
     });
   });
 });

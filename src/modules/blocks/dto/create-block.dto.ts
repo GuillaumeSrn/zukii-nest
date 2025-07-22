@@ -32,22 +32,26 @@ export class CreateBlockDto {
   title?: string;
 
   @ApiProperty({
-    description: 'Position X du block',
+    description: 'Position X du block (optionnel pour organisation en zones)',
     example: 100,
     minimum: 0,
+    required: false,
   })
+  @IsOptional()
   @IsInt({ message: 'La position X doit être un entier' })
   @Min(0, { message: 'La position X doit être positive ou nulle' })
-  positionX: number;
+  positionX?: number;
 
   @ApiProperty({
-    description: 'Position Y du block',
+    description: 'Position Y du block (optionnel pour organisation en zones)',
     example: 200,
     minimum: 0,
+    required: false,
   })
+  @IsOptional()
   @IsInt({ message: 'La position Y doit être un entier' })
   @Min(0, { message: 'La position Y doit être positive ou nulle' })
-  positionY: number;
+  positionY?: number;
 
   @ApiProperty({
     description: 'Largeur du block',
@@ -87,4 +91,23 @@ export class CreateBlockDto {
   @IsUUID('4', { message: "L'ID du contenu doit être un UUID valide" })
   @IsNotEmpty({ message: "L'ID du contenu est requis" })
   contentId: string;
+
+  @ApiProperty({
+    description: 'ID du super-block parent (optionnel)',
+    example: 'super-block-uuid-123',
+    required: false,
+  })
+  @IsOptional()
+  @IsUUID('4', { message: "L'ID du super-block doit être un UUID valide" })
+  superBlockId?: string;
+
+  @ApiProperty({
+    description:
+      'Type de zone pour organisation automatique (data, analysis, notes, comments)',
+    example: 'data',
+    required: false,
+  })
+  @IsOptional()
+  @IsString({ message: 'Le type de zone doit être une chaîne de caractères' })
+  zoneType?: string;
 }

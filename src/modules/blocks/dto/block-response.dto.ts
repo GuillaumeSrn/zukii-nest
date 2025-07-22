@@ -1,7 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Expose } from 'class-transformer';
+import { Expose, Type } from 'class-transformer';
 import { BlockType } from '../enums/block.enum';
 import { StatusResponseDto } from '../../status/dto/status-response.dto';
+import { PublicUserDto } from '../../users/dto/public-user.dto';
 
 export class BlockResponseDto {
   @ApiProperty({
@@ -17,13 +18,6 @@ export class BlockResponseDto {
   })
   @Expose()
   boardId: string;
-
-  @ApiProperty({
-    description: "ID de l'utilisateur créateur",
-    example: 'user-uuid-123',
-  })
-  @Expose()
-  createdBy: string;
 
   @ApiProperty({
     description: 'Type de block',
@@ -42,18 +36,20 @@ export class BlockResponseDto {
   title?: string;
 
   @ApiProperty({
-    description: 'Position X du block',
+    description: 'Position X du block (optionnel pour organisation en zones)',
     example: 100,
+    required: false,
   })
   @Expose()
-  positionX: number;
+  positionX?: number;
 
   @ApiProperty({
-    description: 'Position Y du block',
+    description: 'Position Y du block (optionnel pour organisation en zones)',
     example: 200,
+    required: false,
   })
   @Expose()
-  positionY: number;
+  positionY?: number;
 
   @ApiProperty({
     description: 'Largeur du block',
@@ -77,26 +73,44 @@ export class BlockResponseDto {
   zIndex: number;
 
   @ApiProperty({
-    description: 'ID du contenu associé',
+    description: 'ID du contenu associé (pour modification)',
     example: 'content-uuid-123',
   })
   @Expose()
   contentId: string;
 
   @ApiProperty({
+    description: 'ID du super-block parent',
+    example: 'super-block-uuid-123',
+    required: false,
+  })
+  @Expose()
+  superBlockId?: string;
+
+  @ApiProperty({
+    description: 'Type de zone (data, analysis, notes, comments)',
+    example: 'data',
+    required: false,
+  })
+  @Expose()
+  zoneType?: string;
+
+  @ApiProperty({
     description: 'Statut du block',
     type: StatusResponseDto,
   })
   @Expose()
+  @Type(() => StatusResponseDto)
   status: StatusResponseDto;
 
   @ApiProperty({
-    description: "ID de l'utilisateur ayant modifié en dernier",
-    example: 'user-uuid-456',
+    description: 'Utilisateur ayant modifié en dernier',
+    type: PublicUserDto,
     required: false,
   })
   @Expose()
-  lastModifiedBy?: string;
+  @Type(() => PublicUserDto)
+  lastModifiedByUser?: PublicUserDto;
 
   @ApiProperty({
     description: 'Date de création',

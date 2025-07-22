@@ -120,15 +120,20 @@ board.statusId = BoardStatus.ARCHIVED;
 
 ## 📊 État du projet
 
-**✅ 118/118 tests unitaires passants**
+**✅ 141/141 tests unitaires passants**
+**✅ 31 tests CRITICAL pour développement focalisé**
 
 ### ✅ Modules opérationnels
 - **Users** : CRUD avec authentification bcrypt et gestion des statuts
 - **Status** : États centralisés par catégorie avec auto-seeding
 - **Auth** : JWT, Guards, protection des routes sensibles
-- **Boards** : CRUD complet, validation ownership, suppression permanente
+- **Boards** : CRUD complet, validation ownership, suppression cascade
 - **BoardMembers** : Collaboration opérationnelle avec permissions granulaires (view, edit, admin)
+- **SuperBlocks** : Groupes visuels de blocks avec ordre d'affichage et couleurs
 - **Blocks** : Système de contenu positionné avec types (TEXT, FILE, ANALYSIS)
+- **BlockRelations** : Relations entre blocks (generated_from, comment_on, references, derived_from)
+- **TextContent** : Contenu textuel avec formats (plain, markdown, html)
+- **FileContent** : Upload et stockage de fichiers en base64 avec métadonnées
 
 ### 🔒 Sécurité
 - **Hachage bcrypt** : Mots de passe avec 12 rounds de sel
@@ -155,21 +160,22 @@ board.statusId = BoardStatus.ARCHIVED;
 - **Users** : `user-active`, `user-inactive`
 - **Boards** : `board-active`, `board-archived`
 - **BoardMembers** : `board-member-active`, `board-member-inactive` ✅ *Implémenté*
-- **Blocks** : `block-draft`, `block-active`, `block-archived` *Future*
-- **Invitations** : `invitation-pending`, `invitation-accepted`, `invitation-declined`, `invitation-expired` *Future*
+- **Blocks** : `block-active` ✅ *Implémenté*
 
 ### 🏗️ Architecture
-- **Suppression permanente** avec cascade automatique
+- **Suppression cascade** avec gestion automatique Board → Blocks → Content + Relations
 - **Base Entity** : Héritage cohérent avec timestamps
 - **Interfaces centralisées** : JwtUser, test mocks typés
 - **Séparation permissions/statuts** : Architecture claire et maintenable
+- **Organisation modulaire** : SuperBlocks pour groupement visuel, BlockRelations pour traçabilité
 
 **Détails complets** : [`docs/architecture-technique.md`](docs/architecture-technique.md)
 
 ### 📋 Roadmap (modules à implémenter)
-- **Content Types** : TextContent, FileContent, AnalysisContent spécialisés
-- **Block Relations** : Liens entre blocks (generated_from, references, etc.)
-- **Invitations** : Système d'invitation avec tokens temporaires
+- **AnalysisContent** : Résultats d'analyse IA avec stockage JSONB
+- **Microservice Python** : Service d'analyse CSV avec OpenAI
+- **Intégration NestJS ↔ Python** : Communication entre services
+- **Invitations** : Système d'invitation avec tokens temporaires (entité prête)
 
 ### 🧪 Stratégie de tests MVP
 - **Focus business-critical** : Tests prioritaires sur fonctionnalités essentielles

@@ -77,13 +77,11 @@ export class TextContentService {
     this.logger.log(`Contenu textuel supprimé avec succès: ${id}`);
   }
 
-  toResponseDto(textContent: TextContent): TextContentResponseDto {
+  private mapToResponseDto(textContent: TextContent): TextContentResponseDto {
     return {
       id: textContent.id,
       content: textContent.content,
       formatType: textContent.formatType as TextContentFormat,
-      createdAt: textContent.createdAt,
-      updatedAt: textContent.updatedAt,
     };
   }
 }

@@ -126,9 +126,10 @@ export class BoardsService {
     // ✅ SÉCURITÉ : Seuls le propriétaire peut supprimer (pas les membres ADMIN)
     this.validateOwnership(board, currentUserId);
 
-    await this.boardRepository.delete(id);
+    // ✅ AMÉLIORATION : Utiliser remove() pour garantir les cascades TypeORM
+    await this.boardRepository.remove(board);
 
-    this.logger.log(`Board et ses membres supprimés avec succès: ${id}`);
+    this.logger.log(`Board et ses dépendances supprimés avec succès: ${id}`);
   }
 
   private async findBoardEntity(id: string): Promise<Board> {

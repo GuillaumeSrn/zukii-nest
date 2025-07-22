@@ -24,18 +24,4 @@ export class TextContentResponseDto {
   })
   @Expose()
   formatType: TextContentFormat;
-
-  @ApiProperty({
-    description: 'Date de création',
-    example: '2024-01-15T10:30:00Z',
-  })
-  @Expose()
-  createdAt: Date;
-
-  @ApiProperty({
-    description: 'Date de dernière modification',
-    example: '2024-01-15T11:30:00Z',
-  })
-  @Expose()
-  updatedAt: Date;
 }

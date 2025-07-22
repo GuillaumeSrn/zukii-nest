@@ -6,19 +6,19 @@ import {
   Patch,
   Param,
   Delete,
-  Logger,
   HttpStatus,
   HttpCode,
-  Request,
+  Logger,
   UseInterceptors,
   ClassSerializerInterceptor,
+  Request,
 } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
   ApiResponse,
-  ApiBearerAuth,
   ApiParam,
+  ApiBearerAuth,
   ApiBody,
 } from '@nestjs/swagger';
 import { BoardsService } from './boards.service';
@@ -108,9 +108,9 @@ export class BoardsController {
   @Get(':id')
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
-    summary: 'Récupérer un board par ID',
+    summary: 'Récupérer un board par son ID',
     description:
-      "Récupère les détails d'un board spécifique dont je suis propriétaire",
+      'Récupère les détails complets du board (permission VIEW requise)',
   })
   @ApiParam({
     name: 'id',
@@ -142,11 +142,7 @@ export class BoardsController {
     @Param('id', UuidValidationPipe) id: string,
     @Request() req: { user: JwtUser },
   ): Promise<BoardResponseDto> {
-    this.logger.log(
-      `Récupération du board ${id} par l'utilisateur ${req.user.id}`,
-    );
     const board = await this.boardsService.findById(id, req.user.id);
-    this.logger.log(`Board ${id} récupéré avec succès`);
     return board;
   }
 

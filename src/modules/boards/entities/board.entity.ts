@@ -17,6 +17,8 @@ import { BaseEntity } from '../../../common/entities/base.entity';
 import { User } from '../../users/entities/user.entity';
 import { Status } from '../../status/entities/status.entity';
 import { BoardMember } from '../../board-members/entities/board-member.entity';
+import { Block } from '../../blocks/entities/block.entity';
+import { SuperBlock } from '../../super-blocks/entities/super-block.entity';
 
 @Entity('boards')
 export class Board extends BaseEntity {
@@ -61,6 +63,19 @@ export class Board extends BaseEntity {
 
   @OneToMany(() => BoardMember, (boardMember) => boardMember.board, {
     eager: false,
+    cascade: true,
   })
   members: BoardMember[];
+
+  @OneToMany(() => Block, (block) => block.board, {
+    eager: false,
+    cascade: true,
+  })
+  blocks: Block[];
+
+  @OneToMany(() => SuperBlock, (superBlock) => superBlock.board, {
+    eager: false,
+    cascade: true,
+  })
+  superBlocks: SuperBlock[];
 }
