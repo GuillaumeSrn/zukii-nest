@@ -247,6 +247,7 @@ export class BoardsService {
         isActive: true,
       },
       status: statusDto,
+      createdAt: board.createdAt,
       updatedAt: board.updatedAt,
     };
   }

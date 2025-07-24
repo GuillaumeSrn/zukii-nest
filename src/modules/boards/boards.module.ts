@@ -7,11 +7,19 @@ import { Status } from '../status/entities/status.entity';
 import { BoardMember } from '../board-members/entities/board-member.entity';
 import { SuperBlock } from '../super-blocks/entities/super-block.entity';
 import { UsersModule } from '../users/users.module';
+import { BoardMembersModule } from '../board-members/board-members.module';
+import { SuperBlocksModule } from '../super-blocks/super-blocks.module';
+import { BlocksModule } from '../blocks/blocks.module';
+import { FileContentModule } from '../file-content/file-content.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Board, Status, BoardMember, SuperBlock]),
     UsersModule,
+    BoardMembersModule,
+    SuperBlocksModule,
+    BlocksModule,
+    FileContentModule,
   ],
   controllers: [BoardsController],
   providers: [BoardsService],

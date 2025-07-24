@@ -261,4 +261,107 @@ describe('BoardsController', () => {
       );
     });
   });
+
+  describe('GET /boards/:id/full', () => {
+    it('CRITICAL - doit retourner la structure agrégée complète du board', async () => {
+      // Arrange : mocks minimalistes
+      const mockBoard = {
+        id: 'board-1',
+        title: 'Board Test',
+        description: 'desc',
+        backgroundColor: '#fff',
+        owner: { id: 'user-1', displayName: 'Jean', isActive: true },
+        status: {
+          id: 'active',
+          category: 'board',
+          name: 'active',
+          isActive: true,
+        },
+        createdAt: new Date('2024-01-01T10:00:00Z'),
+        updatedAt: new Date('2024-01-01T12:00:00Z'),
+      };
+      const mockMembers = [
+        {
+          id: 'm1',
+          user: { id: 'user-1', displayName: 'Jean', email: 'j@x.com' },
+          role: 'admin',
+        },
+      ];
+      const mockSuperBlocks = [
+        {
+          id: 'sb1',
+          title: 'SB',
+          color: '#000',
+          collapsed: false,
+          displayOrder: 0,
+          createdBy: 'user-1',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ];
+      const mockBlocks = [
+        {
+          id: 'b1',
+          blockType: 'file',
+          title: 'Fichier',
+          positionX: 0,
+          positionY: 0,
+          width: 200,
+          height: 150,
+          zIndex: 0,
+          superBlockId: null,
+          zoneType: null,
+          contentId: 'f1',
+          createdBy: 'user-1',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ];
+      const mockFiles = [
+        {
+          id: 'f1',
+          fileName: 'test.csv',
+          mimeType: 'text/csv',
+          fileSize: 123,
+          fileType: 'csv',
+        },
+      ];
+
+      // Mock des services
+      controller['boardsService'].findById = jest
+        .fn()
+        .mockResolvedValue(mockBoard);
+      controller['boardMembersService'].findBoardMembers = jest
+        .fn()
+        .mockResolvedValue(mockMembers);
+      controller['superBlocksService'].findByBoard = jest
+        .fn()
+        .mockResolvedValue(mockSuperBlocks);
+      controller['blocksService'].findByBoard = jest
+        .fn()
+        .mockResolvedValue(mockBlocks);
+      controller['fileContentService'].findByBoardId = jest
+        .fn()
+        .mockResolvedValue(mockFiles);
+
+      // Act
+      const result = await controller.getFullBoard('board-1', {
+        user: { id: 'user-1' },
+      });
+
+      // Assert : structure minimale
+      expect(result).toHaveProperty('id', 'board-1');
+      expect(result).toHaveProperty('title', 'Board Test');
+      expect(result).toHaveProperty('members');
+      expect(result).toHaveProperty('superBlocks');
+      expect(result).toHaveProperty('blocks');
+      expect(result).toHaveProperty('files');
+      expect(Array.isArray(result.members)).toBe(true);
+      expect(Array.isArray(result.superBlocks)).toBe(true);
+      expect(Array.isArray(result.blocks)).toBe(true);
+      expect(Array.isArray(result.files)).toBe(true);
+      expect(typeof result.createdAt).toBe('string');
+      expect(typeof result.updatedAt).toBe('string');
+    });
+  });
 });
