@@ -10,7 +10,6 @@ import { UsersModule } from '../users/users.module';
 import { BoardMembersModule } from '../board-members/board-members.module';
 import { SuperBlocksModule } from '../super-blocks/super-blocks.module';
 import { BlocksModule } from '../blocks/blocks.module';
-import { FileContentModule } from '../file-content/file-content.module';
 
 @Module({
   imports: [
@@ -19,7 +18,6 @@ import { FileContentModule } from '../file-content/file-content.module';
     BoardMembersModule,
     SuperBlocksModule,
     BlocksModule,
-    FileContentModule,
   ],
   controllers: [BoardsController],
   providers: [BoardsService],

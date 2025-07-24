@@ -13,6 +13,7 @@ import {
   ClassSerializerInterceptor,
   Request,
 } from '@nestjs/common';
+
 import {
   ApiTags,
   ApiOperation,
@@ -31,8 +32,6 @@ import { BoardFullResponseDto } from './dto/board-full-response.dto';
 import { BoardMembersService } from '../board-members/board-members.service';
 import { SuperBlocksService } from '../super-blocks/super-blocks.service';
 import { BlocksService } from '../blocks/blocks.service';
-import { FileContentService } from '../file-content/file-content.service';
-
 @ApiTags('Boards')
 @Controller('boards')
 @UseInterceptors(ClassSerializerInterceptor)
@@ -44,7 +43,6 @@ export class BoardsController {
     private readonly boardMembersService: BoardMembersService,
     private readonly superBlocksService: SuperBlocksService,
     private readonly blocksService: BlocksService,
-    private readonly fileContentService: FileContentService,
   ) {}
 
   @Post()
@@ -187,9 +185,7 @@ export class BoardsController {
     );
     // 4. Récupérer les blocks (en preview)
     const blocks = await this.blocksService.findByBoard(id, req.user.id);
-    // 5. Récupérer les fichiers du board
-    // TODO: Créer une méthode fileContentService.findByBoardId si besoin
-    const files = [];
+    // 5. Les fichiers sont déjà inclus dans les blocks de type 'file'
     return {
       id: board.id,
       title: board.title,
@@ -202,7 +198,7 @@ export class BoardsController {
       members,
       superBlocks,
       blocks,
-      files,
+      // Les fichiers sont inclus dans les blocks de type 'file'
     };
   }
 

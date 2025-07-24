@@ -13,5 +13,4 @@ export class BoardFullResponseDto {
   @ApiProperty({ type: [Object] }) members: any[];
   @ApiProperty({ type: [Object] }) superBlocks: any[];
   @ApiProperty({ type: [Object] }) blocks: any[];
-  @ApiProperty({ type: [Object] }) files: any[];
 }

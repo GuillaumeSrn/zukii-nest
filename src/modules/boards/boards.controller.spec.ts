@@ -8,16 +8,23 @@ import { BoardsController } from './boards.controller';
 import { BoardsService } from './boards.service';
 import { CreateBoardDto } from './dto/create-board.dto';
 import { UpdateBoardDto } from './dto/update-board.dto';
+import { BoardMembersService } from '../board-members/board-members.service';
+import { SuperBlocksService } from '../super-blocks/super-blocks.service';
+import { BlocksService } from '../blocks/blocks.service';
 
 describe('BoardsController', () => {
   let controller: BoardsController;
   let service: jest.Mocked<BoardsService>;
+  let boardMembersService: jest.Mocked<BoardMembersService>;
+  let superBlocksService: jest.Mocked<SuperBlocksService>;
+  let blocksService: jest.Mocked<BlocksService>;
 
   const mockBoardResponse = {
     id: 'board-123',
     title: 'Test Board',
     description: 'Test Description',
     backgroundColor: '#FFFFFF',
+    createdAt: new Date(),
     updatedAt: new Date(),
     owner: {
       id: 'user-123',
@@ -52,11 +59,32 @@ describe('BoardsController', () => {
             remove: jest.fn(),
           },
         },
+        {
+          provide: BoardMembersService,
+          useValue: {
+            findBoardMembers: jest.fn(),
+          },
+        },
+        {
+          provide: SuperBlocksService,
+          useValue: {
+            findByBoard: jest.fn(),
+          },
+        },
+        {
+          provide: BlocksService,
+          useValue: {
+            findByBoard: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
     controller = module.get<BoardsController>(BoardsController);
     service = module.get(BoardsService);
+    boardMembersService = module.get(BoardMembersService);
+    superBlocksService = module.get(SuperBlocksService);
+    blocksService = module.get(BlocksService);
   });
 
   it('should be defined', () => {
@@ -317,32 +345,14 @@ describe('BoardsController', () => {
           updatedAt: new Date(),
         },
       ];
-      const mockFiles = [
-        {
-          id: 'f1',
-          fileName: 'test.csv',
-          mimeType: 'text/csv',
-          fileSize: 123,
-          fileType: 'csv',
-        },
-      ];
 
       // Mock des services
-      controller['boardsService'].findById = jest
-        .fn()
-        .mockResolvedValue(mockBoard);
-      controller['boardMembersService'].findBoardMembers = jest
-        .fn()
-        .mockResolvedValue(mockMembers);
-      controller['superBlocksService'].findByBoard = jest
-        .fn()
-        .mockResolvedValue(mockSuperBlocks);
-      controller['blocksService'].findByBoard = jest
-        .fn()
-        .mockResolvedValue(mockBlocks);
-      controller['fileContentService'].findByBoardId = jest
-        .fn()
-        .mockResolvedValue(mockFiles);
+      service.findById.mockResolvedValue(mockBoard as any);
+      boardMembersService.findBoardMembers.mockResolvedValue(
+        mockMembers as any,
+      );
+      superBlocksService.findByBoard.mockResolvedValue(mockSuperBlocks as any);
+      blocksService.findByBoard.mockResolvedValue(mockBlocks as any);
 
       // Act
       const result = await controller.getFullBoard('board-1', {
@@ -355,11 +365,9 @@ describe('BoardsController', () => {
       expect(result).toHaveProperty('members');
       expect(result).toHaveProperty('superBlocks');
       expect(result).toHaveProperty('blocks');
-      expect(result).toHaveProperty('files');
       expect(Array.isArray(result.members)).toBe(true);
       expect(Array.isArray(result.superBlocks)).toBe(true);
       expect(Array.isArray(result.blocks)).toBe(true);
-      expect(Array.isArray(result.files)).toBe(true);
       expect(typeof result.createdAt).toBe('string');
       expect(typeof result.updatedAt).toBe('string');
     });
