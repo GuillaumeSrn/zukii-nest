@@ -67,4 +67,46 @@ export class CreateSuperBlockDto {
   @IsInt({ message: "L'ordre d'affichage doit être un entier" })
   @Min(0, { message: "L'ordre d'affichage doit être positif ou nul" })
   displayOrder?: number;
+
+  @ApiPropertyOptional({
+    description: 'Position X du super-block sur le canvas',
+    example: 100,
+    minimum: 0,
+  })
+  @IsOptional()
+  @IsInt({ message: 'La position X doit être un entier' })
+  @Min(0, { message: 'La position X doit être positive ou nulle' })
+  positionX?: number;
+
+  @ApiPropertyOptional({
+    description: 'Position Y du super-block sur le canvas',
+    example: 200,
+    minimum: 0,
+  })
+  @IsOptional()
+  @IsInt({ message: 'La position Y doit être un entier' })
+  @Min(0, { message: 'La position Y doit être positive ou nulle' })
+  positionY?: number;
+
+  @ApiPropertyOptional({
+    description: 'Largeur du super-block',
+    example: 400,
+    minimum: 1,
+    default: 400,
+  })
+  @IsOptional()
+  @IsInt({ message: 'La largeur doit être un entier' })
+  @Min(1, { message: 'La largeur doit être positive' })
+  width?: number;
+
+  @ApiPropertyOptional({
+    description: 'Hauteur du super-block',
+    example: 300,
+    minimum: 1,
+    default: 300,
+  })
+  @IsOptional()
+  @IsInt({ message: 'La hauteur doit être un entier' })
+  @Min(1, { message: 'La hauteur doit être positive' })
+  height?: number;
 }

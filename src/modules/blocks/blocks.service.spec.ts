@@ -15,6 +15,7 @@ import { User } from '../users/entities/user.entity';
 import { BoardMembersService } from '../board-members/board-members.service';
 import { TextContentService } from '../text-content/text-content.service';
 import { FileContentService } from '../file-content/file-content.service';
+import { AnalysisContentService } from '../analysis-content/analysis-content.service';
 import { CreateBlockDto } from './dto/create-block.dto';
 import { UpdateBlockDto, UpdateBlockPositionDto } from './dto/update-block.dto';
 import { BlockType } from './enums/block.enum';
@@ -29,6 +30,7 @@ describe('BlocksService', () => {
   let mockBoardMembersService: jest.Mocked<BoardMembersService>;
   let textContentService: jest.Mocked<TextContentService>;
   let fileContentService: jest.Mocked<FileContentService>;
+  let analysisContentService: jest.Mocked<AnalysisContentService>;
 
   const mockBoard = {
     id: 'board-123',
@@ -153,6 +155,13 @@ describe('BlocksService', () => {
             findOne: jest.fn(),
           },
         },
+        {
+          provide: AnalysisContentService,
+          useValue: {
+            findOne: jest.fn(),
+            remove: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
@@ -164,6 +173,7 @@ describe('BlocksService', () => {
     mockBoardMembersService = module.get(BoardMembersService);
     textContentService = module.get(TextContentService);
     fileContentService = module.get(FileContentService);
+    analysisContentService = module.get(AnalysisContentService);
 
     jest.clearAllMocks();
   });
@@ -210,7 +220,7 @@ describe('BlocksService', () => {
         BoardMemberPermission.EDIT,
       );
       expect(statusRepository.findOne).toHaveBeenCalledWith({
-        where: { category: 'block', name: 'active', isActive: true },
+        where: { id: 'block-active', isActive: true },
       });
       expect(blockRepository.create).toHaveBeenCalledWith({
         ...createBlockDto,
@@ -365,7 +375,7 @@ describe('BlocksService', () => {
       ).rejects.toThrow(BadRequestException);
     });
 
-    it('CRITICAL - should reject ANALYSIS blocks as not yet supported', async () => {
+    it('CRITICAL - should create ANALYSIS blocks successfully', async () => {
       const createAnalysisBlockDto: CreateBlockDto = {
         blockType: BlockType.ANALYSIS,
         title: 'Test Analysis Block',
@@ -376,9 +386,27 @@ describe('BlocksService', () => {
         contentId: 'analysis-content-123',
       };
 
-      await expect(
-        service.create('board-123', createAnalysisBlockDto, 'user-123'),
-      ).rejects.toThrow(BadRequestException);
+      // Mock les dépendances nécessaires
+      analysisContentService.findOne.mockResolvedValue({
+        id: 'analysis-content-123',
+      } as any);
+      boardRepository.findOne.mockResolvedValue(mockBoard as any);
+      mockBoardMembersService.checkUserPermission.mockResolvedValue(true);
+      statusRepository.findOne.mockResolvedValue(mockStatus as any);
+      blockRepository.create.mockReturnValue(mockBlockEntity as any);
+      blockRepository.save.mockResolvedValue(mockBlockEntity as any);
+      blockRepository.findOne.mockResolvedValue(mockBlockEntity as any);
+
+      const result = await service.create(
+        'board-123',
+        createAnalysisBlockDto,
+        'user-123',
+      );
+
+      expect(analysisContentService.findOne).toHaveBeenCalledWith(
+        'analysis-content-123',
+      );
+      expect(result).toEqual(mockBlockResponseDto);
     });
 
     it('CRITICAL - should reject blocks with invalid block type', async () => {
