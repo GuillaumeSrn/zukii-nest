@@ -11,6 +11,7 @@ import { SuperBlock } from './modules/super-blocks/entities/super-block.entity';
 import { BlockRelation } from './modules/block-relations/entities/block-relation.entity';
 import { TextContent } from './modules/text-content/entities/text-content.entity';
 import { FileContent } from './modules/file-content/entities/file-content.entity';
+import { AnalysisContent } from './modules/analysis-content/entities/analysis-content.entity';
 import { StatusModule } from './modules/status/status.module';
 import { UsersModule } from './modules/users/users.module';
 import { BoardsModule } from './modules/boards/boards.module';
@@ -25,6 +26,7 @@ import { SuperBlocksModule } from './modules/super-blocks/super-blocks.module';
 import { BlockRelationsModule } from './modules/block-relations/block-relations.module';
 import { TextContentModule } from './modules/text-content/text-content.module';
 import { FileContentModule } from './modules/file-content/file-content.module';
+import { AnalysisContentModule } from './modules/analysis-content/analysis-content.module';
 
 @Module({
   imports: [
@@ -65,6 +67,7 @@ import { FileContentModule } from './modules/file-content/file-content.module';
           BlockRelation,
           TextContent,
           FileContent,
+          AnalysisContent,
         ],
         synchronize: configService.get<string>('NODE_ENV') !== 'production',
         logging: configService.get<string>('NODE_ENV') === 'development',
@@ -82,6 +85,7 @@ import { FileContentModule } from './modules/file-content/file-content.module';
     BlockRelationsModule,
     TextContentModule,
     FileContentModule,
+    AnalysisContentModule,
   ],
   controllers: [AppController],
   providers: [

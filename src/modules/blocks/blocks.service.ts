@@ -20,6 +20,7 @@ import { UpdateBlockDto, UpdateBlockPositionDto } from './dto/update-block.dto';
 import { BlockResponseDto } from './dto/block-response.dto';
 import { BoardMemberPermission } from '../board-members/enums/board-member.enum';
 import { BlockType } from './enums/block.enum';
+import { AnalysisContentService } from '../analysis-content/analysis-content.service';
 
 @Injectable()
 export class BlocksService {
@@ -37,6 +38,7 @@ export class BlocksService {
     private readonly boardMembersService: BoardMembersService,
     private readonly textContentService: TextContentService,
     private readonly fileContentService: FileContentService,
+    private readonly analysisContentService: AnalysisContentService,
   ) {}
 
   async create(
@@ -62,7 +64,7 @@ export class BlocksService {
     );
 
     const defaultStatus = await this.statusRepository.findOne({
-      where: { category: 'block', name: 'active', isActive: true },
+      where: { id: 'block-active', isActive: true },
     });
 
     if (!defaultStatus) {
@@ -234,10 +236,7 @@ export class BlocksService {
           await this.fileContentService.remove(block.contentId);
           break;
         case BlockType.ANALYSIS:
-          // TODO: AnalysisContent pas encore implémenté
-          this.logger.warn(
-            `Type ANALYSIS pas encore supporté pour contentId: ${block.contentId}`,
-          );
+          await this.analysisContentService.remove(block.contentId);
           break;
       }
     } catch (error) {
@@ -327,10 +326,8 @@ export class BlocksService {
           await this.fileContentService.findOne(contentId);
           break;
         case BlockType.ANALYSIS:
-          // TODO: Implémenter la validation pour AnalysisContent quand le module sera créé
-          throw new BadRequestException(
-            "Le type ANALYSIS n'est pas encore supporté",
-          );
+          await this.analysisContentService.findOne(contentId);
+          break;
         default:
           throw new BadRequestException(
             `Type de block invalide: ${blockType ? blockType : 'unknown'}`,

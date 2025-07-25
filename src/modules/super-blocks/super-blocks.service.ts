@@ -220,6 +220,10 @@ export class SuperBlocksService {
       color: superBlock.color,
       collapsed: superBlock.collapsed,
       displayOrder: superBlock.displayOrder,
+      positionX: superBlock.positionX,
+      positionY: superBlock.positionY,
+      width: superBlock.width,
+      height: superBlock.height,
       createdAt: superBlock.createdAt,
       updatedAt: superBlock.updatedAt,
     };
