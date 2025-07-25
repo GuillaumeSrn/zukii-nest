@@ -247,7 +247,7 @@ export class BlocksController {
     private readonly fileContentService: FileContentService,
     private readonly analysisContentService: AnalysisContentService,
     private readonly blockRelationsService: BlockRelationsService,
-    ) {}
+  ) {}
 
   @Post('content/text')
   @ApiBearerAuth('JWT-auth')
