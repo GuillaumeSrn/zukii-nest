@@ -10,6 +10,9 @@ import { UsersModule } from '../users/users.module';
 import { BoardMembersModule } from '../board-members/board-members.module';
 import { SuperBlocksModule } from '../super-blocks/super-blocks.module';
 import { BlocksModule } from '../blocks/blocks.module';
+import { TextContentModule } from '../text-content/text-content.module';
+import { FileContentModule } from '../file-content/file-content.module';
+import { AnalysisContentModule } from '../analysis-content/analysis-content.module';
 
 @Module({
   imports: [
@@ -18,6 +21,9 @@ import { BlocksModule } from '../blocks/blocks.module';
     BoardMembersModule,
     SuperBlocksModule,
     BlocksModule,
+    TextContentModule,
+    FileContentModule,
+    AnalysisContentModule,
   ],
   controllers: [BoardsController],
   providers: [BoardsService],

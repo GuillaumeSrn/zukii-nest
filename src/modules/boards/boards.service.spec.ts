@@ -12,6 +12,9 @@ import { User } from '../users/entities/user.entity';
 import { Status } from '../status/entities/status.entity';
 import { UsersService } from '../users/users.service';
 import { BoardMember } from '../board-members/entities/board-member.entity';
+import { TextContentService } from '../text-content/text-content.service';
+import { FileContentService } from '../file-content/file-content.service';
+import { AnalysisContentService } from '../analysis-content/analysis-content.service';
 
 describe('BoardsService', () => {
   let service: BoardsService;
@@ -88,6 +91,33 @@ describe('BoardsService', () => {
           provide: UsersService,
           useValue: {
             findByIdEntity: jest.fn(),
+          },
+        },
+        {
+          provide: TextContentService,
+          useValue: {
+            findOne: jest.fn(),
+            create: jest.fn(),
+            update: jest.fn(),
+            remove: jest.fn(),
+          },
+        },
+        {
+          provide: FileContentService,
+          useValue: {
+            findOne: jest.fn(),
+            create: jest.fn(),
+            update: jest.fn(),
+            remove: jest.fn(),
+          },
+        },
+        {
+          provide: AnalysisContentService,
+          useValue: {
+            findOne: jest.fn(),
+            create: jest.fn(),
+            update: jest.fn(),
+            remove: jest.fn(),
           },
         },
       ],

@@ -180,7 +180,7 @@ describe('BlocksController', () => {
     it('should delete a block successfully', async () => {
       service.remove.mockResolvedValue(undefined);
 
-      await controller.remove('block-123', mockRequest);
+      await controller.remove('board-123', 'block-123', mockRequest);
 
       expect(service.remove).toHaveBeenCalledWith('block-123', 'user-123');
     });

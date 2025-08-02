@@ -79,6 +79,9 @@ async function bootstrap() {
   // Interceptor de sécurité global
   app.useGlobalInterceptors(new SecurityInterceptor());
 
+  // Préfixe global pour toutes les routes API
+  app.setGlobalPrefix('api');
+
   // Conf Swagger
   const config = new DocumentBuilder()
     .setTitle('Zukii API')

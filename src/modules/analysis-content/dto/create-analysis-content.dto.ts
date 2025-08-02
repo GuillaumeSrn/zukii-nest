@@ -31,4 +31,21 @@ export class CreateAnalysisContentDto {
   @IsOptional()
   @IsArray({ message: 'Les IDs de fichiers doivent être un tableau' })
   linkedFileIds?: string[];
+
+  @ApiPropertyOptional({
+    description: "Résultats de l'analyse Python",
+    example: { summary: 'Analyse complète', insights: [] },
+  })
+  @IsOptional()
+  @IsObject({ message: 'Les résultats doivent être un objet' })
+  results?: Record<string, unknown>;
+
+  @ApiPropertyOptional({
+    description: "Statut de l'analyse",
+    example: 'pending',
+    enum: ['pending', 'processing', 'completed', 'failed'],
+  })
+  @IsOptional()
+  @IsString({ message: 'Le statut doit être une chaîne de caractères' })
+  status?: string;
 }

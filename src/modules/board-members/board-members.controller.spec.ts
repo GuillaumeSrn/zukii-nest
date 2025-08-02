@@ -56,43 +56,8 @@ describe('BoardMembersController', () => {
     jest.clearAllMocks();
   });
 
-  describe('create', () => {
-    const createDto = {
-      email: 'test@example.com',
-      permissionLevel: BoardMemberPermission.VIEW,
-    };
-
-    it('should create a board member successfully', async () => {
-      // Arrange
-      service.create.mockResolvedValue(mockBoardMemberResponse);
-
-      // Act
-      const result = await controller.create(
-        'board-123',
-        createDto,
-        mockRequest as any,
-      );
-
-      // Assert
-      expect(result).toEqual(mockBoardMemberResponse);
-      expect(service.create).toHaveBeenCalledWith(
-        'board-123',
-        createDto,
-        'user-123',
-      );
-    });
-
-    it('should propagate service errors', async () => {
-      // Arrange
-      const error = new Error('Service error');
-      service.create.mockRejectedValue(error);
-
-      // Act & Assert
-      await expect(
-        controller.create('board-123', createDto, mockRequest as any),
-      ).rejects.toThrow('Service error');
-    });
-  });
+  // NOTE: La méthode create a été supprimée en faveur du système d'invitation
+  // Les membres sont ajoutés automatiquement lors de l'acceptation d'une invitation
 
   describe('findAll', () => {
     it('should return board members', async () => {

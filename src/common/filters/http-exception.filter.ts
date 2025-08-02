@@ -42,7 +42,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
       status = HttpStatus.INTERNAL_SERVER_ERROR;
       message = 'Erreur interne du serveur';
 
-      // Log l'erreur complète pour le debug
+      // Log l'erreur complète
       this.logger.error(
         `Erreur 500 sur ${request.method} ${request.url}`,
         exception instanceof Error ? exception.stack : exception,

@@ -335,6 +335,8 @@ export class BlocksController {
         // Autoriser les types de fichiers communs pour l'analyse
         const allowedMimes = [
           'text/csv',
+          'application/csv',
+          'application/octet-stream', // Pour les fichiers CSV détectés comme octet-stream
           'application/vnd.ms-excel',
           'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
           'application/json',
@@ -596,6 +598,162 @@ export class BlocksController {
     };
 
     return this.blocksService.create(boardId, blockDto, req.user.id);
+  }
+
+  @Post(':blockId/execute-analysis')
+  @ApiBearerAuth('JWT-auth')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: "Exécuter une analyse sur un block d'analyse",
+    description:
+      "Déclenche l'analyse Python sur les fichiers liés au block d'analyse",
+  })
+  @ApiParam({
+    name: 'boardId',
+    description: 'Identifiant UUID du board',
+  })
+  @ApiParam({
+    name: 'blockId',
+    description: "Identifiant UUID du block d'analyse",
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        question: {
+          type: 'string',
+          description: "Question d'analyse (10-1000 caractères)",
+          example: 'Quelles sont les tendances dans ces données ?',
+        },
+        analysisType: {
+          type: 'string',
+          enum: [
+            'general',
+            'trends',
+            'correlations',
+            'predictions',
+            'statistical',
+          ],
+          description: "Type d'analyse à effectuer",
+          example: 'general',
+        },
+        includeCharts: {
+          type: 'boolean',
+          description: 'Inclure des graphiques dans la réponse',
+          example: true,
+        },
+        anonymizeData: {
+          type: 'boolean',
+          description: 'Anonymiser les données sensibles',
+          example: true,
+        },
+      },
+      required: ['question'],
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Analyse exécutée avec succès',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Données invalides ou block non trouvé',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Token JWT requis',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Permissions insuffisantes',
+  })
+  @ApiResponse({
+    status: 404,
+    description: "Block d'analyse non trouvé",
+  })
+  async executeAnalysis(
+    @Param('boardId', UuidValidationPipe) boardId: string,
+    @Param('blockId', UuidValidationPipe) blockId: string,
+    @Body()
+    executeAnalysisDto: {
+      question: string;
+      analysisType?: string;
+      includeCharts?: boolean;
+      anonymizeData?: boolean;
+    },
+    @Request() req: { user: JwtUser },
+  ): Promise<unknown> {
+    this.logger.log(
+      `Exécution d'analyse sur le block ${blockId} du board ${boardId}`,
+    );
+
+    try {
+      // Récupérer le block et vérifier qu'il s'agit d'un block d'analyse
+      const block = await this.blocksService.findOne(blockId, req.user.id);
+
+      if (block.blockType !== BlockType.ANALYSIS) {
+        throw new BadRequestException("Ce block n'est pas un block d'analyse");
+      }
+
+      // Récupérer les fichiers liés à l'analyse
+      const linkedFiles =
+        await this.analysisContentService.getLinkedFilesMetadata(
+          block.contentId,
+        );
+
+      if (linkedFiles.length === 0) {
+        throw new BadRequestException('Aucun fichier lié à cette analyse');
+      }
+
+      // Récupérer les fichiers depuis le stockage
+      const files: Express.Multer.File[] = [];
+      for (const fileMetadata of linkedFiles) {
+        const fileContent = await this.fileContentService.findOne(
+          fileMetadata.id,
+        );
+        if (fileContent) {
+          files.push({
+            buffer: Buffer.from(fileContent.base64Data, 'base64'),
+            originalname: fileMetadata.fileName,
+            mimetype: fileMetadata.mimeType,
+            size: fileMetadata.fileSize,
+          } as Express.Multer.File);
+        }
+      }
+
+      if (files.length === 0) {
+        throw new BadRequestException(
+          'Impossible de récupérer les fichiers liés',
+        );
+      }
+
+      // Exécuter l'analyse Python
+      const analysisResult =
+        await this.analysisContentService.analyzeFilesWithPython(
+          files,
+          executeAnalysisDto.question,
+          {
+            analysisType: executeAnalysisDto.analysisType,
+            includeCharts: executeAnalysisDto.includeCharts,
+            anonymizeData: executeAnalysisDto.anonymizeData,
+          },
+        );
+
+      // Mettre à jour le contenu de l'analyse avec le résultat
+      await this.analysisContentService.update(block.contentId, {
+        content: JSON.stringify(analysisResult),
+      });
+
+      this.logger.log(`Analyse exécutée avec succès pour le block ${blockId}`);
+
+      // Retourner directement la réponse du service Python
+      return analysisResult;
+    } catch (error) {
+      this.logger.error(
+        `Erreur lors de l'exécution de l'analyse: ${(error as Error).message}`,
+      );
+      throw error;
+    }
   }
 
   @Post(':blockId/relations')
@@ -1064,7 +1222,7 @@ export class BlocksController {
     @Param('boardId', UuidValidationPipe) boardId: string,
     @Param('blockId', UuidValidationPipe) blockId: string,
     @Request() req: { user: JwtUser },
-  ): Promise<any> {
+  ): Promise<unknown> {
     this.logger.log(`Récupération du contenu du block ${blockId}`);
 
     // 1. Récupérer le block pour connaître son type et contentId
@@ -1153,7 +1311,7 @@ export class BlocksController {
     @Param('boardId', UuidValidationPipe) boardId: string,
     @Param('blockId', UuidValidationPipe) blockId: string,
     @Request() req: { user: JwtUser },
-  ): Promise<any> {
+  ): Promise<unknown> {
     this.logger.log(`Téléchargement du fichier du block ${blockId}`);
 
     // 1. Récupérer le block pour vérifier qu'il s'agit bien d'un FILE
@@ -1207,6 +1365,7 @@ export class BlocksController {
     description: 'Block non trouvé ou déjà supprimé',
   })
   async remove(
+    @Param('boardId', UuidValidationPipe) boardId: string,
     @Param('blockId', UuidValidationPipe) blockId: string,
     @Request() req: { user: JwtUser },
   ): Promise<void> {

@@ -1,8 +1,6 @@
 import {
   Controller,
   Get,
-  Post,
-  Body,
   Patch,
   Param,
   Delete,
@@ -12,6 +10,7 @@ import {
   Request,
   UseInterceptors,
   ClassSerializerInterceptor,
+  Body,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -22,7 +21,6 @@ import {
   ApiBody,
 } from '@nestjs/swagger';
 import { BoardMembersService } from './board-members.service';
-import { CreateBoardMemberDto } from './dto/create-board-member.dto';
 import { UpdateBoardMemberPermissionDto } from './dto/update-board-member.dto';
 import { BoardMemberResponseDto } from './dto/board-member-response.dto';
 import { UuidValidationPipe } from '../../common/pipes/uuid-validation.pipe';
@@ -36,63 +34,9 @@ export class BoardMembersController {
 
   constructor(private readonly boardMembersService: BoardMembersService) {}
 
-  @Post()
-  @ApiBearerAuth('JWT-auth')
-  @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({
-    summary: 'Ajouter un membre au board',
-    description: "Permet au propriétaire ou admin d'ajouter un membre au board",
-  })
-  @ApiParam({
-    name: 'boardId',
-    description: 'Identifiant UUID du board',
-    example: '123e4567-e89b-12d3-a456-426614174000',
-  })
-  @ApiBody({ type: CreateBoardMemberDto })
-  @ApiResponse({
-    status: 201,
-    description: 'Membre ajouté avec succès',
-    type: BoardMemberResponseDto,
-  })
-  @ApiResponse({
-    status: 400,
-    description: 'Données invalides ou utilisateur déjà propriétaire',
-  })
-  @ApiResponse({
-    status: 401,
-    description: 'Token JWT requis',
-  })
-  @ApiResponse({
-    status: 403,
-    description:
-      'Seuls le propriétaire et les administrateurs peuvent ajouter des membres',
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'Board ou utilisateur non trouvé',
-  })
-  @ApiResponse({
-    status: 409,
-    description: 'Utilisateur déjà membre du board',
-  })
-  async create(
-    @Param('boardId', UuidValidationPipe) boardId: string,
-    @Body() createBoardMemberDto: CreateBoardMemberDto,
-    @Request() req: { user: JwtUser },
-  ): Promise<BoardMemberResponseDto> {
-    this.logger.log(
-      `Ajout d'un membre au board ${boardId} par l'utilisateur ${req.user.id}`,
-    );
-    const member = await this.boardMembersService.create(
-      boardId,
-      createBoardMemberDto,
-      req.user.id,
-    );
-    this.logger.log(
-      `Membre ${member.id} ajouté avec succès au board ${boardId}`,
-    );
-    return member;
-  }
+  // NOTE: L'ajout direct de membres est désactivé en faveur du système d'invitation
+  // Les membres sont ajoutés automatiquement lors de l'acceptation d'une invitation
+  // Utilisez POST /invitations/boards/:boardId pour inviter des membres
 
   @Get()
   @ApiBearerAuth('JWT-auth')
