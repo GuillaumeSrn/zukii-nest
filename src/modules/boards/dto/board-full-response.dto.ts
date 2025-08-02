@@ -29,8 +29,6 @@ interface BoardMember {
   };
 }
 
-
-
 export class BoardFullResponseDto {
   @ApiProperty() id: string;
   @ApiProperty() title: string;
