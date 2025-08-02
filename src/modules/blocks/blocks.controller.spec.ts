@@ -4,6 +4,7 @@ import { BlocksService } from './blocks.service';
 import { TextContentService } from '../text-content/text-content.service';
 import { FileContentService } from '../file-content/file-content.service';
 import { BlockRelationsService } from '../block-relations/block-relations.service';
+import { AnalysisContentService } from '../analysis-content/analysis-content.service';
 import { CreateBlockDto } from './dto/create-block.dto';
 import { UpdateBlockDto, UpdateBlockPositionDto } from './dto/update-block.dto';
 import { BlockType } from './enums/block.enum';
@@ -92,6 +93,13 @@ describe('BlocksController', () => {
           provide: BlockRelationsService,
           useValue: mockBlockRelationsService,
         },
+        {
+          provide: AnalysisContentService,
+          useValue: {
+            findOne: jest.fn(),
+            remove: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
@@ -172,7 +180,7 @@ describe('BlocksController', () => {
     it('should delete a block successfully', async () => {
       service.remove.mockResolvedValue(undefined);
 
-      await controller.remove('block-123', mockRequest);
+      await controller.remove('board-123', 'block-123', mockRequest);
 
       expect(service.remove).toHaveBeenCalledWith('block-123', 'user-123');
     });

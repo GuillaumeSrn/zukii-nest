@@ -25,6 +25,7 @@ import {
   ApiBody,
   ApiConsumes,
   ApiProperty,
+  ApiPropertyOptional,
 } from '@nestjs/swagger';
 import { BlocksService } from './blocks.service';
 import { CreateBlockDto } from './dto/create-block.dto';
@@ -34,8 +35,10 @@ import { UuidValidationPipe } from '../../common/pipes/uuid-validation.pipe';
 import { JwtUser } from '../../common/interfaces/jwt-user.interface';
 import { TextContentService } from '../text-content/text-content.service';
 import { FileContentService } from '../file-content/file-content.service';
+import { AnalysisContentService } from '../analysis-content/analysis-content.service';
 import { BlockRelationsService } from '../block-relations/block-relations.service';
 import { CreateTextContentDto } from '../text-content/dto/create-text-content.dto';
+import { CreateAnalysisContentDto } from '../analysis-content/dto/create-analysis-content.dto';
 import {
   CreateBlockRelationDto,
   CreateBlockRelationFromUrlDto,
@@ -142,6 +145,96 @@ interface FileUploadMetadata {
   height?: string; // Reçu comme string du form-data
 }
 
+// DTO pour créer un block d'analyse
+export class CreateAnalysisBlockDto {
+  @ApiProperty({
+    description: "Titre de l'analyse",
+    example: 'Analyse des ventes Q4',
+    required: false,
+  })
+  @IsOptional()
+  @IsString({ message: 'Le titre doit être une chaîne de caractères' })
+  title?: string;
+
+  @ApiProperty({
+    description: 'Position X (optionnel)',
+    example: 100,
+    required: false,
+  })
+  @IsOptional()
+  @IsInt({ message: 'La position X doit être un entier' })
+  @Min(0, { message: 'La position X doit être positive ou nulle' })
+  positionX?: number;
+
+  @ApiProperty({
+    description: 'Position Y (optionnel)',
+    example: 200,
+    required: false,
+  })
+  @IsOptional()
+  @IsInt({ message: 'La position Y doit être un entier' })
+  @Min(0, { message: 'La position Y doit être positive ou nulle' })
+  positionY?: number;
+
+  @ApiProperty({
+    description: 'Type de zone',
+    example: 'analysis',
+    required: false,
+  })
+  @IsOptional()
+  @IsString({ message: 'Le type de zone doit être une chaîne de caractères' })
+  zoneType?: string;
+
+  @ApiProperty({
+    description: 'ID du super-block parent',
+    required: false,
+  })
+  @IsOptional()
+  @IsUUID('4', { message: "L'ID du super-block doit être un UUID valide" })
+  superBlockId?: string;
+
+  @ApiProperty({
+    description: 'Largeur du block',
+    example: 400,
+    required: false,
+  })
+  @IsOptional()
+  @IsInt({ message: 'La largeur doit être un entier' })
+  @Min(1, { message: 'La largeur doit être supérieure à 0' })
+  width?: number;
+
+  @ApiProperty({
+    description: 'Hauteur du block',
+    example: 300,
+    required: false,
+  })
+  @IsOptional()
+  @IsInt({ message: 'La hauteur doit être un entier' })
+  @Min(1, { message: 'La hauteur doit être supérieure à 0' })
+  height?: number;
+
+  @ApiProperty({
+    description: "Contenu de l'analyse (requête, description, etc.)",
+    example: 'Analyser les tendances de vente du dernier trimestre',
+  })
+  @IsString({ message: 'Le contenu doit être une chaîne de caractères' })
+  content: string;
+
+  @ApiPropertyOptional({
+    description: "Métadonnées de l'analyse",
+    example: { type: 'sales_analysis', period: 'Q4' },
+  })
+  @IsOptional()
+  metadata?: Record<string, unknown>;
+
+  @ApiPropertyOptional({
+    description: 'IDs des fichiers liés à cette analyse',
+    example: ['file-uuid-1', 'file-uuid-2'],
+  })
+  @IsOptional()
+  linkedFileIds?: string[];
+}
+
 @ApiTags('Blocks')
 @Controller('boards/:boardId/blocks')
 @UseInterceptors(ClassSerializerInterceptor)
@@ -152,56 +245,9 @@ export class BlocksController {
     private readonly blocksService: BlocksService,
     private readonly textContentService: TextContentService,
     private readonly fileContentService: FileContentService,
+    private readonly analysisContentService: AnalysisContentService,
     private readonly blockRelationsService: BlockRelationsService,
   ) {}
-
-  @Post()
-  @ApiBearerAuth('JWT-auth')
-  @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({
-    summary: 'Créer un nouveau block',
-    description:
-      'Crée un block (text/file/analysis) selon le type spécifié (permission EDIT requise)',
-  })
-  @ApiParam({
-    name: 'boardId',
-    description: 'Identifiant UUID du board',
-    example: '123e4567-e89b-12d3-a456-426614174000',
-  })
-  @ApiBody({ type: CreateBlockDto })
-  @ApiResponse({
-    status: 201,
-    description: 'Block créé avec succès',
-    type: BlockResponseDto,
-  })
-  @ApiResponse({
-    status: 400,
-    description: 'Données de création invalides ou UUID invalide',
-  })
-  @ApiResponse({
-    status: 401,
-    description: 'Token JWT requis',
-  })
-  @ApiResponse({
-    status: 403,
-    description: 'Permissions insuffisantes pour créer un block',
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'Board non trouvé',
-  })
-  @ApiResponse({
-    status: 409,
-    description: 'Statut par défaut non disponible',
-  })
-  async create(
-    @Param('boardId', UuidValidationPipe) boardId: string,
-    @Body() createBlockDto: CreateBlockDto,
-    @Request() req: { user: JwtUser },
-  ): Promise<BlockResponseDto> {
-    this.logger.log(`Création d'un block dans le board ${boardId}`);
-    return this.blocksService.create(boardId, createBlockDto, req.user.id);
-  }
 
   @Post('content/text')
   @ApiBearerAuth('JWT-auth')
@@ -289,6 +335,8 @@ export class BlocksController {
         // Autoriser les types de fichiers communs pour l'analyse
         const allowedMimes = [
           'text/csv',
+          'application/csv',
+          'application/octet-stream', // Pour les fichiers CSV détectés comme octet-stream
           'application/vnd.ms-excel',
           'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
           'application/json',
@@ -476,6 +524,235 @@ export class BlocksController {
       throw new BadRequestException(
         `Erreur lors du traitement du fichier: ${errorMessage || 'Erreur inconnue'}`,
       );
+    }
+  }
+
+  @Post('content/analysis')
+  @ApiBearerAuth('JWT-auth')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary: "Créer un block d'analyse",
+    description:
+      'Crée un AnalysisContent et un Block associé en une seule opération',
+  })
+  @ApiParam({
+    name: 'boardId',
+    description: 'Identifiant UUID du board',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @ApiBody({ type: CreateAnalysisBlockDto })
+  @ApiResponse({
+    status: 201,
+    description: "Block d'analyse créé avec succès",
+    type: BlockResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Données de création invalides ou UUID invalide',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Token JWT requis',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Permissions insuffisantes pour créer un block',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Board non trouvé',
+  })
+  @ApiResponse({
+    status: 409,
+    description: 'Statut par défaut non disponible',
+  })
+  async createAnalysisBlock(
+    @Param('boardId', UuidValidationPipe) boardId: string,
+    @Body() createAnalysisDto: CreateAnalysisBlockDto,
+    @Request() req: { user: JwtUser },
+  ): Promise<BlockResponseDto> {
+    this.logger.log(`Création d'un block d'analyse dans le board ${boardId}`);
+
+    // 1. Créer le AnalysisContent
+    const analysisContentDto: CreateAnalysisContentDto = {
+      title: createAnalysisDto.title || 'Analyse',
+      content: createAnalysisDto.content,
+      metadata: createAnalysisDto.metadata,
+      linkedFileIds: createAnalysisDto.linkedFileIds,
+    };
+    const analysisContent =
+      await this.analysisContentService.create(analysisContentDto);
+
+    // 2. Créer le Block associé
+    const blockDto: CreateBlockDto = {
+      blockType: BlockType.ANALYSIS,
+      title: createAnalysisDto.title || 'Analyse',
+      positionX: createAnalysisDto.positionX,
+      positionY: createAnalysisDto.positionY,
+      width: createAnalysisDto.width,
+      height: createAnalysisDto.height,
+      zoneType: createAnalysisDto.zoneType,
+      // Nettoyer superBlockId : ne pas l'inclure s'il est vide
+      superBlockId: createAnalysisDto.superBlockId?.trim() || undefined,
+      contentId: analysisContent.id,
+    };
+
+    return this.blocksService.create(boardId, blockDto, req.user.id);
+  }
+
+  @Post(':blockId/execute-analysis')
+  @ApiBearerAuth('JWT-auth')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: "Exécuter une analyse sur un block d'analyse",
+    description:
+      "Déclenche l'analyse Python sur les fichiers liés au block d'analyse",
+  })
+  @ApiParam({
+    name: 'boardId',
+    description: 'Identifiant UUID du board',
+  })
+  @ApiParam({
+    name: 'blockId',
+    description: "Identifiant UUID du block d'analyse",
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        question: {
+          type: 'string',
+          description: "Question d'analyse (10-1000 caractères)",
+          example: 'Quelles sont les tendances dans ces données ?',
+        },
+        analysisType: {
+          type: 'string',
+          enum: [
+            'general',
+            'trends',
+            'correlations',
+            'predictions',
+            'statistical',
+          ],
+          description: "Type d'analyse à effectuer",
+          example: 'general',
+        },
+        includeCharts: {
+          type: 'boolean',
+          description: 'Inclure des graphiques dans la réponse',
+          example: true,
+        },
+        anonymizeData: {
+          type: 'boolean',
+          description: 'Anonymiser les données sensibles',
+          example: true,
+        },
+      },
+      required: ['question'],
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Analyse exécutée avec succès',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Données invalides ou block non trouvé',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Token JWT requis',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Permissions insuffisantes',
+  })
+  @ApiResponse({
+    status: 404,
+    description: "Block d'analyse non trouvé",
+  })
+  async executeAnalysis(
+    @Param('boardId', UuidValidationPipe) boardId: string,
+    @Param('blockId', UuidValidationPipe) blockId: string,
+    @Body()
+    executeAnalysisDto: {
+      question: string;
+      analysisType?: string;
+      includeCharts?: boolean;
+      anonymizeData?: boolean;
+    },
+    @Request() req: { user: JwtUser },
+  ): Promise<unknown> {
+    this.logger.log(
+      `Exécution d'analyse sur le block ${blockId} du board ${boardId}`,
+    );
+
+    try {
+      // Récupérer le block et vérifier qu'il s'agit d'un block d'analyse
+      const block = await this.blocksService.findOne(blockId, req.user.id);
+
+      if (block.blockType !== BlockType.ANALYSIS) {
+        throw new BadRequestException("Ce block n'est pas un block d'analyse");
+      }
+
+      // Récupérer les fichiers liés à l'analyse
+      const linkedFiles =
+        await this.analysisContentService.getLinkedFilesMetadata(
+          block.contentId,
+        );
+
+      if (linkedFiles.length === 0) {
+        throw new BadRequestException('Aucun fichier lié à cette analyse');
+      }
+
+      // Récupérer les fichiers depuis le stockage
+      const files: Express.Multer.File[] = [];
+      for (const fileMetadata of linkedFiles) {
+        const fileContent = await this.fileContentService.findOne(
+          fileMetadata.id,
+        );
+        if (fileContent) {
+          files.push({
+            buffer: Buffer.from(fileContent.base64Data, 'base64'),
+            originalname: fileMetadata.fileName,
+            mimetype: fileMetadata.mimeType,
+            size: fileMetadata.fileSize,
+          } as Express.Multer.File);
+        }
+      }
+
+      if (files.length === 0) {
+        throw new BadRequestException(
+          'Impossible de récupérer les fichiers liés',
+        );
+      }
+
+      // Exécuter l'analyse Python
+      const analysisResult =
+        await this.analysisContentService.analyzeFilesWithPython(
+          files,
+          executeAnalysisDto.question,
+          {
+            analysisType: executeAnalysisDto.analysisType,
+            includeCharts: executeAnalysisDto.includeCharts,
+            anonymizeData: executeAnalysisDto.anonymizeData,
+          },
+        );
+
+      // Mettre à jour le contenu de l'analyse avec le résultat
+      await this.analysisContentService.update(block.contentId, {
+        content: JSON.stringify(analysisResult),
+      });
+
+      this.logger.log(`Analyse exécutée avec succès pour le block ${blockId}`);
+
+      // Retourner directement la réponse du service Python
+      return analysisResult;
+    } catch (error) {
+      this.logger.error(
+        `Erreur lors de l'exécution de l'analyse: ${(error as Error).message}`,
+      );
+      throw error;
     }
   }
 
@@ -945,7 +1222,7 @@ export class BlocksController {
     @Param('boardId', UuidValidationPipe) boardId: string,
     @Param('blockId', UuidValidationPipe) blockId: string,
     @Request() req: { user: JwtUser },
-  ): Promise<any> {
+  ): Promise<unknown> {
     this.logger.log(`Récupération du contenu du block ${blockId}`);
 
     // 1. Récupérer le block pour connaître son type et contentId
@@ -1034,7 +1311,7 @@ export class BlocksController {
     @Param('boardId', UuidValidationPipe) boardId: string,
     @Param('blockId', UuidValidationPipe) blockId: string,
     @Request() req: { user: JwtUser },
-  ): Promise<any> {
+  ): Promise<unknown> {
     this.logger.log(`Téléchargement du fichier du block ${blockId}`);
 
     // 1. Récupérer le block pour vérifier qu'il s'agit bien d'un FILE
@@ -1088,6 +1365,7 @@ export class BlocksController {
     description: 'Block non trouvé ou déjà supprimé',
   })
   async remove(
+    @Param('boardId', UuidValidationPipe) boardId: string,
     @Param('blockId', UuidValidationPipe) blockId: string,
     @Request() req: { user: JwtUser },
   ): Promise<void> {

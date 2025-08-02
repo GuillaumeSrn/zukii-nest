@@ -58,4 +58,13 @@ export class BoardResponseDto {
   })
   @Expose()
   updatedAt: Date;
+
+  @ApiProperty({
+    description: 'Date de création',
+    example: '2024-01-15T10:30:00.000Z',
+    type: 'string',
+    format: 'date-time',
+  })
+  @Expose()
+  createdAt: Date;
 }

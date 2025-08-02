@@ -14,6 +14,7 @@ import { UserResponseDto } from './dto/user-response.dto';
 import { StatusService } from '../status/status.service';
 import { UserStatus } from '../status/enums/status.enum';
 import { EmailService } from '../email/email.service';
+import { InvitationService } from '../invitation/invitation.service';
 
 @Injectable()
 export class UsersService {
@@ -24,6 +25,7 @@ export class UsersService {
     private readonly userRepository: Repository<User>,
     private readonly statusService: StatusService,
     private readonly emailService: EmailService,
+    private readonly invitationService: InvitationService,
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<UserResponseDto> {
@@ -63,6 +65,13 @@ export class UsersService {
     this.logger.log(
       `Utilisateur créé avec succès: ${savedUser.email} (ID: ${savedUser.id})`,
     );
+
+    // Traiter les invitations en attente pour cet email
+    await this.invitationService.processPendingInvitations(
+      savedUser.email,
+      savedUser.id,
+    );
+
     await this.emailService.sendWelcome(savedUser.email, savedUser.displayName);
 
     return this.findById(savedUser.id);

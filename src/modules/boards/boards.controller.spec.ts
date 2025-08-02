@@ -8,16 +8,23 @@ import { BoardsController } from './boards.controller';
 import { BoardsService } from './boards.service';
 import { CreateBoardDto } from './dto/create-board.dto';
 import { UpdateBoardDto } from './dto/update-board.dto';
+import { BoardMembersService } from '../board-members/board-members.service';
+import { SuperBlocksService } from '../super-blocks/super-blocks.service';
+import { BlocksService } from '../blocks/blocks.service';
 
 describe('BoardsController', () => {
   let controller: BoardsController;
   let service: jest.Mocked<BoardsService>;
+  let boardMembersService: jest.Mocked<BoardMembersService>;
+  let superBlocksService: jest.Mocked<SuperBlocksService>;
+  let blocksService: jest.Mocked<BlocksService>;
 
   const mockBoardResponse = {
     id: 'board-123',
     title: 'Test Board',
     description: 'Test Description',
     backgroundColor: '#FFFFFF',
+    createdAt: new Date(),
     updatedAt: new Date(),
     owner: {
       id: 'user-123',
@@ -52,11 +59,32 @@ describe('BoardsController', () => {
             remove: jest.fn(),
           },
         },
+        {
+          provide: BoardMembersService,
+          useValue: {
+            findBoardMembers: jest.fn(),
+          },
+        },
+        {
+          provide: SuperBlocksService,
+          useValue: {
+            findByBoard: jest.fn(),
+          },
+        },
+        {
+          provide: BlocksService,
+          useValue: {
+            findByBoard: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
     controller = module.get<BoardsController>(BoardsController);
     service = module.get(BoardsService);
+    boardMembersService = module.get(BoardMembersService);
+    superBlocksService = module.get(SuperBlocksService);
+    blocksService = module.get(BlocksService);
   });
 
   it('should be defined', () => {
@@ -259,6 +287,89 @@ describe('BoardsController', () => {
       await expect(controller.remove(boardId, mockAuthRequest)).rejects.toThrow(
         ForbiddenException,
       );
+    });
+  });
+
+  describe('GET /boards/:id/full', () => {
+    it('CRITICAL - doit retourner la structure agrégée complète du board', async () => {
+      // Arrange : mocks minimalistes
+      const mockBoard = {
+        id: 'board-1',
+        title: 'Board Test',
+        description: 'desc',
+        backgroundColor: '#fff',
+        owner: { id: 'user-1', displayName: 'Jean', isActive: true },
+        status: {
+          id: 'active',
+          category: 'board',
+          name: 'active',
+          isActive: true,
+        },
+        createdAt: new Date('2024-01-01T10:00:00Z'),
+        updatedAt: new Date('2024-01-01T12:00:00Z'),
+      };
+      const mockMembers = [
+        {
+          id: 'm1',
+          user: { id: 'user-1', displayName: 'Jean', email: 'j@x.com' },
+          role: 'admin',
+        },
+      ];
+      const mockSuperBlocks = [
+        {
+          id: 'sb1',
+          title: 'SB',
+          color: '#000',
+          collapsed: false,
+          displayOrder: 0,
+          createdBy: 'user-1',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ];
+      const mockBlocks = [
+        {
+          id: 'b1',
+          blockType: 'file',
+          title: 'Fichier',
+          positionX: 0,
+          positionY: 0,
+          width: 200,
+          height: 150,
+          zIndex: 0,
+          superBlockId: null,
+          zoneType: null,
+          contentId: 'f1',
+          createdBy: 'user-1',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ];
+
+      // Mock des services
+      service.findById.mockResolvedValue(mockBoard as any);
+      boardMembersService.findBoardMembers.mockResolvedValue(
+        mockMembers as any,
+      );
+      superBlocksService.findByBoard.mockResolvedValue(mockSuperBlocks as any);
+      blocksService.findByBoard.mockResolvedValue(mockBlocks as any);
+
+      // Act
+      const result = await controller.getFullBoard('board-1', {
+        user: { id: 'user-1' },
+      });
+
+      // Assert : structure minimale
+      expect(result).toHaveProperty('id', 'board-1');
+      expect(result).toHaveProperty('title', 'Board Test');
+      expect(result).toHaveProperty('members');
+      expect(result).toHaveProperty('superBlocks');
+      expect(result).toHaveProperty('blocks');
+      expect(Array.isArray(result.members)).toBe(true);
+      expect(Array.isArray(result.superBlocks)).toBe(true);
+      expect(Array.isArray(result.blocks)).toBe(true);
+      expect(typeof result.createdAt).toBe('string');
+      expect(typeof result.updatedAt).toBe('string');
     });
   });
 });

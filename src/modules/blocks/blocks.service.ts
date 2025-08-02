@@ -20,6 +20,7 @@ import { UpdateBlockDto, UpdateBlockPositionDto } from './dto/update-block.dto';
 import { BlockResponseDto } from './dto/block-response.dto';
 import { BoardMemberPermission } from '../board-members/enums/board-member.enum';
 import { BlockType } from './enums/block.enum';
+import { AnalysisContentService } from '../analysis-content/analysis-content.service';
 
 @Injectable()
 export class BlocksService {
@@ -37,6 +38,7 @@ export class BlocksService {
     private readonly boardMembersService: BoardMembersService,
     private readonly textContentService: TextContentService,
     private readonly fileContentService: FileContentService,
+    private readonly analysisContentService: AnalysisContentService,
   ) {}
 
   async create(
@@ -62,7 +64,7 @@ export class BlocksService {
     );
 
     const defaultStatus = await this.statusRepository.findOne({
-      where: { category: 'block', name: 'active', isActive: true },
+      where: { id: 'block-active', isActive: true },
     });
 
     if (!defaultStatus) {
@@ -82,6 +84,32 @@ export class BlocksService {
 
     const savedBlock = await this.blockRepository.save(block);
     this.logger.log(`Block créé avec succès: ${savedBlock.id}`);
+
+    // Si c'est un block d'analyse, déclencher automatiquement l'analyse
+    if (createBlockDto.blockType === BlockType.ANALYSIS) {
+      this.logger.log(
+        `Déclenchement automatique de l'analyse pour le block ${savedBlock.id}`,
+      );
+      try {
+        // Récupérer les fichiers liés et déclencher l'analyse
+        const linkedFiles =
+          await this.analysisContentService.getLinkedFilesMetadata(
+            createBlockDto.contentId,
+          );
+        if (linkedFiles.length > 0) {
+          await this.triggerAnalysisAsync(
+            savedBlock.id,
+            createBlockDto.contentId,
+            linkedFiles,
+          );
+        }
+      } catch (error) {
+        this.logger.error(
+          `Erreur lors du déclenchement automatique de l'analyse: ${error instanceof Error ? error.message : 'Erreur inconnue'}`,
+        );
+        // Ne pas faire échouer la création du block si l'analyse échoue
+      }
+    }
 
     // Récupérer le block avec les relations pour le mapping DTO
     const blockWithRelations = await this.blockRepository.findOne({
@@ -234,10 +262,7 @@ export class BlocksService {
           await this.fileContentService.remove(block.contentId);
           break;
         case BlockType.ANALYSIS:
-          // TODO: AnalysisContent pas encore implémenté
-          this.logger.warn(
-            `Type ANALYSIS pas encore supporté pour contentId: ${block.contentId}`,
-          );
+          await this.analysisContentService.remove(block.contentId);
           break;
       }
     } catch (error) {
@@ -327,10 +352,8 @@ export class BlocksService {
           await this.fileContentService.findOne(contentId);
           break;
         case BlockType.ANALYSIS:
-          // TODO: Implémenter la validation pour AnalysisContent quand le module sera créé
-          throw new BadRequestException(
-            "Le type ANALYSIS n'est pas encore supporté",
-          );
+          await this.analysisContentService.findOne(contentId);
+          break;
         default:
           throw new BadRequestException(
             `Type de block invalide: ${blockType ? blockType : 'unknown'}`,
@@ -443,5 +466,86 @@ export class BlocksService {
       createdAt: block.createdAt,
       updatedAt: block.updatedAt,
     };
+  }
+
+  private async triggerAnalysisAsync(
+    blockId: string,
+    contentId: string,
+    linkedFiles: Array<{
+      id: string;
+      fileName: string;
+      fileSize: number;
+      mimeType: string;
+      fileType: string;
+    }>,
+  ): Promise<void> {
+    try {
+      this.logger.log(
+        `Démarrage de l'analyse asynchrone pour le block ${blockId}`,
+      );
+
+      // Récupérer les fichiers depuis le stockage et créer des objets Express.Multer.File
+      const files: Express.Multer.File[] = [];
+      for (const fileMetadata of linkedFiles) {
+        const fileContent = await this.fileContentService.findOne(
+          fileMetadata.id,
+        );
+        if (fileContent) {
+          files.push({
+            fieldname: 'file',
+            originalname: fileMetadata.fileName,
+            encoding: '7bit',
+            mimetype: fileMetadata.mimeType,
+            size: fileMetadata.fileSize,
+            destination: '',
+            filename: fileMetadata.fileName,
+            path: '',
+            buffer: Buffer.from(fileContent.base64Data, 'base64'),
+            stream: null as unknown,
+          } as Express.Multer.File);
+        }
+      }
+
+      if (files.length === 0) {
+        this.logger.warn(
+          `Aucun fichier trouvé pour l'analyse du block ${blockId}`,
+        );
+        return;
+      }
+
+      // Appeler le service d'analyse Python
+      const analysisResult =
+        await this.analysisContentService.analyzeFilesWithPython(
+          files,
+          'Analyse automatique des données',
+        );
+
+      // Mettre à jour le contenu d'analyse avec les résultats
+      await this.analysisContentService.update(contentId, {
+        results: analysisResult as unknown as Record<string, unknown>,
+        status: 'completed',
+      });
+
+      this.logger.log(`Analyse terminée avec succès pour le block ${blockId}`);
+    } catch (error) {
+      this.logger.error(
+        `Erreur lors de l'analyse asynchrone du block ${blockId}: ${error instanceof Error ? error.message : 'Erreur inconnue'}`,
+      );
+
+      // Mettre à jour le statut en cas d'erreur
+      try {
+        await this.analysisContentService.update(contentId, {
+          results: {
+            error: "Erreur lors de l'analyse",
+            message: error instanceof Error ? error.message : 'Erreur inconnue',
+          },
+          status: 'failed',
+        });
+      } catch (updateError) {
+        this.logger.error(
+          `Impossible de mettre à jour le statut d'erreur: ${updateError instanceof Error ? updateError.message : 'Erreur inconnue'}`,
+        );
+      }
+    }
   }
 }
