@@ -95,8 +95,8 @@ export class Block extends BaseEntity {
   superBlock?: SuperBlock;
 
   @OneToMany('BlockRelation', 'sourceBlock', { cascade: true })
-  outgoingRelations: any[];
+  outgoingRelations: unknown[];
 
   @OneToMany('BlockRelation', 'targetBlock', { cascade: true })
-  incomingRelations: any[];
+  incomingRelations: unknown[];
 }

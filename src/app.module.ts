@@ -12,10 +12,12 @@ import { BlockRelation } from './modules/block-relations/entities/block-relation
 import { TextContent } from './modules/text-content/entities/text-content.entity';
 import { FileContent } from './modules/file-content/entities/file-content.entity';
 import { AnalysisContent } from './modules/analysis-content/entities/analysis-content.entity';
+import { Invitation } from './modules/invitation/entities/invitation.entity';
 import { StatusModule } from './modules/status/status.module';
 import { UsersModule } from './modules/users/users.module';
 import { BoardsModule } from './modules/boards/boards.module';
 import { BoardMembersModule } from './modules/board-members/board-members.module';
+import { InvitationModule } from './modules/invitation/invitation.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 import { APP_GUARD } from '@nestjs/core';
@@ -68,6 +70,7 @@ import { AnalysisContentModule } from './modules/analysis-content/analysis-conte
           TextContent,
           FileContent,
           AnalysisContent,
+          Invitation,
         ],
         synchronize: configService.get<string>('NODE_ENV') !== 'production',
         logging: configService.get<string>('NODE_ENV') === 'development',
@@ -78,6 +81,7 @@ import { AnalysisContentModule } from './modules/analysis-content/analysis-conte
     UsersModule,
     BoardsModule,
     BoardMembersModule,
+    InvitationModule,
     AuthModule,
     EmailModule,
     BlocksModule,

@@ -7,6 +7,7 @@ import { User } from './entities/user.entity';
 import { Status } from '../status/entities/status.entity';
 import { StatusService } from '../status/status.service';
 import { EmailService } from '../email/email.service';
+import { InvitationService } from '../invitation/invitation.service';
 
 describe('UsersService', () => {
   let service: UsersService;
@@ -54,6 +55,12 @@ describe('UsersService', () => {
           provide: EmailService,
           useValue: {
             sendWelcome: jest.fn().mockResolvedValue(undefined),
+          },
+        },
+        {
+          provide: InvitationService,
+          useValue: {
+            processPendingInvitations: jest.fn().mockResolvedValue(undefined),
           },
         },
       ],

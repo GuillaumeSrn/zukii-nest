@@ -5,9 +5,15 @@ import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
 import { StatusModule } from '../status/status.module';
 import { EmailModule } from '../email/email.module';
+import { InvitationModule } from '../invitation/invitation.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([User]), StatusModule, EmailModule],
+  imports: [
+    TypeOrmModule.forFeature([User]),
+    StatusModule,
+    EmailModule,
+    InvitationModule,
+  ],
   controllers: [UsersController],
   providers: [UsersService],
   exports: [UsersService, TypeOrmModule],

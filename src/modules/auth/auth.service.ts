@@ -136,7 +136,7 @@ export class AuthService {
     try {
       // TODO: Vérifier dans Redis si le token est dans la blacklist
       // Pour l'instant, on retourne toujours false
-      // En attendant l'implémentation Redis, on log le token pour debug
+              // En attendant l'implémentation Redis
       this.logger.debug(
         `Vérification révocation pour: ${token.substring(0, 10)}...`,
       );
