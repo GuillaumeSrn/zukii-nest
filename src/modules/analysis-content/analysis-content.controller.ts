@@ -32,22 +32,23 @@ export class AnalysisContentController {
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
     summary: "Obtenir le statut d'une analyse",
-    description: 'Récupère le statut actuel d\'une analyse (pending, processing, completed, failed)',
+    description:
+      "Récupère le statut actuel d'une analyse (pending, processing, completed, failed)",
   })
   @ApiParam({
     name: 'id',
-    description: 'Identifiant UUID du contenu d\'analyse',
+    description: "Identifiant UUID du contenu d'analyse",
   })
   @ApiResponse({
     status: 200,
-    description: 'Statut de l\'analyse récupéré avec succès',
+    description: "Statut de l'analyse récupéré avec succès",
     schema: {
       type: 'object',
       properties: {
         id: { type: 'string' },
-        status: { 
-          type: 'string', 
-          enum: ['pending', 'processing', 'completed', 'failed'] 
+        status: {
+          type: 'string',
+          enum: ['pending', 'processing', 'completed', 'failed'],
         },
         content: { type: 'string' },
         results: { type: 'object' },
@@ -60,7 +61,7 @@ export class AnalysisContentController {
   })
   @ApiResponse({
     status: 404,
-    description: 'Contenu d\'analyse non trouvé',
+    description: "Contenu d'analyse non trouvé",
   })
   async getAnalysisStatus(
     @Param('id', UuidValidationPipe) id: string,
@@ -75,6 +76,83 @@ export class AnalysisContentController {
       status: analysisContent.status,
       content: analysisContent.content,
       results: analysisContent.results,
+    };
+  }
+
+  @Get(':id/details')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: "Obtenir les détails complets d'une analyse",
+    description:
+      "Récupère tous les détails d'une analyse incluant les résultats, métadonnées et fichiers liés",
+  })
+  @ApiParam({
+    name: 'id',
+    description: "Identifiant UUID du contenu d'analyse",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Détails de l'analyse récupérés avec succès",
+    schema: {
+      type: 'object',
+      properties: {
+        id: { type: 'string' },
+        title: { type: 'string' },
+        content: { type: 'string' },
+        metadata: { type: 'object' },
+        status: {
+          type: 'string',
+          enum: ['pending', 'processing', 'completed', 'failed'],
+        },
+        results: { type: 'object' },
+        linkedFileIds: { type: 'array', items: { type: 'string' } },
+        linkedFilesMetadata: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'string' },
+              fileName: { type: 'string' },
+              fileSize: { type: 'number' },
+              mimeType: { type: 'string' },
+              fileType: { type: 'string' },
+            },
+          },
+        },
+        createdAt: { type: 'string' },
+        updatedAt: { type: 'string' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Token JWT requis',
+  })
+  @ApiResponse({
+    status: 404,
+    description: "Contenu d'analyse non trouvé",
+  })
+  async getAnalysisDetails(
+    @Param('id', UuidValidationPipe) id: string,
+    @Request() req: { user: JwtUser },
+  ) {
+    this.logger.log(`Récupération des détails de l'analyse ${id}`);
+
+    const analysisContent = await this.analysisContentService.findOne(id);
+    const linkedFilesMetadata =
+      await this.analysisContentService.getLinkedFilesMetadata(id);
+
+    return {
+      id: analysisContent.id,
+      title: analysisContent.title,
+      content: analysisContent.content,
+      metadata: analysisContent.metadata,
+      status: analysisContent.status,
+      results: analysisContent.results,
+      linkedFileIds: analysisContent.linkedFileIds,
+      linkedFilesMetadata,
+      createdAt: analysisContent.createdAt?.toISOString?.() ?? '',
+      updatedAt: analysisContent.updatedAt?.toISOString?.() ?? '',
     };
   }
 }

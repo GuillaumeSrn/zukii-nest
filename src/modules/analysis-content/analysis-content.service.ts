@@ -83,7 +83,9 @@ export class AnalysisContentService {
     question: string,
     options: AnalysisOptions = {},
   ): Promise<void> {
-    this.logger.log(`Démarrage de l'analyse en arrière-plan: ${analysisContentId}`);
+    this.logger.log(
+      `Démarrage de l'analyse en arrière-plan: ${analysisContentId}`,
+    );
 
     // Mettre à jour le statut à "processing"
     await this.update(analysisContentId, { status: 'processing' });
@@ -93,32 +95,37 @@ export class AnalysisContentService {
       try {
         // Récupérer les fichiers liés
         const analysisContent = await this.findOne(analysisContentId);
-        if (!analysisContent.linkedFileIds || analysisContent.linkedFileIds.length === 0) {
+        if (
+          !analysisContent.linkedFileIds ||
+          analysisContent.linkedFileIds.length === 0
+        ) {
           throw new Error('Aucun fichier lié à analyser');
         }
 
         // Récupérer les fichiers depuis le service
         const fileContents = await Promise.all(
-          analysisContent.linkedFileIds.map(async fileId => {
+          analysisContent.linkedFileIds.map(async (fileId) => {
             try {
               // Essayer d'abord de récupérer directement comme FileContent
               return await this.fileContentService.findOne(fileId);
             } catch (error) {
-              this.logger.warn(`FileContent ${fileId} non trouvé, tentative de récupération via block`);
+              this.logger.warn(
+                `FileContent ${fileId} non trouvé, tentative de récupération via block`,
+              );
               // Si ça échoue, essayer de récupérer via le block (fileId pourrait être l'ID du block)
               const block = await this.blockRepository.findOne({
-                where: { id: fileId, blockType: BlockType.FILE }
+                where: { id: fileId, blockType: BlockType.FILE },
               });
               if (block && block.contentId) {
                 return await this.fileContentService.findOne(block.contentId);
               }
               throw new NotFoundException(`Fichier non trouvé: ${fileId}`);
             }
-          })
+          }),
         );
 
         // Convertir en format attendu par analyzeFilesWithPython
-        const files = fileContents.map(fileContent => ({
+        const files = fileContents.map((fileContent) => ({
           originalname: fileContent.fileName,
           mimetype: fileContent.mimeType,
           buffer: Buffer.from(fileContent.base64Data, 'base64'),
@@ -132,7 +139,11 @@ export class AnalysisContentService {
         }));
 
         // Lancer l'analyse Python
-        const result = await this.analyzeFilesWithPython(files, question, options);
+        const result = await this.analyzeFilesWithPython(
+          files,
+          question,
+          options,
+        );
 
         // Mettre à jour avec les résultats
         await this.update(analysisContentId, {
@@ -143,8 +154,11 @@ export class AnalysisContentService {
 
         this.logger.log(`Analyse terminée avec succès: ${analysisContentId}`);
       } catch (error) {
-        this.logger.error(`Erreur lors de l'analyse: ${analysisContentId}`, error);
-        
+        this.logger.error(
+          `Erreur lors de l'analyse: ${analysisContentId}`,
+          error,
+        );
+
         // Mettre à jour le statut à "failed"
         await this.update(analysisContentId, {
           status: 'failed',
@@ -259,12 +273,14 @@ export class AnalysisContentService {
       try {
         // Récupérer le block de fichier pour obtenir son contentId
         const fileBlock = await this.blockRepository.findOne({
-          where: { id: fileBlockId }
+          where: { id: fileBlockId },
         });
-        
+
         if (fileBlock && fileBlock.contentId) {
           // Récupérer le contenu du fichier
-          const fileContent = await this.fileContentService.findOne(fileBlock.contentId);
+          const fileContent = await this.fileContentService.findOne(
+            fileBlock.contentId,
+          );
           filesMetadata.push({
             id: fileContent.id,
             fileName: fileContent.fileName,
@@ -274,7 +290,9 @@ export class AnalysisContentService {
           });
         }
       } catch (error) {
-        this.logger.warn(`Block de fichier ${fileBlockId} non trouvé pour l'analyse ${id}: ${error.message}`);
+        this.logger.warn(
+          `Block de fichier ${fileBlockId} non trouvé pour l'analyse ${id}: ${error.message}`,
+        );
         // Continuer avec les autres fichiers
       }
     }

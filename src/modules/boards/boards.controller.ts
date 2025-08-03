@@ -187,25 +187,25 @@ export class BoardsController {
     );
     // 4. Récupérer les blocks (en preview)
     const blocks = await this.blocksService.findByBoard(id, req.user.id);
-    
-    // 5. Récupérer les AnalysisContent pour les blocks d'analyse
-    const analysisBlocks = blocks.filter(block => block.blockType === 'analysis');
-    const analysisContentIds = analysisBlocks.map(block => block.contentId);
-    const analysisContents = await this.analysisContentService.findByIds(analysisContentIds);
-    
-    // 6. Transformer les AnalysisContent en DTO
-    const analysisContentsDto = analysisContents.map(content => ({
+
+    // 5. Récupérer les informations minimales des AnalysisContent pour les blocks d'analyse
+    const analysisBlocks = blocks.filter(
+      (block) => block.blockType === 'analysis',
+    );
+    const analysisContentIds = analysisBlocks.map((block) => block.contentId);
+    const analysisContents =
+      await this.analysisContentService.findByIds(analysisContentIds);
+
+    // 6. Transformer les AnalysisContent en DTO minimal (pour l'affichage de base)
+    const analysisContentsDto = analysisContents.map((content) => ({
       id: content.id,
       title: content.title,
-      content: content.content,
-      metadata: content.metadata,
       status: content.status,
-      results: content.results,
       linkedFileIds: content.linkedFileIds,
       createdAt: content.createdAt?.toISOString?.() ?? '',
       updatedAt: content.updatedAt?.toISOString?.() ?? '',
     }));
-    
+
     return {
       id: board.id,
       title: board.title,

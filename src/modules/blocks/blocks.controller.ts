@@ -597,7 +597,11 @@ export class BlocksController {
       contentId: analysisContent.id,
     };
 
-    const block = await this.blocksService.create(boardId, blockDto, req.user.id);
+    const block = await this.blocksService.create(
+      boardId,
+      blockDto,
+      req.user.id,
+    );
 
     // 3. Lancer l'analyse en arrière-plan
     const analysisOptions = {
@@ -607,13 +611,18 @@ export class BlocksController {
     };
 
     // Lancer l'analyse en arrière-plan (non-bloquant)
-    this.analysisContentService.startAnalysisInBackground(
-      analysisContent.id,
-      createAnalysisDto.content,
-      analysisOptions,
-    ).catch(error => {
-      this.logger.error(`Erreur lors du lancement de l'analyse en arrière-plan: ${analysisContent.id}`, error);
-    });
+    this.analysisContentService
+      .startAnalysisInBackground(
+        analysisContent.id,
+        createAnalysisDto.content,
+        analysisOptions,
+      )
+      .catch((error) => {
+        this.logger.error(
+          `Erreur lors du lancement de l'analyse en arrière-plan: ${analysisContent.id}`,
+          error,
+        );
+      });
 
     return block;
   }
