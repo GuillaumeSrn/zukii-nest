@@ -1,5 +1,17 @@
 import { ApiProperty } from '@nestjs/swagger';
 
+interface AnalysisContent {
+  id: string;
+  title: string;
+  content: string;
+  metadata?: Record<string, unknown>;
+  status: string;
+  results?: Record<string, unknown>;
+  linkedFileIds?: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
 interface BoardOwner {
   id: string;
   displayName: string;
@@ -42,4 +54,5 @@ export class BoardFullResponseDto {
   @ApiProperty({ type: [Object] }) members: BoardMember[];
   @ApiProperty({ type: [Object] }) superBlocks: unknown[];
   @ApiProperty({ type: [Object] }) blocks: unknown[];
+  @ApiProperty({ type: [Object], description: 'Contenus d\'analyse liés aux blocks' }) analysisContents: AnalysisContent[];
 }

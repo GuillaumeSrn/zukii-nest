@@ -12,6 +12,7 @@ import { CreateAnalysisContentDto } from './dto/create-analysis-content.dto';
 import { UpdateAnalysisContentDto } from './dto/update-analysis-content.dto';
 import { FileContentService } from '../file-content/file-content.service';
 import { Block } from '../blocks/entities/block.entity';
+import { BlockType } from '../blocks/enums/block.enum';
 import axios, { AxiosError } from 'axios';
 import * as FormData from 'form-data';
 
@@ -65,6 +66,7 @@ export class AnalysisContentService {
 
     const analysisContent = this.analysisContentRepository.create({
       ...createAnalysisContentDto,
+      status: 'pending', // Statut initial
     });
 
     const savedAnalysisContent =
@@ -74,6 +76,82 @@ export class AnalysisContentService {
     );
 
     return savedAnalysisContent;
+  }
+
+  async startAnalysisInBackground(
+    analysisContentId: string,
+    question: string,
+    options: AnalysisOptions = {},
+  ): Promise<void> {
+    this.logger.log(`Démarrage de l'analyse en arrière-plan: ${analysisContentId}`);
+
+    // Mettre à jour le statut à "processing"
+    await this.update(analysisContentId, { status: 'processing' });
+
+    // Lancer l'analyse en arrière-plan (non-bloquant)
+    setImmediate(async () => {
+      try {
+        // Récupérer les fichiers liés
+        const analysisContent = await this.findOne(analysisContentId);
+        if (!analysisContent.linkedFileIds || analysisContent.linkedFileIds.length === 0) {
+          throw new Error('Aucun fichier lié à analyser');
+        }
+
+        // Récupérer les fichiers depuis le service
+        const fileContents = await Promise.all(
+          analysisContent.linkedFileIds.map(async fileId => {
+            try {
+              // Essayer d'abord de récupérer directement comme FileContent
+              return await this.fileContentService.findOne(fileId);
+            } catch (error) {
+              this.logger.warn(`FileContent ${fileId} non trouvé, tentative de récupération via block`);
+              // Si ça échoue, essayer de récupérer via le block (fileId pourrait être l'ID du block)
+              const block = await this.blockRepository.findOne({
+                where: { id: fileId, blockType: BlockType.FILE }
+              });
+              if (block && block.contentId) {
+                return await this.fileContentService.findOne(block.contentId);
+              }
+              throw new NotFoundException(`Fichier non trouvé: ${fileId}`);
+            }
+          })
+        );
+
+        // Convertir en format attendu par analyzeFilesWithPython
+        const files = fileContents.map(fileContent => ({
+          originalname: fileContent.fileName,
+          mimetype: fileContent.mimeType,
+          buffer: Buffer.from(fileContent.base64Data, 'base64'),
+          fieldname: 'file',
+          encoding: '7bit',
+          size: fileContent.fileSize,
+          stream: null as any,
+          destination: '',
+          filename: fileContent.fileName,
+          path: '',
+        }));
+
+        // Lancer l'analyse Python
+        const result = await this.analyzeFilesWithPython(files, question, options);
+
+        // Mettre à jour avec les résultats
+        await this.update(analysisContentId, {
+          status: 'completed',
+          results: result as unknown as Record<string, unknown>,
+          content: result.summary || 'Analyse terminée',
+        });
+
+        this.logger.log(`Analyse terminée avec succès: ${analysisContentId}`);
+      } catch (error) {
+        this.logger.error(`Erreur lors de l'analyse: ${analysisContentId}`, error);
+        
+        // Mettre à jour le statut à "failed"
+        await this.update(analysisContentId, {
+          status: 'failed',
+          content: `Erreur d'analyse: ${error instanceof Error ? error.message : 'Erreur inconnue'}`,
+        });
+      }
+    });
   }
 
   async findAll(): Promise<AnalysisContent[]> {
@@ -96,6 +174,23 @@ export class AnalysisContentService {
     }
 
     return analysisContent;
+  }
+
+  async findByIds(ids: string[]): Promise<AnalysisContent[]> {
+    this.logger.log(`Récupération de ${ids.length} contenus d'analyse`);
+
+    if (ids.length === 0) {
+      return [];
+    }
+
+    const analysisContents = await this.analysisContentRepository
+      .createQueryBuilder('analysisContent')
+      .where('analysisContent.id IN (:...ids)', { ids })
+      .orderBy('analysisContent.createdAt', 'DESC')
+      .getMany();
+
+    this.logger.log(`${analysisContents.length} contenus d'analyse trouvés`);
+    return analysisContents;
   }
 
   async update(
