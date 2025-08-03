@@ -32,6 +32,7 @@ import { BoardFullResponseDto } from './dto/board-full-response.dto';
 import { BoardMembersService } from '../board-members/board-members.service';
 import { SuperBlocksService } from '../super-blocks/super-blocks.service';
 import { BlocksService } from '../blocks/blocks.service';
+import { AnalysisContentService } from '../analysis-content/analysis-content.service';
 @ApiTags('Boards')
 @Controller('boards')
 @UseInterceptors(ClassSerializerInterceptor)
@@ -43,6 +44,7 @@ export class BoardsController {
     private readonly boardMembersService: BoardMembersService,
     private readonly superBlocksService: SuperBlocksService,
     private readonly blocksService: BlocksService,
+    private readonly analysisContentService: AnalysisContentService,
   ) {}
 
   @Post()
@@ -185,7 +187,25 @@ export class BoardsController {
     );
     // 4. Récupérer les blocks (en preview)
     const blocks = await this.blocksService.findByBoard(id, req.user.id);
-    // 5. Les fichiers sont déjà inclus dans les blocks de type 'file'
+
+    // 5. Récupérer les informations minimales des AnalysisContent pour les blocks d'analyse
+    const analysisBlocks = blocks.filter(
+      (block) => block.blockType === 'analysis',
+    );
+    const analysisContentIds = analysisBlocks.map((block) => block.contentId);
+    const analysisContents =
+      await this.analysisContentService.findByIds(analysisContentIds);
+
+    // 6. Transformer les AnalysisContent en DTO minimal (pour l'affichage de base)
+    const analysisContentsDto = analysisContents.map((content) => ({
+      id: content.id,
+      title: content.title,
+      status: content.status,
+      linkedFileIds: content.linkedFileIds,
+      createdAt: content.createdAt?.toISOString?.() ?? '',
+      updatedAt: content.updatedAt?.toISOString?.() ?? '',
+    }));
+
     return {
       id: board.id,
       title: board.title,
@@ -198,7 +218,7 @@ export class BoardsController {
       members,
       superBlocks,
       blocks,
-      // Les fichiers sont inclus dans les blocks de type 'file'
+      analysisContents: analysisContentsDto,
     };
   }
 

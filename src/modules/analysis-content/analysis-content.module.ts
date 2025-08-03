@@ -8,7 +8,10 @@ import { Block } from '../blocks/entities/block.entity';
 import { FileContentModule } from '../file-content/file-content.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([AnalysisContent, Block]), FileContentModule],
+  imports: [
+    TypeOrmModule.forFeature([AnalysisContent, Block]),
+    FileContentModule,
+  ],
 
   controllers: [AnalysisContentController],
   providers: [AnalysisContentService],

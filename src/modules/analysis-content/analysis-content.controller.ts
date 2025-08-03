@@ -1,28 +1,26 @@
 import {
   Controller,
-  Post,
-  Body,
-  UploadedFiles,
-  UseInterceptors,
-  BadRequestException,
+  Get,
+  Param,
+  UseGuards,
+  Request,
   Logger,
 } from '@nestjs/common';
-import { FilesInterceptor } from '@nestjs/platform-express';
-import { ApiTags, ApiOperation, ApiConsumes } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiParam,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AnalysisContentService } from './analysis-content.service';
-
-interface PythonAnalysisResponse {
-  analysis_id: string;
-  summary: string;
-  insights: unknown[];
-  charts: unknown[];
-  metrics: Record<string, unknown>;
-  anonymization_report: Record<string, unknown>;
-  processing_time: number;
-}
+import { JwtUser } from '../../common/interfaces/jwt-user.interface';
+import { UuidValidationPipe } from '../../common/pipes/uuid-validation.pipe';
 
 @ApiTags('analysis-content')
 @Controller('analysis-content')
+@UseGuards(JwtAuthGuard)
 export class AnalysisContentController {
   private readonly logger = new Logger(AnalysisContentController.name);
 
@@ -30,72 +28,131 @@ export class AnalysisContentController {
     private readonly analysisContentService: AnalysisContentService,
   ) {}
 
-  @Post('analyze')
+  @Get(':id/status')
+  @ApiBearerAuth('JWT-auth')
   @ApiOperation({
-    summary: 'Lancer une analyse Python simple',
+    summary: "Obtenir le statut d'une analyse",
     description:
-      'Endpoint REST simple pour analyser des fichiers avec le microservice Python',
+      "Récupère le statut actuel d'une analyse (pending, processing, completed, failed)",
   })
-  @ApiConsumes('multipart/form-data')
-  @UseInterceptors(FilesInterceptor('files'))
-  async analyzeFiles(
-    @UploadedFiles() files: Express.Multer.File[],
-    @Body()
-    body: {
-      question: string;
-      analysisType?: string;
-      includeCharts?: boolean;
-      anonymizeData?: boolean;
+  @ApiParam({
+    name: 'id',
+    description: "Identifiant UUID du contenu d'analyse",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Statut de l'analyse récupéré avec succès",
+    schema: {
+      type: 'object',
+      properties: {
+        id: { type: 'string' },
+        status: {
+          type: 'string',
+          enum: ['pending', 'processing', 'completed', 'failed'],
+        },
+        content: { type: 'string' },
+        results: { type: 'object' },
+      },
     },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Token JWT requis',
+  })
+  @ApiResponse({
+    status: 404,
+    description: "Contenu d'analyse non trouvé",
+  })
+  async getAnalysisStatus(
+    @Param('id', UuidValidationPipe) id: string,
+    @Request() req: { user: JwtUser },
   ) {
-    this.logger.log(`Analyse demandée pour ${files.length} fichiers`);
+    this.logger.log(`Récupération du statut de l'analyse ${id}`);
 
-    if (!files || files.length === 0) {
-      throw new BadRequestException('Aucun fichier fourni');
-    }
+    const analysisContent = await this.analysisContentService.findOne(id);
 
-    if (!body.question) {
-      throw new BadRequestException("Question d'analyse requise");
-    }
+    return {
+      id: analysisContent.id,
+      status: analysisContent.status,
+      content: analysisContent.content,
+      results: analysisContent.results,
+    };
+  }
 
-    try {
-      // Lancer l'analyse Python
-      const pythonResult =
-        (await this.analysisContentService.analyzeFilesWithPython(
-          files,
-          body.question,
-          {
-            analysisType: body.analysisType || 'general',
-            includeCharts: body.includeCharts !== false,
-            anonymizeData: body.anonymizeData !== false,
+  @Get(':id/details')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: "Obtenir les détails complets d'une analyse",
+    description:
+      "Récupère tous les détails d'une analyse incluant les résultats, métadonnées et fichiers liés",
+  })
+  @ApiParam({
+    name: 'id',
+    description: "Identifiant UUID du contenu d'analyse",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Détails de l'analyse récupérés avec succès",
+    schema: {
+      type: 'object',
+      properties: {
+        id: { type: 'string' },
+        title: { type: 'string' },
+        content: { type: 'string' },
+        metadata: { type: 'object' },
+        status: {
+          type: 'string',
+          enum: ['pending', 'processing', 'completed', 'failed'],
+        },
+        results: { type: 'object' },
+        linkedFileIds: { type: 'array', items: { type: 'string' } },
+        linkedFilesMetadata: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'string' },
+              fileName: { type: 'string' },
+              fileSize: { type: 'number' },
+              mimeType: { type: 'string' },
+              fileType: { type: 'string' },
+            },
           },
-        )) as PythonAnalysisResponse;
+        },
+        createdAt: { type: 'string' },
+        updatedAt: { type: 'string' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Token JWT requis',
+  })
+  @ApiResponse({
+    status: 404,
+    description: "Contenu d'analyse non trouvé",
+  })
+  async getAnalysisDetails(
+    @Param('id', UuidValidationPipe) id: string,
+    @Request() req: { user: JwtUser },
+  ) {
+    this.logger.log(`Récupération des détails de l'analyse ${id}`);
 
-      // Formater la réponse pour correspondre à nos tables
-      const formattedResult = {
-        analysisId: pythonResult.analysis_id,
-        summary: pythonResult.summary,
-        insights: pythonResult.insights || [],
-        charts: pythonResult.charts || [],
-        metrics: pythonResult.metrics || {},
-        anonymizationReport: pythonResult.anonymization_report || {},
-        processingTime: pythonResult.processing_time,
-        createdAt: new Date().toISOString(),
-        status: 'completed',
-        filesAnalyzed: files.map((f) => f.originalname),
-      };
+    const analysisContent = await this.analysisContentService.findOne(id);
+    const linkedFilesMetadata =
+      await this.analysisContentService.getLinkedFilesMetadata(id);
 
-      this.logger.log(
-        `Analyse terminée avec succès: ${formattedResult.analysisId}`,
-      );
-      return formattedResult;
-    } catch (error) {
-      this.logger.error(
-        `Erreur lors de l'analyse: ${(error as Error).message}`,
-      );
-      throw new BadRequestException(
-        `Erreur d'analyse: ${(error as Error).message}`,
-      );
-    }
+    return {
+      id: analysisContent.id,
+      title: analysisContent.title,
+      content: analysisContent.content,
+      metadata: analysisContent.metadata,
+      status: analysisContent.status,
+      results: analysisContent.results,
+      linkedFileIds: analysisContent.linkedFileIds,
+      linkedFilesMetadata,
+      createdAt: analysisContent.createdAt?.toISOString?.() ?? '',
+      updatedAt: analysisContent.updatedAt?.toISOString?.() ?? '',
+    };
   }
 }
