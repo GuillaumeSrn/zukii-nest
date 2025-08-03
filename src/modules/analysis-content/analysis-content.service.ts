@@ -11,6 +11,7 @@ import { AnalysisContent } from './entities/analysis-content.entity';
 import { CreateAnalysisContentDto } from './dto/create-analysis-content.dto';
 import { UpdateAnalysisContentDto } from './dto/update-analysis-content.dto';
 import { FileContentService } from '../file-content/file-content.service';
+import { Block } from '../blocks/entities/block.entity';
 import axios, { AxiosError } from 'axios';
 import * as FormData from 'form-data';
 
@@ -52,6 +53,8 @@ export class AnalysisContentService {
   constructor(
     @InjectRepository(AnalysisContent)
     private readonly analysisContentRepository: Repository<AnalysisContent>,
+    @InjectRepository(Block)
+    private readonly blockRepository: Repository<Block>,
     private readonly fileContentService: FileContentService,
   ) {}
 
@@ -157,18 +160,26 @@ export class AnalysisContentService {
       fileType: string;
     }> = [];
 
-    for (const fileId of analysisContent.linkedFileIds) {
+    for (const fileBlockId of analysisContent.linkedFileIds) {
       try {
-        const fileContent = await this.fileContentService.findOne(fileId);
-        filesMetadata.push({
-          id: fileContent.id,
-          fileName: fileContent.fileName,
-          fileSize: fileContent.fileSize,
-          mimeType: fileContent.mimeType,
-          fileType: fileContent.fileType,
+        // Récupérer le block de fichier pour obtenir son contentId
+        const fileBlock = await this.blockRepository.findOne({
+          where: { id: fileBlockId }
         });
-      } catch {
-        this.logger.warn(`Fichier ${fileId} non trouvé pour l'analyse ${id}`);
+        
+        if (fileBlock && fileBlock.contentId) {
+          // Récupérer le contenu du fichier
+          const fileContent = await this.fileContentService.findOne(fileBlock.contentId);
+          filesMetadata.push({
+            id: fileContent.id,
+            fileName: fileContent.fileName,
+            fileSize: fileContent.fileSize,
+            mimeType: fileContent.mimeType,
+            fileType: fileContent.fileType,
+          });
+        }
+      } catch (error) {
+        this.logger.warn(`Block de fichier ${fileBlockId} non trouvé pour l'analyse ${id}: ${error.message}`);
         // Continuer avec les autres fichiers
       }
     }
