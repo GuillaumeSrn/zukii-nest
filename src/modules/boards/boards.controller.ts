@@ -33,6 +33,7 @@ import { BoardMembersService } from '../board-members/board-members.service';
 import { SuperBlocksService } from '../super-blocks/super-blocks.service';
 import { BlocksService } from '../blocks/blocks.service';
 import { AnalysisContentService } from '../analysis-content/analysis-content.service';
+import { BlockType } from '../blocks/enums/block.enum';
 @ApiTags('Boards')
 @Controller('boards')
 @UseInterceptors(ClassSerializerInterceptor)
@@ -190,7 +191,7 @@ export class BoardsController {
 
     // 5. Récupérer les informations minimales des AnalysisContent pour les blocks d'analyse
     const analysisBlocks = blocks.filter(
-      (block) => block.blockType === 'analysis',
+      (block) => block.blockType === BlockType.ANALYSIS,
     );
     const analysisContentIds = analysisBlocks.map((block) => block.contentId);
     const analysisContents =

@@ -15,7 +15,7 @@ import {
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AnalysisContentService } from './analysis-content.service';
-import { JwtUser } from '../../common/interfaces/jwt-user.interface';
+
 import { UuidValidationPipe } from '../../common/pipes/uuid-validation.pipe';
 
 @ApiTags('analysis-content')
@@ -63,10 +63,7 @@ export class AnalysisContentController {
     status: 404,
     description: "Contenu d'analyse non trouvé",
   })
-  async getAnalysisStatus(
-    @Param('id', UuidValidationPipe) id: string,
-    @Request() req: { user: JwtUser },
-  ) {
+  async getAnalysisStatus(@Param('id', UuidValidationPipe) id: string) {
     this.logger.log(`Récupération du statut de l'analyse ${id}`);
 
     const analysisContent = await this.analysisContentService.findOne(id);
@@ -132,10 +129,7 @@ export class AnalysisContentController {
     status: 404,
     description: "Contenu d'analyse non trouvé",
   })
-  async getAnalysisDetails(
-    @Param('id', UuidValidationPipe) id: string,
-    @Request() req: { user: JwtUser },
-  ) {
+  async getAnalysisDetails(@Param('id', UuidValidationPipe) id: string) {
     this.logger.log(`Récupération des détails de l'analyse ${id}`);
 
     const analysisContent = await this.analysisContentService.findOne(id);

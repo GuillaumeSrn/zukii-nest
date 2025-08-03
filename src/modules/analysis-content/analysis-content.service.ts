@@ -91,80 +91,82 @@ export class AnalysisContentService {
     await this.update(analysisContentId, { status: 'processing' });
 
     // Lancer l'analyse en arrière-plan (non-bloquant)
-    setImmediate(async () => {
-      try {
-        // Récupérer les fichiers liés
-        const analysisContent = await this.findOne(analysisContentId);
-        if (
-          !analysisContent.linkedFileIds ||
-          analysisContent.linkedFileIds.length === 0
-        ) {
-          throw new Error('Aucun fichier lié à analyser');
-        }
+    setImmediate(() => {
+      void (async () => {
+        try {
+          // Récupérer les fichiers liés
+          const analysisContent = await this.findOne(analysisContentId);
+          if (
+            !analysisContent.linkedFileIds ||
+            analysisContent.linkedFileIds.length === 0
+          ) {
+            throw new Error('Aucun fichier lié à analyser');
+          }
 
-        // Récupérer les fichiers depuis le service
-        const fileContents = await Promise.all(
-          analysisContent.linkedFileIds.map(async (fileId) => {
-            try {
-              // Essayer d'abord de récupérer directement comme FileContent
-              return await this.fileContentService.findOne(fileId);
-            } catch (error) {
-              this.logger.warn(
-                `FileContent ${fileId} non trouvé, tentative de récupération via block`,
-              );
-              // Si ça échoue, essayer de récupérer via le block (fileId pourrait être l'ID du block)
-              const block = await this.blockRepository.findOne({
-                where: { id: fileId, blockType: BlockType.FILE },
-              });
-              if (block && block.contentId) {
-                return await this.fileContentService.findOne(block.contentId);
+          // Récupérer les fichiers depuis le service
+          const fileContents = await Promise.all(
+            analysisContent.linkedFileIds.map(async (fileId) => {
+              try {
+                // Essayer d'abord de récupérer directement comme FileContent
+                return await this.fileContentService.findOne(fileId);
+              } catch {
+                this.logger.warn(
+                  `FileContent ${fileId} non trouvé, tentative de récupération via block`,
+                );
+                // Si ça échoue, essayer de récupérer via le block (fileId pourrait être l'ID du block)
+                const block = await this.blockRepository.findOne({
+                  where: { id: fileId, blockType: BlockType.FILE },
+                });
+                if (block && block.contentId) {
+                  return await this.fileContentService.findOne(block.contentId);
+                }
+                throw new NotFoundException(`Fichier non trouvé: ${fileId}`);
               }
-              throw new NotFoundException(`Fichier non trouvé: ${fileId}`);
-            }
-          }),
-        );
+            }),
+          );
 
-        // Convertir en format attendu par analyzeFilesWithPython
-        const files = fileContents.map((fileContent) => ({
-          originalname: fileContent.fileName,
-          mimetype: fileContent.mimeType,
-          buffer: Buffer.from(fileContent.base64Data, 'base64'),
-          fieldname: 'file',
-          encoding: '7bit',
-          size: fileContent.fileSize,
-          stream: null as any,
-          destination: '',
-          filename: fileContent.fileName,
-          path: '',
-        }));
+          // Convertir en format attendu par analyzeFilesWithPython
+          const files = fileContents.map((fileContent) => ({
+            originalname: fileContent.fileName,
+            mimetype: fileContent.mimeType,
+            buffer: Buffer.from(fileContent.base64Data, 'base64'),
+            fieldname: 'file',
+            encoding: '7bit',
+            size: fileContent.fileSize,
+            stream: null,
+            destination: '',
+            filename: fileContent.fileName,
+            path: '',
+          }));
 
-        // Lancer l'analyse Python
-        const result = await this.analyzeFilesWithPython(
-          files,
-          question,
-          options,
-        );
+          // Lancer l'analyse Python
+          const result = await this.analyzeFilesWithPython(
+            files as unknown as Express.Multer.File[],
+            question,
+            options,
+          );
 
-        // Mettre à jour avec les résultats
-        await this.update(analysisContentId, {
-          status: 'completed',
-          results: result as unknown as Record<string, unknown>,
-          content: result.summary || 'Analyse terminée',
-        });
+          // Mettre à jour avec les résultats
+          await this.update(analysisContentId, {
+            status: 'completed',
+            results: result as unknown as Record<string, unknown>,
+            content: result.summary || 'Analyse terminée',
+          });
 
-        this.logger.log(`Analyse terminée avec succès: ${analysisContentId}`);
-      } catch (error) {
-        this.logger.error(
-          `Erreur lors de l'analyse: ${analysisContentId}`,
-          error,
-        );
+          this.logger.log(`Analyse terminée avec succès: ${analysisContentId}`);
+        } catch (error) {
+          this.logger.error(
+            `Erreur lors de l'analyse: ${analysisContentId}`,
+            error,
+          );
 
-        // Mettre à jour le statut à "failed"
-        await this.update(analysisContentId, {
-          status: 'failed',
-          content: `Erreur d'analyse: ${error instanceof Error ? error.message : 'Erreur inconnue'}`,
-        });
-      }
+          // Mettre à jour le statut à "failed"
+          await this.update(analysisContentId, {
+            status: 'failed',
+            content: `Erreur d'analyse: ${error instanceof Error ? error.message : 'Erreur inconnue'}`,
+          });
+        }
+      })();
     });
   }
 
