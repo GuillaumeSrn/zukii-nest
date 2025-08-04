@@ -4,10 +4,14 @@ import { AnalysisContentService } from './analysis-content.service';
 import { AnalysisContentController } from './analysis-content.controller';
 
 import { AnalysisContent } from './entities/analysis-content.entity';
+import { Block } from '../blocks/entities/block.entity';
 import { FileContentModule } from '../file-content/file-content.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([AnalysisContent]), FileContentModule],
+  imports: [
+    TypeOrmModule.forFeature([AnalysisContent, Block]),
+    FileContentModule,
+  ],
 
   controllers: [AnalysisContentController],
   providers: [AnalysisContentService],

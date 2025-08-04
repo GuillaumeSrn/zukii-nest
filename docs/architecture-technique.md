@@ -16,11 +16,11 @@ L'architecture repose sur deux diagrammes UML :
 - **Block** : Système de contenu avec zones et positionnement optionnel
 - **FileContent** : Upload et gestion fichiers CSV avec métadonnées complètes
 - **TextContent** : Notes et commentaires intégrés
+- **AnalysisContent** : Résultats d'analyses IA avec intégration microservice Python
+- **SuperBlock** : Structure prête pour regroupements logiques (entité créée)
 
 #### 🚧 **Modules en roadmap (non implémentés)**
-- **SuperBlock** : Regroupements logiques de blocks avec interface collapse/expand
 - **BlockRelation** : Relations tracées entre contenus (generated_from, comment_on, references, derived_from)
-- **AnalysisContent** : Résultats d'analyses IA avec données Plotly et traçabilité
 - **Invitation** : Système d'invitations temporaires
 - **AnalysisTemplate** : Templates IA préconfigurés
 
@@ -62,10 +62,11 @@ L'architecture repose sur deux diagrammes UML :
 - User 1..N BoardMember N..1 Board (permissions granulaires) - `board_member.userId` / `board_member.boardId`
 - Status 1..N User/Board/BoardMember - `*.statusId`
 - Board 1..N Block - `block.boardId`
-- Block 1..1 TextContent|FileContent (via content_id) - `block.contentId`
+- Block 1..1 TextContent|FileContent|AnalysisContent (via content_id) - `block.contentId`
+- SuperBlock 1..N Block - `block.superBlockId`
+- FileContent 1..N AnalysisContent - `analysis_content.source_file_id`
 
 #### 🚧 **Relations futures (roadmap)**
-- SuperBlock 1..N Block - `block.superBlockId`
 - Block N..N Block (via BlockRelation) - `block_relation.sourceBlockId` / `targetBlockId`
 - Status 1..N Block - `block.statusId`
 - AnalysisContent 1..N FileContent (sources) - via relations

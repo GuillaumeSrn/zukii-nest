@@ -11,6 +11,7 @@ import { UpdateBoardDto } from './dto/update-board.dto';
 import { BoardMembersService } from '../board-members/board-members.service';
 import { SuperBlocksService } from '../super-blocks/super-blocks.service';
 import { BlocksService } from '../blocks/blocks.service';
+import { AnalysisContentService } from '../analysis-content/analysis-content.service';
 
 describe('BoardsController', () => {
   let controller: BoardsController;
@@ -18,6 +19,7 @@ describe('BoardsController', () => {
   let boardMembersService: jest.Mocked<BoardMembersService>;
   let superBlocksService: jest.Mocked<SuperBlocksService>;
   let blocksService: jest.Mocked<BlocksService>;
+  let analysisContentService: jest.Mocked<AnalysisContentService>;
 
   const mockBoardResponse = {
     id: 'board-123',
@@ -77,6 +79,13 @@ describe('BoardsController', () => {
             findByBoard: jest.fn(),
           },
         },
+        {
+          provide: AnalysisContentService,
+          useValue: {
+            getLinkedFilesMetadata: jest.fn(),
+            findByIds: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
@@ -85,6 +94,7 @@ describe('BoardsController', () => {
     boardMembersService = module.get(BoardMembersService);
     superBlocksService = module.get(SuperBlocksService);
     blocksService = module.get(BlocksService);
+    analysisContentService = module.get(AnalysisContentService);
   });
 
   it('should be defined', () => {
@@ -353,6 +363,7 @@ describe('BoardsController', () => {
       );
       superBlocksService.findByBoard.mockResolvedValue(mockSuperBlocks as any);
       blocksService.findByBoard.mockResolvedValue(mockBlocks as any);
+      analysisContentService.findByIds.mockResolvedValue([]);
 
       // Act
       const result = await controller.getFullBoard('board-1', {
