@@ -114,6 +114,8 @@ describe('InvitationController', () => {
       const expectedResponse = {
         message: 'Invitation acceptée avec succès',
         boardId: 'board-123',
+        userExists: true,
+        boardName: 'Test Board',
       };
 
       jest

@@ -232,6 +232,8 @@ export class InvitationService {
   ): Promise<{
     message: string;
     boardId: string;
+    userExists: boolean;
+    boardName?: string;
   }> {
     this.logger.log("Acceptation publique d'une invitation");
 
@@ -284,19 +286,29 @@ export class InvitationService {
       this.logger.log(
         `Invitation acceptée et BoardMember créé pour ${existingUser.email}`,
       );
+
+      return {
+        message:
+          'Invitation acceptée avec succès ! Vous pouvez maintenant accéder au board.',
+        boardId: invitation.boardId,
+        userExists: true,
+        boardName: invitation.board.title,
+      };
     } else {
       // L'utilisateur n'existe pas encore, on garde l'invitation active
       // Elle sera traitée lors de l'inscription de l'utilisateur
       this.logger.log(
         `Invitation acceptée pour utilisateur non enregistré: ${invitation.email}. L'invitation reste active.`,
       );
-    }
 
-    return {
-      message:
-        'Invitation acceptée avec succès ! Vous pouvez maintenant accéder au board.',
-      boardId: invitation.boardId,
-    };
+      return {
+        message:
+          'Invitation acceptée ! Vous devez créer un compte pour accéder au board.',
+        boardId: invitation.boardId,
+        userExists: false,
+        boardName: invitation.board.title,
+      };
+    }
   }
 
   async deleteInvitation(
