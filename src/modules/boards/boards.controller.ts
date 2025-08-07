@@ -23,6 +23,7 @@ import {
   ApiBody,
 } from '@nestjs/swagger';
 import { BoardsService } from './boards.service';
+import { BoardLockService } from './board-lock.service';
 import { CreateBoardDto } from './dto/create-board.dto';
 import { UpdateBoardDto } from './dto/update-board.dto';
 import { BoardResponseDto } from './dto/board-response.dto';
@@ -42,6 +43,7 @@ export class BoardsController {
 
   constructor(
     private readonly boardsService: BoardsService,
+    private readonly boardLockService: BoardLockService,
     private readonly boardMembersService: BoardMembersService,
     private readonly superBlocksService: SuperBlocksService,
     private readonly blocksService: BlocksService,
@@ -278,20 +280,17 @@ export class BoardsController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({
     summary: 'Supprimer un board',
-    description: 'Supprime un board existant (propriétaire uniquement)',
+    description: 'Supprime définitivement un board (propriétaire uniquement)',
   })
   @ApiParam({
     name: 'id',
-    description: 'Identifiant UUID du board',
-    example: '123e4567-e89b-12d3-a456-426614174000',
+    description: 'ID du board à supprimer',
+    type: 'string',
+    format: 'uuid',
   })
   @ApiResponse({
     status: 204,
     description: 'Board supprimé avec succès',
-  })
-  @ApiResponse({
-    status: 400,
-    description: 'UUID invalide',
   })
   @ApiResponse({
     status: 401,
@@ -299,7 +298,7 @@ export class BoardsController {
   })
   @ApiResponse({
     status: 403,
-    description: 'Accès non autorisé à ce board',
+    description: 'Accès non autorisé (propriétaire uniquement)',
   })
   @ApiResponse({
     status: 404,
@@ -314,5 +313,96 @@ export class BoardsController {
     );
     await this.boardsService.remove(id, req.user.id);
     this.logger.log(`Board ${id} supprimé avec succès`);
+  }
+
+  @Post(':id/lock')
+  @ApiBearerAuth('JWT-auth')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Verrouiller un board',
+    description: "Verrouille un board pour l'utilisateur actuel",
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'ID du board à verrouiller',
+    type: 'string',
+    format: 'uuid',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Board verrouillé avec succès',
+  })
+  @ApiResponse({
+    status: 409,
+    description: 'Board déjà verrouillé par un autre utilisateur',
+  })
+  async lockBoard(
+    @Param('id', UuidValidationPipe) id: string,
+    @Request() req: { user: JwtUser },
+  ): Promise<{ success: boolean }> {
+    await this.boardLockService.lockBoard(id, req.user.id);
+    return { success: true };
+  }
+
+  @Delete(':id/unlock')
+  @ApiBearerAuth('JWT-auth')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({
+    summary: 'Déverrouiller un board',
+    description: "Déverrouille un board pour l'utilisateur actuel",
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'ID du board à déverrouiller',
+    type: 'string',
+    format: 'uuid',
+  })
+  @ApiResponse({
+    status: 204,
+    description: 'Board déverrouillé avec succès',
+  })
+  async unlockBoard(
+    @Param('id', UuidValidationPipe) id: string,
+    @Request() req: { user: JwtUser },
+  ): Promise<void> {
+    await this.boardLockService.unlockBoard(id, req.user.id);
+  }
+
+  @Get(':id/lock-status')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: 'Vérifier le statut du verrou',
+    description: 'Vérifie si un board est verrouillé',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'ID du board à vérifier',
+    type: 'string',
+    format: 'uuid',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Statut du verrou récupéré',
+    schema: {
+      type: 'object',
+      properties: {
+        locked: { type: 'boolean' },
+        lockedBy: { type: 'string', nullable: true },
+        lockedAt: { type: 'string', nullable: true },
+      },
+    },
+  })
+  async getLockStatus(
+    @Param('id', UuidValidationPipe) id: string,
+  ): Promise<{ locked: boolean; lockedBy?: string; lockedAt?: string }> {
+    const lock = await this.boardLockService.getBoardLock(id);
+    if (lock) {
+      return {
+        locked: true,
+        lockedBy: lock.userId,
+        lockedAt: lock.lockedAt.toISOString(),
+      };
+    }
+    return { locked: false };
   }
 }
