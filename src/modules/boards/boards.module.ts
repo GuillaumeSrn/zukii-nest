@@ -1,8 +1,12 @@
 import { Module } from '@nestjs/common';
+import { JwtModule } from '@nestjs/jwt';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { BoardsController } from './boards.controller';
 import { BoardsService } from './boards.service';
+import { BoardLockService } from './board-lock.service';
+import { BoardsGateway } from './boards.gateway';
 import { Board } from './entities/board.entity';
+import { BoardLock } from './entities/board-lock.entity';
 import { Status } from '../status/entities/status.entity';
 import { BoardMember } from '../board-members/entities/board-member.entity';
 import { SuperBlock } from '../super-blocks/entities/super-block.entity';
@@ -16,7 +20,14 @@ import { AnalysisContentModule } from '../analysis-content/analysis-content.modu
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Board, Status, BoardMember, SuperBlock]),
+    JwtModule.register({}),
+    TypeOrmModule.forFeature([
+      Board,
+      BoardLock,
+      Status,
+      BoardMember,
+      SuperBlock,
+    ]),
     UsersModule,
     BoardMembersModule,
     SuperBlocksModule,
@@ -26,7 +37,7 @@ import { AnalysisContentModule } from '../analysis-content/analysis-content.modu
     AnalysisContentModule,
   ],
   controllers: [BoardsController],
-  providers: [BoardsService],
-  exports: [BoardsService],
+  providers: [BoardsService, BoardLockService, BoardsGateway],
+  exports: [BoardsService, BoardLockService],
 })
 export class BoardsModule {}
