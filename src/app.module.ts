@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
+import { JwtService } from '@nestjs/jwt';
 import { User } from './modules/users/entities/user.entity';
 import { Status } from './modules/status/entities/status.entity';
 import { Board } from './modules/boards/entities/board.entity';
@@ -99,6 +100,7 @@ import { AnalysisContentModule } from './modules/analysis-content/analysis-conte
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
     },
+    JwtService,
   ],
 })
 export class AppModule {}

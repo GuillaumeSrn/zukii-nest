@@ -395,6 +395,8 @@ export class BoardsController {
   async getLockStatus(
     @Param('id', UuidValidationPipe) id: string,
   ): Promise<{ locked: boolean; lockedBy?: string; lockedAt?: string }> {
+    // Expirer les verrous silencieusement au moment de la consultation du statut
+    await this.boardLockService.cleanupExpiredLocks();
     const lock = await this.boardLockService.getBoardLock(id);
     if (lock) {
       return {
