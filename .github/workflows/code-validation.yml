@@ -54,6 +54,24 @@ jobs:
       - name: Generate coverage report
         run: npm run test:cov
 
+      - name: Build application
+        run: npm run build
+
+      - name: Upload dist artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nest-dist
+          path: dist/
+          retention-days: 14
+
+      - name: Upload coverage artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nest-coverage
+          path: coverage/
+          retention-days: 14
+
   build:
     name: Build Docker
     runs-on: ubuntu-latest
