@@ -15,7 +15,10 @@ interface LockRequestPayload {
 }
 
 @Injectable()
-@WebSocketGateway({ namespace: '/boards', cors: { origin: true, credentials: true } })
+@WebSocketGateway({
+  namespace: '/boards',
+  cors: { origin: true, credentials: true },
+})
 export class BoardsGateway {
   private readonly logger = new Logger(BoardsGateway.name);
 
@@ -28,14 +31,20 @@ export class BoardsGateway {
   ) {}
 
   @SubscribeMessage('join')
-  handleJoin(@MessageBody() payload: { boardId: string }, @ConnectedSocket() client: Socket) {
+  handleJoin(
+    @MessageBody() payload: { boardId: string },
+    @ConnectedSocket() client: Socket,
+  ) {
     const room = `board:${payload.boardId}`;
     client.join(room);
     this.logger.debug(`Client ${client.id} joined ${room}`);
   }
 
   @SubscribeMessage('leave')
-  handleLeave(@MessageBody() payload: { boardId: string }, @ConnectedSocket() client: Socket) {
+  handleLeave(
+    @MessageBody() payload: { boardId: string },
+    @ConnectedSocket() client: Socket,
+  ) {
     const room = `board:${payload.boardId}`;
     client.leave(room);
     this.logger.debug(`Client ${client.id} left ${room}`);
@@ -46,7 +55,7 @@ export class BoardsGateway {
     @MessageBody() payload: LockRequestPayload,
     @ConnectedSocket() client: Socket,
   ) {
-    const token = (client.handshake.auth && (client.handshake.auth as any).token) || '';
+    const token = this.extractToken(client);
     const userId = this.safeExtractUserId(token);
     const { boardId } = payload;
     try {
@@ -55,7 +64,7 @@ export class BoardsGateway {
       this.server.to(`board:${boardId}`).emit('lock:granted', data);
       // Diffusion globale pour les clients hors room (ex: navigation en cours)
       this.server.emit('lock:granted', data);
-    } catch (e) {
+    } catch {
       client.emit('lock:denied', { boardId });
     }
   }
@@ -65,7 +74,7 @@ export class BoardsGateway {
     @MessageBody() payload: LockRequestPayload,
     @ConnectedSocket() client: Socket,
   ) {
-    const token = (client.handshake.auth && (client.handshake.auth as any).token) || '';
+    const token = this.extractToken(client);
     const userId = this.safeExtractUserId(token);
     const { boardId } = payload;
     try {
@@ -74,7 +83,7 @@ export class BoardsGateway {
       this.server.to(`board:${boardId}`).emit('lock:released', data);
       // Diffusion globale pour éviter toute perte d'event
       this.server.emit('lock:released', data);
-    } catch (e) {
+    } catch {
       // No-op
     }
   }
@@ -84,19 +93,19 @@ export class BoardsGateway {
     @MessageBody() payload: LockRequestPayload,
     @ConnectedSocket() client: Socket,
   ) {
-    const token = (client.handshake.auth && (client.handshake.auth as any).token) || '';
+    const token = this.extractToken(client);
     const userId = this.safeExtractUserId(token);
     const { boardId } = payload;
     try {
       await this.lockService.lockBoard(boardId, userId);
-    } catch (e) {
+    } catch {
       // No-op: si déjà verrouillé par un autre, on ne casse rien
     }
   }
 
   // Déverrouillage automatique si le client coupe brutalement (fermeture onglet)
   async handleDisconnect(client: Socket) {
-    const token = (client.handshake.auth && (client.handshake.auth as any).token) || '';
+    const token = this.extractToken(client);
     const userId = this.safeExtractUserId(token);
     if (!userId) return;
     const unlockedBoards = await this.lockService.unlockAllByUser(userId);
@@ -110,8 +119,12 @@ export class BoardsGateway {
   private safeExtractUserId(token: string): string {
     try {
       if (!token) return '';
-      const decoded = this.jwtService.decode(token) as { sub?: string; type?: string } | null;
-      if (decoded && decoded.type === 'access' && typeof decoded.sub === 'string') {
+      const decoded = this.jwtService.decode(token);
+      if (
+        decoded &&
+        decoded.type === 'access' &&
+        typeof decoded.sub === 'string'
+      ) {
         return decoded.sub;
       }
       return '';
@@ -119,6 +132,14 @@ export class BoardsGateway {
       return '';
     }
   }
+
+  private extractToken(client: Socket): string {
+    const auth =
+      client.handshake && (client.handshake as { auth?: unknown }).auth;
+    if (auth && typeof auth === 'object' && auth !== null) {
+      const token = (auth as Record<string, unknown>).token;
+      return typeof token === 'string' ? token : '';
+    }
+    return '';
+  }
 }
-
-
