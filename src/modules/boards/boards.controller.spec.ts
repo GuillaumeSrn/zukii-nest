@@ -12,6 +12,7 @@ import { BoardMembersService } from '../board-members/board-members.service';
 import { SuperBlocksService } from '../super-blocks/super-blocks.service';
 import { BlocksService } from '../blocks/blocks.service';
 import { AnalysisContentService } from '../analysis-content/analysis-content.service';
+import { BoardLockService } from './board-lock.service';
 
 describe('BoardsController', () => {
   let controller: BoardsController;
@@ -20,6 +21,7 @@ describe('BoardsController', () => {
   let superBlocksService: jest.Mocked<SuperBlocksService>;
   let blocksService: jest.Mocked<BlocksService>;
   let analysisContentService: jest.Mocked<AnalysisContentService>;
+  let boardLockService: jest.Mocked<BoardLockService>;
 
   const mockBoardResponse = {
     id: 'board-123',
@@ -62,6 +64,16 @@ describe('BoardsController', () => {
           },
         },
         {
+          provide: BoardLockService,
+          useValue: {
+            lockBoard: jest.fn(),
+            unlockBoard: jest.fn(),
+            getBoardLock: jest.fn(),
+            isBoardLocked: jest.fn(),
+            cleanupExpiredLocks: jest.fn(),
+          },
+        },
+        {
           provide: BoardMembersService,
           useValue: {
             findBoardMembers: jest.fn(),
@@ -95,6 +107,7 @@ describe('BoardsController', () => {
     superBlocksService = module.get(SuperBlocksService);
     blocksService = module.get(BlocksService);
     analysisContentService = module.get(AnalysisContentService);
+    boardLockService = module.get(BoardLockService);
   });
 
   it('should be defined', () => {

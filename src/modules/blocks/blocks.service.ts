@@ -85,31 +85,8 @@ export class BlocksService {
     const savedBlock = await this.blockRepository.save(block);
     this.logger.log(`Block créé avec succès: ${savedBlock.id}`);
 
-    // Si c'est un block d'analyse, déclencher automatiquement l'analyse
-    if (createBlockDto.blockType === BlockType.ANALYSIS) {
-      this.logger.log(
-        `Déclenchement automatique de l'analyse pour le block ${savedBlock.id}`,
-      );
-      try {
-        // Récupérer les fichiers liés et déclencher l'analyse
-        const linkedFiles =
-          await this.analysisContentService.getLinkedFilesMetadata(
-            createBlockDto.contentId,
-          );
-        if (linkedFiles.length > 0) {
-          await this.triggerAnalysisAsync(
-            savedBlock.id,
-            createBlockDto.contentId,
-            linkedFiles,
-          );
-        }
-      } catch (error) {
-        this.logger.error(
-          `Erreur lors du déclenchement automatique de l'analyse: ${error instanceof Error ? error.message : 'Erreur inconnue'}`,
-        );
-        // Ne pas faire échouer la création du block si l'analyse échoue
-      }
-    }
+    // Ne plus déclencher d'analyse ici pour éviter de bloquer la réponse HTTP.
+    // L'analyse est désormais lancée en arrière-plan par le controller.
 
     // Récupérer le block avec les relations pour le mapping DTO
     const blockWithRelations = await this.blockRepository.findOne({
