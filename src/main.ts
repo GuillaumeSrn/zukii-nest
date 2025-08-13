@@ -86,7 +86,17 @@ async function bootstrap() {
   const config = new DocumentBuilder()
     .setTitle('Zukii API')
     .setDescription(
-      "API REST Zukii : application collaborative d'analyse de données CSV",
+      "API REST Zukii : application collaborative d'analyse de données CSV\n\n" +
+        '## Gestion des erreurs\n' +
+        '- **400** : Données invalides ou requête mal formée\n' +
+        '- **401** : Authentification requise\n' +
+        '- **403** : Accès interdit (permissions insuffisantes)\n' +
+        '- **404** : Ressource non trouvée\n' +
+        '- **409** : Conflit (ressource déjà existante)\n' +
+        '- **422** : Erreur de validation des données\n' +
+        '- **500** : Erreur interne du serveur\n\n' +
+        '## Codes de statut HTTP\n' +
+        "Tous les endpoints retournent des codes HTTP standardisés avec des messages d'erreur détaillés incluant timestamp, chemin et méthode.",
     )
     .setVersion('1.0')
     .addBearerAuth(

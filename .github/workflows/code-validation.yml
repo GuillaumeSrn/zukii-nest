@@ -3,6 +3,7 @@ name: Code Validation Pipeline
 on:
   push:
     branches: [main]
+    tags: ['bloc2-*']
   pull_request:
     branches: [main]
 
@@ -62,6 +63,8 @@ jobs:
         with:
           name: nest-dist
           path: dist/
+          if-no-files-found: error
+          retention-days: 14
           retention-days: 14
 
       - name: Upload coverage artifact
@@ -70,6 +73,8 @@ jobs:
         with:
           name: nest-coverage
           path: coverage/
+          if-no-files-found: ignore
+          retention-days: 14
           retention-days: 14
 
   build:

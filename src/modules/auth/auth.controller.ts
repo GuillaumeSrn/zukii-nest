@@ -16,6 +16,10 @@ import {
   ApiBody,
   ApiBearerAuth,
 } from '@nestjs/swagger';
+import {
+  ErrorResponseDto,
+  ValidationErrorResponseDto,
+} from '../../common/dto/error-response.dto';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
@@ -53,6 +57,17 @@ export class AuthController {
   @ApiResponse({
     status: 400,
     description: 'Données de connexion invalides',
+    type: ValidationErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 422,
+    description: 'Erreur de validation des données',
+    type: ValidationErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Erreur interne du serveur',
+    type: ErrorResponseDto,
   })
   async login(@Body() loginDto: LoginDto): Promise<AuthResponseDto> {
     this.logger.log(`Tentative de connexion pour: ${loginDto.email}`);

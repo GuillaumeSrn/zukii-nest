@@ -22,6 +22,10 @@ import {
   ApiBearerAuth,
   ApiBody,
 } from '@nestjs/swagger';
+import {
+  ErrorResponseDto,
+  ValidationErrorResponseDto,
+} from '../../common/dto/error-response.dto';
 import { BoardsService } from './boards.service';
 import { BoardLockService } from './board-lock.service';
 import { CreateBoardDto } from './dto/create-board.dto';
@@ -67,18 +71,37 @@ export class BoardsController {
   @ApiResponse({
     status: 400,
     description: 'Données de création invalides',
+    type: ValidationErrorResponseDto,
   })
   @ApiResponse({
     status: 401,
     description: 'Token JWT requis',
+    type: ErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Accès interdit',
+    type: ErrorResponseDto,
   })
   @ApiResponse({
     status: 404,
     description: 'Utilisateur non trouvé',
+    type: ErrorResponseDto,
   })
   @ApiResponse({
     status: 409,
     description: 'Statut par défaut non disponible',
+    type: ErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 422,
+    description: 'Erreur de validation des données',
+    type: ValidationErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Erreur interne du serveur',
+    type: ErrorResponseDto,
   })
   async create(
     @Body() createBoardDto: CreateBoardDto,
