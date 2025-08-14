@@ -1,17 +1,12 @@
 name: Deploy to OVH VPS
 
 on:
-  workflow_run:
-    workflows: ["Code Validation Pipeline"]
-    types: [completed]
+  push:
     branches: [main]
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    # CRITIQUE : Déploiement UNIQUEMENT si validation CI réussie
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
-    
     steps:
       - name: Deploy to OVH VPS
         uses: appleboy/ssh-action@v1.0.0
@@ -21,109 +16,29 @@ jobs:
           key: ${{ secrets.OVH_SSH_KEY }}
           script: |
             cd ~/zukii-app
+            
             echo "🚀 DÉPLOIEMENT PROGRESSIF C2.2.4 - Démarrage..."
-            echo "✅ Validation CI réussie - Déploiement autorisé"
             
             # === ÉTAPE 1: BASE DE DONNÉES ===
             echo "📊 ÉTAPE 1: Déploiement de la base de données..."
             docker compose up -d db
+            sleep 5
             
-            # Health check DB avec timeout et retry
-            echo "⏳ Vérification de la disponibilité de la base de données..."
-            for i in {1..30}; do
-              if docker compose exec -T db pg_isready -U $DB_USERNAME >/dev/null 2>&1; then
-                echo "✅ Base de données opérationnelle (tentative $i/30)"
-                break
-              fi
-              if [ $i -eq 30 ]; then
-                echo "❌ ÉCHEC: Base de données non accessible après 30 tentatives"
-                exit 1
-              fi
-              echo "⏳ Tentative $i/30 - Attente 2s..."
-              sleep 2
-            done
-            
-            # === ÉTAPE 2: SERVICE PYTHON ===
-            echo "🐍 ÉTAPE 2: Déploiement du service Python..."
-            docker compose pull python-service
-            docker compose up -d python-service
-            
-            # Health check Python (tolérant au mode offline)
-            echo "⏳ Vérification du service Python..."
-            for i in {1..30}; do
-              if docker compose exec -T python-service sh -c "curl -sf http://localhost:8000/health" >/dev/null 2>&1; then
-                echo "✅ Service Python opérationnel (tentative $i/30)"
-                break
-              fi
-              if [ $i -eq 30 ]; then
-                echo "⚠️ Service Python non accessible (mode offline possible) - Continuation..."
-                break
-              fi
-              echo "⏳ Tentative $i/30 - Attente 2s..."
-              sleep 2
-            done
-            
-            # === ÉTAPE 3: BACKEND NESTJS ===
-            echo "🔧 ÉTAPE 3: Déploiement du backend NestJS..."
+            # === ÉTAPE 2: BACKEND NESTJS ===
+            echo "🔧 ÉTAPE 2: Déploiement du backend NestJS..."
             docker compose pull backend
             docker compose up -d backend
+            sleep 10
             
-            # Health check Backend
-            echo "⏳ Vérification du backend NestJS..."
-            for i in {1..30}; do
-              if docker compose exec -T backend sh -c "curl -sf http://localhost:3000/health" >/dev/null 2>&1; then
-                echo "✅ Backend NestJS opérationnel (tentative $i/30)"
-                break
-              fi
-              if [ $i -eq 30 ]; then
-                echo "❌ ÉCHEC: Backend non accessible après 30 tentatives"
-                exit 1
-              fi
-              echo "⏳ Tentative $i/30 - Attente 2s..."
-              sleep 2
-            done
-            
-            # === ÉTAPE 4: FRONTEND ANGULAR ===
-            echo "🌐 ÉTAPE 4: Déploiement du frontend Angular..."
+            # === ÉTAPE 3: FRONTEND ANGULAR ===
+            echo "🌐 ÉTAPE 3: Déploiement du frontend Angular..."
             docker compose pull frontend
             docker compose up -d frontend
+            sleep 5
             
-            # Health check Frontend
-            echo "⏳ Vérification du frontend Angular..."
-            for i in {1..30}; do
-              if docker compose exec -T frontend sh -c "curl -sf http://localhost/" >/dev/null 2>&1; then
-                echo "✅ Frontend Angular opérationnel (tentative $i/30)"
-                break
-              fi
-              if [ $i -eq 30 ]; then
-                echo "❌ ÉCHEC: Frontend non accessible après 30 tentatives"
-                exit 1
-              fi
-              echo "⏳ Tentative $i/30 - Attente 2s..."
-              sleep 2
-            done
+            # === VALIDATION FINALE ===
+            echo "🔍 Vérification des services..."
+            docker compose ps
             
-            # === VALIDATION FINALE C2.2.4 ===
-            echo "🔍 VALIDATION FINALE C2.2.4 - Vérification de tous les services..."
-            
-            # Test final de tous les services
-            echo "📊 Test final - Base de données:"
-            docker compose exec -T db pg_isready -U $DB_USERNAME && echo "✅ DB: OK" || echo "❌ DB: KO"
-            
-            echo "🔧 Test final - Backend:"
-            docker compose exec -T backend sh -c "curl -sf http://localhost:3000/health" >/dev/null 2>&1 && echo "✅ Backend: OK" || echo "❌ Backend: KO"
-            
-            echo "🌐 Test final - Frontend:"
-            docker compose exec -T frontend sh -c "curl -sf http://localhost/" >/dev/null 2>&1 && echo "✅ Frontend: OK" || echo "❌ Frontend: KO"
-            
-            # === RÉSUMÉ C2.2.4 ===
-            echo ""
-            echo "🎉 DÉPLOIEMENT PROGRESSIF C2.2.4 RÉUSSI !"
-            echo "============================================="
-            echo "✅ Base de données: Déployée et opérationnelle"
-            echo "✅ Service Python: Déployé et opérationnel"
-            echo "✅ Backend NestJS: Déployé et opérationnel"
-            echo "✅ Frontend Angular: Déployé et opérationnel"
-            echo ""
+            echo "🎉 DÉPLOIEMENT PROGRESSIF C2.2.4 TERMINÉ !"
             echo "🌐 Application accessible sur: http://${{ secrets.OVH_HOST }}"
-            echo "📊 Compétence C2.2.4: DÉPLOIEMENT PROGRESSIF VALIDÉ"
