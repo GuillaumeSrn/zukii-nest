@@ -5,7 +5,8 @@ WORKDIR /app
 COPY package*.json ./
 COPY tsconfig*.json ./
 
-RUN npm ci
+# Utiliser npm install au lieu de npm ci pour éviter l'erreur de package-lock.json
+RUN npm install
 
 COPY . .
 
