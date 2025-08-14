@@ -46,6 +46,6 @@ export class ValidationErrorResponseDto extends ErrorResponseDto {
   errors: Array<{
     field: string;
     message: string;
-    value: any;
+    value: unknown;
   }>;
 }
