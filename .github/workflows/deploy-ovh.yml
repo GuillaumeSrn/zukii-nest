@@ -1,0 +1,42 @@
+name: Deploy to OVH VPS
+
+on:
+  workflow_run:
+    workflows: ["Code Validation Pipeline"]
+    types: [completed]
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    
+    steps:
+      - name: Deploy Backend to OVH VPS
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.OVH_HOST }}
+          username: ${{ secrets.OVH_USER }}
+          key: ${{ secrets.OVH_SSH_KEY }}
+          script: |
+            cd ~/zukii-app
+            echo "🔄 Déploiement séquentiel : Base de données..."
+            docker compose up -d db
+            sleep 10
+            
+            echo "🔄 Déploiement séquentiel : Backend NestJS..."
+            docker compose pull backend
+            docker compose up -d backend
+            sleep 15
+            
+            echo "🔄 Déploiement séquentiel : Service Python..."
+            docker compose pull python-service
+            docker compose up -d python-service
+            sleep 10
+            
+            echo "🔄 Déploiement séquentiel : Frontend Angular..."
+            docker compose pull frontend
+            docker compose up -d frontend
+            
+            echo "✅ Déploiement séquentiel complet sur OVH !"
+            echo "🌐 Application accessible sur : http://${{ secrets.OVH_HOST }}"
