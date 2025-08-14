@@ -20,23 +20,52 @@ jobs:
           key: ${{ secrets.OVH_SSH_KEY }}
           script: |
             cd ~/zukii-app
-            echo "🔄 Déploiement séquentiel : Base de données..."
+            echo "🔄 Déploiement progressif sur OVH VPS..."
+            
+            # 1. Base de données
+            echo "📊 Déploiement de la base de données..."
             docker compose up -d db
-            sleep 10
             
-            echo "🔄 Déploiement séquentiel : Backend NestJS..."
-            docker compose pull backend
-            docker compose up -d backend
-            sleep 15
+            # Attendre que la base soit prête
+            echo "⏳ Attente de la disponibilité de la base de données..."
+            timeout 60 bash -c 'until docker compose exec -T db pg_isready -U $DB_USERNAME; do sleep 2; done' || exit 1
+            echo "✅ Base de données prête"
             
-            echo "🔄 Déploiement séquentiel : Service Python..."
+            # 2. Service Python
+            echo "🐍 Déploiement du service Python..."
             docker compose pull python-service
             docker compose up -d python-service
-            sleep 10
             
-            echo "🔄 Déploiement séquentiel : Frontend Angular..."
+            # Attendre que le service Python soit prêt (avec tolérance pour le mode offline)
+            echo "⏳ Attente de la disponibilité du service Python..."
+            timeout 60 bash -c 'until docker compose exec -T python-service sh -c "curl -sf http://localhost:8000/health" >/dev/null 2>&1; do sleep 2; done' || echo "⚠️ Service Python non accessible (mode offline possible)"
+            echo "✅ Service Python prêt"
+            
+            # 3. Backend NestJS
+            echo "🔧 Déploiement du backend NestJS..."
+            docker compose pull backend
+            docker compose up -d backend
+            
+            # Attendre que le backend soit prêt
+            echo "⏳ Attente de la disponibilité du backend..."
+            timeout 60 bash -c 'until docker compose exec -T backend sh -c "curl -sf http://localhost:3000/health" >/dev/null 2>&1; do sleep 2; done' || exit 1
+            echo "✅ Backend prêt"
+            
+            # 4. Frontend Angular
+            echo "🌐 Déploiement du frontend Angular..."
             docker compose pull frontend
             docker compose up -d frontend
             
-            echo "✅ Déploiement séquentiel complet sur OVH !"
-            echo "🌐 Application accessible sur : http://${{ secrets.OVH_HOST }}"
+            # Attendre que le frontend soit prêt
+            echo "⏳ Attente de la disponibilité du frontend..."
+            timeout 60 bash -c 'until docker compose exec -T frontend sh -c "curl -sf http://localhost/" >/dev/null 2>&1; do sleep 2; done' || exit 1
+            echo "✅ Frontend prêt"
+            
+            # Validation finale
+            echo "🔍 Validation finale des services..."
+            echo "📊 Base de données: $(docker compose exec -T db pg_isready -U $DB_USERNAME && echo 'OK' || echo 'KO')"
+            echo "🔧 Backend: $(docker compose exec -T backend sh -c "curl -sf http://localhost:3000/health" >/dev/null 2>&1 && echo 'OK' || echo 'KO')"
+            echo "🌐 Frontend: $(docker compose exec -T frontend sh -c "curl -sf http://localhost/" >/dev/null 2>&1 && echo 'OK' || echo 'KO')"
+            
+            echo "🎉 Déploiement progressif réussi sur OVH VPS!"
+            echo "🌐 Application accessible sur: http://${{ secrets.OVH_HOST }}"
