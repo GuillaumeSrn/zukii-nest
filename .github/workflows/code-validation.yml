@@ -103,8 +103,8 @@ jobs:
           file: ./Dockerfile
           push: true
           tags: |
-            ghcr.io/${{ github.repository }}:latest
-            ghcr.io/${{ github.repository }}:${{ github.sha }}
+            ghcr.io/guillaumesrn/zukii-nest:latest
+            ghcr.io/guillaumesrn/zukii-nest:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
