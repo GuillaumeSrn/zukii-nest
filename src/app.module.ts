@@ -75,10 +75,10 @@ import { AnalysisContentModule } from './modules/analysis-content/analysis-conte
           AnalysisContent,
           Invitation,
         ],
-        synchronize: configService.get<string>('NODE_ENV') !== 'production',
+        synchronize: true, // TEMPORAIRE: activé pour le déploiement
         logging: configService.get<string>('NODE_ENV') === 'development',
         migrations: [__dirname + '/database/migrations/*.ts'],
-        migrationsRun: configService.get<string>('NODE_ENV') === 'production',
+        migrationsRun: false, // TEMPORAIRE: désactivé pour le déploiement
         migrationsTableName: 'migrations',
       }),
       inject: [ConfigService],
