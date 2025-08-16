@@ -1,0 +1,14 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "🔍 Pre-commit hook NestJS: Vérification de la qualité du code..."
+
+# Vérifier le lint
+echo "🔍 Vérification du lint..."
+npm run lint
+
+# Vérifier le build
+echo "🏗️ Vérification du build..."
+npm run build
+
+echo "✅ Pre-commit hook NestJS terminé avec succès !"
