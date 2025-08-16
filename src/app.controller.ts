@@ -48,27 +48,10 @@ export class AppController {
     };
   }
 
-  @Public()
   @Get('health')
-  @ApiOperation({
-    summary: 'Health check',
-    description: "Vérification de la santé de l'API",
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'API en bonne santé',
-    example: {
-      status: 'healthy',
-      service: 'zukii-api',
-      version: '1.0.0',
-      timestamp: '2025-01-27T10:00:00Z',
-    },
-  })
-  getHealth(): object {
+  getHealth(): { status: string; timestamp: string } {
     return {
-      status: 'healthy',
-      service: 'zukii-api',
-      version: '1.0.0',
+      status: 'ok',
       timestamp: new Date().toISOString(),
     };
   }
