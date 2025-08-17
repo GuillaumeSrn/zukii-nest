@@ -31,6 +31,7 @@ import { BlockRelationsModule } from './modules/block-relations/block-relations.
 import { TextContentModule } from './modules/text-content/text-content.module';
 import { FileContentModule } from './modules/file-content/file-content.module';
 import { AnalysisContentModule } from './modules/analysis-content/analysis-content.module';
+import { MetricsModule } from './modules/metrics/metrics.module';
 
 @Module({
   imports: [
@@ -96,6 +97,7 @@ import { AnalysisContentModule } from './modules/analysis-content/analysis-conte
     TextContentModule,
     FileContentModule,
     AnalysisContentModule,
+    MetricsModule,
   ],
   controllers: [AppController],
   providers: [
