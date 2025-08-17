@@ -24,8 +24,7 @@
     "docker:run": "docker-compose up -d",
     "docker:stop": "docker-compose down",
     "docker:logs": "docker-compose logs -f api",
-    "db:reset": "npm run docker:stop && docker volume rm zukii-nest_postgres_data && npm run docker:run",
-
+    "db:reset": "npm run docker:stop && docker volume rm zukii-nest_postgres_data && npm run docker:run"
   },
   "dependencies": {
     "@nestjs-modules/mailer": "^2.0.2",
