@@ -32,6 +32,7 @@ import { TextContentModule } from './modules/text-content/text-content.module';
 import { FileContentModule } from './modules/file-content/file-content.module';
 import { AnalysisContentModule } from './modules/analysis-content/analysis-content.module';
 import { MetricsModule } from './modules/metrics/metrics.module';
+import { LoggingModule } from './modules/logging/logging.module';
 
 @Module({
   imports: [
@@ -98,6 +99,7 @@ import { MetricsModule } from './modules/metrics/metrics.module';
     FileContentModule,
     AnalysisContentModule,
     MetricsModule,
+    LoggingModule,
   ],
   controllers: [AppController],
   providers: [
