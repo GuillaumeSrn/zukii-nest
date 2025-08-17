@@ -48,19 +48,12 @@ export class LoggingController {
   @Get('metrics')
   @Public()
   getLogMetrics() {
-    const logs = this.loggingService.getLogs();
-    const total = logs.length;
-    const errors = logs.filter((log) => log.level === 'error').length;
-    const warnings = logs.filter((log) => log.level === 'warn').length;
-    const info = logs.filter((log) => log.level === 'info').length;
+    return this.loggingService.getLogMetrics();
+  }
 
-    return {
-      total,
-      errors,
-      warnings,
-      info,
-      errorRate: total > 0 ? (errors / total) * 100 : 0,
-      warningRate: total > 0 ? (warnings / total) * 100 : 0,
-    };
+  @Get('prometheus')
+  @Public()
+  getPrometheusMetrics() {
+    return this.loggingService.getPrometheusMetrics();
   }
 }
