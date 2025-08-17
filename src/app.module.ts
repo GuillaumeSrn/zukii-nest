@@ -33,6 +33,7 @@ import { FileContentModule } from './modules/file-content/file-content.module';
 import { AnalysisContentModule } from './modules/analysis-content/analysis-content.module';
 import { MetricsModule } from './modules/metrics/metrics.module';
 import { LoggingModule } from './modules/logging/logging.module';
+import { VersionModule } from './modules/version/version.module';
 
 @Module({
   imports: [
@@ -100,6 +101,7 @@ import { LoggingModule } from './modules/logging/logging.module';
     AnalysisContentModule,
     MetricsModule,
     LoggingModule,
+    VersionModule,
   ],
   controllers: [AppController],
   providers: [
