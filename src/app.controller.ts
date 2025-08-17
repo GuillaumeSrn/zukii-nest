@@ -1,10 +1,14 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Inject } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { Public } from './common/decorators/public.decorator';
+import { LoggingService } from './modules/logging/logging.service';
 
 @ApiTags('API Info')
 @Controller()
 export class AppController {
+  constructor(
+    @Inject(LoggingService) private readonly loggingService: LoggingService,
+  ) {}
   @Public()
   @Get()
   @ApiOperation({
@@ -59,6 +63,20 @@ export class AppController {
     const memoryUsage = process.memoryUsage();
     const timestamp = Date.now();
 
+    // Récupérer les métriques de logs via le service
+    let logsMetrics = '';
+
+    try {
+      if (
+        this.loggingService &&
+        typeof this.loggingService.getPrometheusMetrics === 'function'
+      ) {
+        logsMetrics = '\n' + this.loggingService.getPrometheusMetrics();
+      }
+    } catch {
+      // Si le service n'est pas disponible, on continue sans
+    }
+
     return `# HELP zukii_app_uptime_seconds Application uptime in seconds
 # TYPE zukii_app_uptime_seconds gauge
 zukii_app_uptime_seconds ${uptime}
@@ -77,7 +95,6 @@ zukii_app_timestamp_last_request ${timestamp}
 
 # HELP zukii_app_info Application information
 # TYPE zukii_app_info gauge
-zukii_app_info{version="1.0.0",name="zukii-nest"} 1
-`;
+zukii_app_info{version="1.0.0",name="zukii-nest"} 1${logsMetrics}`;
   }
 }
