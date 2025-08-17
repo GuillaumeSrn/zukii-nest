@@ -2,7 +2,7 @@ import { Controller, Get, Query, Post, Body } from '@nestjs/common';
 import { LoggingService, LogEntry } from './logging.service';
 import { Public } from '../../common/decorators/public.decorator';
 
-@Controller('api/logs')
+@Controller('logs')
 export class LoggingController {
   constructor(private readonly loggingService: LoggingService) {}
 
